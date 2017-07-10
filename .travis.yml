@@ -2,7 +2,6 @@ language: node_js
 node_js:
 - 7.4.0
 sudo: false
-os: osx
 
 notifications:
   email:
@@ -31,3 +30,4 @@ matrix:
         packages:
         - clang-3.3
         - build-essential
+  - os: osx
