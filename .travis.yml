@@ -1,3 +1,36 @@
 language: node_js
 node_js:
 - 7.4.0
+sudo: false
+
+notifications:
+  email:
+    on_success: never
+    on_failure: change
+
+os:
+- linux
+- osx
+
+git:
+  depth: 10
+
+branches:
+  only:
+  - master
+
+env:
+  global:
+  - CC=clang
+  - CXX=clang++
+  - npm_config_clang=1
+
+matrix:
+  include:
+  - os: linux
+    dist: trust
+    addons:
+      apt:
+        packages:
+        - clang-3.3
+        - build-essential
