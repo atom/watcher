@@ -11,11 +11,6 @@
             "includes"
         ],
         "conditions": [
-            ["OS=='win'", {
-                "sources": [
-                    "src/platform_win32.cpp",
-                ]
-            }],
             ["OS=='mac'", {
                 "link_settings": {
                     "xcode_settings": {
