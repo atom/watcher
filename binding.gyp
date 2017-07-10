@@ -37,5 +37,16 @@
                 ]
             }]
         ],
-    }]
+    }],
+    "target_defaults": {
+        "cflags_cc": ["-std=c++11"],
+        "conditions": [
+            ['OS=="mac"', {
+                "xcode_settings": {
+                    'CLANG_CXX_LIBRARY': 'libc++',
+                    'CLANG_CXX_LANGUAGE_STANDARD':'c++11',
+                }
+            }]
+        ]
+    }
 }
