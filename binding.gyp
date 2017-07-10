@@ -29,23 +29,6 @@
                     "-std=c++0x"
                 ]
             }],
-            ["OS=='win'", {
-                "conditions": [
-                    ["target_arch=='x64'", {
-                        "VCLibrarianTool": {
-                          "AdditionalOptions": [
-                            "/MACHINE:X64",
-                          ],
-                        },
-                    }, {
-                        "VCLibrarianTool": {
-                          "AdditionalOptions": [
-                            "/MACHINE:x86",
-                          ],
-                        },
-                    }],
-                ]
-            }],
             ["OS=='mac' or OS=='linux'", {
                 "defines": [
                     "HAVE_STDDEF_H=1",
