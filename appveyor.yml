@@ -1,0 +1,20 @@
+image: Visual Studio 2015
+
+environment:
+  nodejs_version: "7.4.0"
+
+platform:
+  - x86
+  - x64
+
+install:
+  - ps: Install-Product node $env:nodejs_version
+  - npm install
+
+test_script:
+- npm test
+
+shallow_clone: true
+clone_depth: 5
+
+skip_branch_with_pr: true
