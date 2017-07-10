@@ -5,10 +5,8 @@
         "sources": [
             "src/main.cpp"
         ],
-        "win_delay_load_hook": "false",
         "include_dirs": [
-            "<!(node -e \"require('nan')\")",
-            "includes"
+            "<!(node -e \"require('nan')\")"
         ],
         "conditions": [
             ["OS=='mac'", {
@@ -22,19 +20,6 @@
                         ]
                     }
                 }
-            }],
-            ["OS=='linux'", {
-                "cflags": [
-                    "-Wno-unknown-pragmas",
-                    "-std=c++0x"
-                ]
-            }],
-            ["OS=='mac' or OS=='linux'", {
-                "defines": [
-                    "HAVE_STDDEF_H=1",
-                    "HAVE_STDLIB_H=1",
-                    "HAVE_UNISTD_H=1"
-                ]
             }]
         ],
     }],

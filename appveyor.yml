@@ -7,6 +7,8 @@ platform:
   - x86
   - x64
 
+build: off
+
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm config set msvs_version 2015
