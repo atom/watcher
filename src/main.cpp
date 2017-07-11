@@ -5,6 +5,7 @@
 #include <uv.h>
 
 #include "log.h"
+#include "worker/thread.h"
 
 using namespace v8;
 using std::string;
@@ -21,6 +22,9 @@ public:
   {
     Logger::toFile(mainLogFile.c_str());
   }
+
+private:
+  WorkerThread workerThread;
 };
 
 static Main instance;

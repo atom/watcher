@@ -4,7 +4,9 @@
 
         "sources": [
             "src/main.cpp",
-            "src/log.cpp"
+            "src/log.cpp",
+            "src/errable.cpp",
+            "src/worker/thread.cpp"
         ],
         "include_dirs": [
             "<!(node -e \"require('nan')\")"
