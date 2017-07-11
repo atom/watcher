@@ -24,6 +24,7 @@
     "chai-as-promised": "7.1.1",
     "mocha": "3.4.2",
     "mocha-appveyor-reporter": "^0.4.0",
+    "mz": "^2.6.0",
     "standard": "10.0.2"
   },
   "dependencies": {
@@ -33,7 +34,9 @@
     "globals": [
       "describe",
       "it",
-      "assert"
+      "assert",
+      "beforeEach",
+      "afterEach"
     ]
   }
 }
