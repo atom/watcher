@@ -5,22 +5,24 @@
 
 #include "log.h"
 
-using std::cerr;
 using std::endl;
-using std::ios_base;
+using std::ostream;
 using std::ofstream;
 
 class NullLogger : public Logger {
 public:
-  virtual Logger& prefix(const char *file, int line) override
+  virtual Logger* prefix(const char *file, int line) override
   {
-    return *this;
+    return this;
   }
 
-  virtual Logger& operator<<(const char *message) override
+  virtual ostream& stream() override
   {
-    return *this;
+    return unopened;
   }
+
+private:
+  ofstream unopened;
 };
 
 class FileLogger : public Logger {
@@ -32,16 +34,15 @@ public:
     logStream << "FileLogger opened." << endl;
   }
 
-  virtual Logger& prefix(const char *file, int line) override
+  virtual Logger* prefix(const char *file, int line) override
   {
     logStream << "[" << file << ":" << line << "] ";
-    return *this;
+    return this;
   }
 
-  virtual Logger& operator<<(const char *message) override
+  virtual ostream& stream() override
   {
-    logStream << message;
-    return *this;
+    return logStream;
   }
 
 private:
