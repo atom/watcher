@@ -3,7 +3,8 @@
         "target_name": "sfw",
 
         "sources": [
-            "src/main.cpp"
+            "src/main.cpp",
+            "src/log.cpp"
         ],
         "include_dirs": [
             "<!(node -e \"require('nan')\")"
