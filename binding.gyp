@@ -6,6 +6,7 @@
             "src/main.cpp",
             "src/log.cpp",
             "src/errable.cpp",
+            "src/queue.cpp",
             "src/worker/thread.cpp"
         ],
         "include_dirs": [

@@ -5,6 +5,7 @@
 #include <uv.h>
 
 #include "log.h"
+#include "queue.h"
 #include "worker/thread.h"
 
 using namespace v8;
@@ -13,7 +14,7 @@ using std::endl;
 
 class Main {
 public:
-  Main()
+  Main() : workerThread{out, in}
   {
     //
   }
@@ -23,7 +24,15 @@ public:
     Logger::toFile(mainLogFile.c_str());
   }
 
+  void handleEvents()
+  {
+    //
+  }
+
 private:
+  Queue in;
+  Queue out;
+
   WorkerThread workerThread;
 };
 
