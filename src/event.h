@@ -25,7 +25,7 @@ public:
     const std::string &&oldBaseName,
     const std::string &&newBaseName
   );
-  ~FileSystemEvent();
+  ~FileSystemEvent() {};
 
 private:
   const FileSystemAction action;
@@ -54,7 +54,7 @@ private:
 class AckEvent {
 public:
   AckEvent(const void *event);
-  ~AckEvent();
+  ~AckEvent() {};
 
 private:
   const void* event;
@@ -68,8 +68,8 @@ enum EventKind {
 
 class Event {
 public:
-  Event();
-  ~Event();
+  Event() {};
+  ~Event() {};
 
 private:
   EventKind kind;
