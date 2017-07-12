@@ -7,6 +7,7 @@
             "src/log.cpp",
             "src/errable.cpp",
             "src/queue.cpp",
+            "src/lock.cpp",
             "src/worker/thread.cpp"
         ],
         "include_dirs": [
