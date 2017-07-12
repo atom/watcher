@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "standard",
-    "mocha": "mocha --require test/global.js",
+    "mocha": "mocha --require test/global.js --harmony",
     "test": "npm run lint && npm run mocha",
     "ci:appveyor": "npm run mocha -- --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5"
   },
