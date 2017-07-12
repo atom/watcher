@@ -11,6 +11,11 @@ using std::ofstream;
 
 class NullLogger : public Logger {
 public:
+  NullLogger()
+  {
+    //
+  }
+
   virtual Logger* prefix(const char *file, int line) override
   {
     return this;
