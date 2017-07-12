@@ -2,6 +2,7 @@
 #define QUEUE_H
 
 #include <memory>
+#include <vector>
 #include <uv.h>
 
 #include "event.h"
