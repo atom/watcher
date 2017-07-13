@@ -18,8 +18,8 @@ describe('entry point', function () {
   })
 
   describe('configuration', function () {
-    it('validates its arguments', function () {
-      assert.throws(() => sfw.configure(), 'requires an option object')
+    it('validates its arguments', async function () {
+      await assert.isRejected(sfw.configure(), /requires an option object/)
     })
 
     it('configures the main thread logger', async function () {

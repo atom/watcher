@@ -95,7 +95,13 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   string main_log_file;
   string worker_log_file;
 
-  Local<Object> options = Nan::To<Object>(info[0]).ToLocalChecked();
+  Nan::MaybeLocal<Object> maybeOptions = Nan::To<Object>(info[0]);
+  if (maybeOptions.IsEmpty()) {
+    Nan::ThrowError("configure() requires an option object");
+    return;
+  }
+
+  Local<Object> options = maybeOptions.ToLocalChecked();
   if (!get_string_option(options, "mainLogFile", main_log_file)) return;
   if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
 
@@ -104,6 +110,9 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!main_log_file.empty()) {
     instance.use_main_log_file(move(main_log_file));
   }
+
+  callback->Call(0, 0);
+  delete callback;
 }
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
