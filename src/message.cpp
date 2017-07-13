@@ -13,26 +13,26 @@ using std::dec;
 
 FileSystemPayload::FileSystemPayload(
   const FileSystemAction action,
-  const EntryKind entryKind,
+  const EntryKind entry_kind,
   const string &&dirname,
-  const string &&oldBaseName,
-  const string &&newBaseName
+  const string &&old_base_name,
+  const string &&new_base_name
 ) :
   action{action},
-  entryKind{entryKind},
+  entry_kind{entry_kind},
   dirname{move(dirname)},
-  oldBaseName{move(oldBaseName)},
-  newBaseName{move(newBaseName)}
+  old_base_name{move(old_base_name)},
+  new_base_name{move(new_base_name)}
 {
   //
 }
 
 FileSystemPayload::FileSystemPayload(FileSystemPayload&& original) :
   action{original.action},
-  entryKind{original.entryKind},
+  entry_kind{original.entry_kind},
   dirname{move(original.dirname)},
-  oldBaseName{move(original.oldBaseName)},
-  newBaseName{move(original.newBaseName)}
+  old_base_name{move(original.old_base_name)},
+  new_base_name{move(original.new_base_name)}
 {
   //
 }
@@ -42,7 +42,7 @@ string FileSystemPayload::describe() const
   ostringstream builder;
   builder << "[FileSystemPayload ";
 
-  switch (entryKind) {
+  switch (entry_kind) {
     case KIND_FILE:
       builder << "file ";
       break;
@@ -50,22 +50,22 @@ string FileSystemPayload::describe() const
       builder << "dir ";
       break;
     default:
-      builder << "!!entryKind=" << entryKind << " ";
+      builder << "!!entry_kind=" << entry_kind << " ";
       break;
   }
 
   switch (action) {
     case ACTION_CREATED:
-      builder << "created " << dirname << " " << oldBaseName;
+      builder << "created " << dirname << " " << old_base_name;
       break;
     case ACTION_DELETED:
-      builder << "deleted " << dirname << " " << oldBaseName;
+      builder << "deleted " << dirname << " " << old_base_name;
       break;
     case ACTION_MODIFIED:
-      builder << "modified " << dirname << " " << oldBaseName;
+      builder << "modified " << dirname << " " << old_base_name;
       break;
     case ACTION_RENAMED:
-      builder << "renamed " << dirname << " {" << oldBaseName << " => " << newBaseName << "}";
+      builder << "renamed " << dirname << " {" << old_base_name << " => " << new_base_name << "}";
       break;
     default:
       builder << "!!action=" << action << " ";
@@ -142,30 +142,30 @@ string AckPayload::describe() const
 
 const FileSystemPayload* Message::as_filesystem() const
 {
-  return kind == KIND_FILESYSTEM ? &fileSystemPayload : nullptr;
+  return kind == KIND_FILESYSTEM ? &filesystem_payload : nullptr;
 }
 
 const CommandPayload* Message::as_command() const
 {
-  return kind == KIND_COMMAND ? &commandPayload : nullptr;
+  return kind == KIND_COMMAND ? &command_payload : nullptr;
 }
 
 const AckPayload* Message::as_ack() const
 {
-  return kind == KIND_ACK ? &ackPayload : nullptr;
+  return kind == KIND_ACK ? &ack_payload : nullptr;
 }
 
-Message::Message(FileSystemPayload &&p) : kind{KIND_FILESYSTEM}, fileSystemPayload{move(p)}
+Message::Message(FileSystemPayload &&p) : kind{KIND_FILESYSTEM}, filesystem_payload{move(p)}
 {
   //
 }
 
-Message::Message(CommandPayload &&p) : kind{KIND_COMMAND}, commandPayload{move(p)}
+Message::Message(CommandPayload &&p) : kind{KIND_COMMAND}, command_payload{move(p)}
 {
   //
 }
 
-Message::Message(AckPayload &&p) : kind{KIND_ACK}, ackPayload{move(p)}
+Message::Message(AckPayload &&p) : kind{KIND_ACK}, ack_payload{move(p)}
 {
   //
 }
@@ -174,13 +174,13 @@ Message::Message(Message&& original) : kind{original.kind}, pending{true}
 {
   switch (kind) {
     case KIND_FILESYSTEM:
-      new (&fileSystemPayload) FileSystemPayload(move(original.fileSystemPayload));
+      new (&filesystem_payload) FileSystemPayload(move(original.filesystem_payload));
       break;
     case KIND_COMMAND:
-      new (&commandPayload) CommandPayload(move(original.commandPayload));
+      new (&command_payload) CommandPayload(move(original.command_payload));
       break;
     case KIND_ACK:
-      new (&ackPayload) AckPayload(move(original.ackPayload));
+      new (&ack_payload) AckPayload(move(original.ack_payload));
       break;
   };
 }
@@ -189,13 +189,13 @@ Message::~Message()
 {
   switch (kind) {
     case KIND_FILESYSTEM:
-      fileSystemPayload.~FileSystemPayload();
+      filesystem_payload.~FileSystemPayload();
       break;
     case KIND_COMMAND:
-      commandPayload.~CommandPayload();
+      command_payload.~CommandPayload();
       break;
     case KIND_ACK:
-      ackPayload.~AckPayload();
+      ack_payload.~AckPayload();
       break;
   };
 }
@@ -207,13 +207,13 @@ string Message::describe() const
 
   switch (kind) {
     case KIND_FILESYSTEM:
-      builder << fileSystemPayload;
+      builder << filesystem_payload;
       break;
     case KIND_COMMAND:
-      builder << commandPayload;
+      builder << command_payload;
       break;
     case KIND_ACK:
-      builder << ackPayload;
+      builder << ack_payload;
       break;
     default:
       builder << "!!kind=" << kind;

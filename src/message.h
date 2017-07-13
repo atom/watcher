@@ -20,10 +20,10 @@ class FileSystemPayload {
 public:
   FileSystemPayload(
     const FileSystemAction action,
-    const EntryKind entryKind,
-    const std::string &&dirname,
-    const std::string &&oldBaseName,
-    const std::string &&newBaseName
+    const EntryKind entry_kind,
+    const std::string &&dir_name,
+    const std::string &&old_base_name,
+    const std::string &&new_base_name
   );
   FileSystemPayload(FileSystemPayload&& original);
   ~FileSystemPayload() {};
@@ -31,10 +31,10 @@ public:
   std::string describe() const;
 private:
   const FileSystemAction action;
-  const EntryKind entryKind;
+  const EntryKind entry_kind;
   const std::string dirname;
-  const std::string oldBaseName;
-  const std::string newBaseName;
+  const std::string old_base_name;
+  const std::string new_base_name;
 };
 
 enum CommandAction {
@@ -93,9 +93,9 @@ private:
   MessageKind kind;
   union
   {
-    FileSystemPayload fileSystemPayload;
-    CommandPayload commandPayload;
-    AckPayload ackPayload;
+    FileSystemPayload filesystem_payload;
+    CommandPayload command_payload;
+    AckPayload ack_payload;
     bool pending;
   };
 };

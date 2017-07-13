@@ -33,7 +33,7 @@ public:
 
   void use_main_log_file(string &&main_log_file)
   {
-    Logger::toFile(main_log_file.c_str());
+    Logger::to_file(main_log_file.c_str());
   }
 
   void handle_events()
@@ -95,13 +95,13 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   string main_log_file;
   string worker_log_file;
 
-  Nan::MaybeLocal<Object> maybeOptions = Nan::To<Object>(info[0]);
-  if (maybeOptions.IsEmpty()) {
+  Nan::MaybeLocal<Object> maybe_options = Nan::To<Object>(info[0]);
+  if (maybe_options.IsEmpty()) {
     Nan::ThrowError("configure() requires an option object");
     return;
   }
 
-  Local<Object> options = maybeOptions.ToLocalChecked();
+  Local<Object> options = maybe_options.ToLocalChecked();
   if (!get_string_option(options, "mainLogFile", main_log_file)) return;
   if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
 

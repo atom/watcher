@@ -33,7 +33,7 @@ void WorkerThread::run()
 
 void WorkerThread::work()
 {
-  Logger::toFile("worker.log");
+  Logger::to_file("worker.log");
 
   LOGGER << "What's up" << endl;
 }
@@ -67,7 +67,7 @@ void WorkerThread::handle_events()
         LOGGER << "Removing watcher for path " << command->get_root() << "." << endl;
         break;
       case COMMAND_LOG_FILE:
-        Logger::toFile(command->get_root().c_str());
+        Logger::to_file(command->get_root().c_str());
         break;
       case COMMAND_LOG_DISABLE:
         LOGGER << "Disabling logger." << endl;

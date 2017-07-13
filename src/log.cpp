@@ -32,30 +32,29 @@ private:
 
 class FileLogger : public Logger {
 public:
-  FileLogger(const char *filename) :
-    logStream{filename, std::ios::out | std::ios::app}
+  FileLogger(const char *filename) : log_stream{filename, std::ios::out | std::ios::app}
   {
     prefix(__FILE__, __LINE__);
-    logStream << "FileLogger opened." << endl;
+    log_stream << "FileLogger opened." << endl;
   }
 
   virtual Logger* prefix(const char *file, int line) override
   {
-    logStream << "[" << file << ":" << line << "] ";
+    log_stream << "[" << file << ":" << line << "] ";
     return this;
   }
 
   virtual ostream& stream() override
   {
-    return logStream;
+    return log_stream;
   }
 
 private:
-  ofstream logStream;
+  ofstream log_stream;
 };
 
 static uv_key_t current_logger_key;
-static const NullLogger theNullLogger;
+static const NullLogger the_null_logger;
 static uv_once_t make_key_once = UV_ONCE_INIT;
 
 static void make_key()
@@ -70,28 +69,28 @@ Logger* Logger::current()
   Logger* logger = (Logger*) uv_key_get(&current_logger_key);
 
   if (logger == nullptr) {
-    uv_key_set(&current_logger_key, (void*) &theNullLogger);
+    uv_key_set(&current_logger_key, (void*) &the_null_logger);
   }
 
   return logger;
 }
 
-static void replaceLogger(const Logger *newLogger)
+static void replace_logger(const Logger *new_logger)
 {
   Logger *prior = Logger::current();
-  if (prior != &theNullLogger) {
+  if (prior != &the_null_logger) {
     delete prior;
   }
 
-  uv_key_set(&current_logger_key, (void*) newLogger);
+  uv_key_set(&current_logger_key, (void*) new_logger);
 }
 
-void Logger::toFile(const char *filename)
+void Logger::to_file(const char *filename)
 {
-  replaceLogger(new FileLogger(filename));
+  replace_logger(new FileLogger(filename));
 }
 
 void Logger::disable()
 {
-  replaceLogger(&theNullLogger);
+  replace_logger(&the_null_logger);
 }

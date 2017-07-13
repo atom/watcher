@@ -8,7 +8,7 @@ public:
   virtual ~Logger() {}
 
   static Logger* current();
-  static void toFile(const char *filename);
+  static void to_file(const char *filename);
   static void disable();
 
   virtual Logger* prefix(const char *file, int line) = 0;
