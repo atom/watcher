@@ -4,14 +4,17 @@ const path = require('path')
 const fs = require('mz/fs')
 
 describe('entry point', function () {
-  let mainLogFile
+  let mainLogFile, workerLogFile
 
   beforeEach(function () {
     mainLogFile = path.join(__dirname, '..', 'main.log')
+    workerLogFile = path.join(__dirname, '..', 'worker.log')
   })
 
   afterEach(async function () {
-    await fs.unlink(mainLogFile).catch(() => {})
+    await Promise.all(
+      [mainLogFile, workerLogFile].map(fname => fs.unlink(fname).catch(() => {}))
+    )
   })
 
   describe('configuration', function () {
@@ -20,9 +23,16 @@ describe('entry point', function () {
     })
 
     it('configures the main thread logger', async function () {
-      sfw.configure({mainLogFile})
+      await sfw.configure({mainLogFile})
 
       const contents = await fs.readFile(mainLogFile)
+      assert.match(contents, /FileLogger opened/)
+    })
+
+    it('configures the worker thread logger', async function () {
+      await sfw.configure({workerLogFile})
+
+      const contents = await fs.readFile(workerLogFile)
       assert.match(contents, /FileLogger opened/)
     })
   })
