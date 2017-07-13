@@ -62,11 +62,11 @@ static bool get_string_option(Local<Object>& options, const char *key_name, stri
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
 
   Nan::MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
-  if (!as_maybe_value.IsEmpty()) {
+  if (as_maybe_value.IsEmpty()) {
     return true;
   }
   Local<Value> as_value = as_maybe_value.ToLocalChecked();
-  if (!as_value->IsUndefined()) {
+  if (as_value->IsUndefined()) {
     return true;
   }
 
