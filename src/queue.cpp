@@ -4,7 +4,7 @@
 #include <uv.h>
 
 #include "queue.h"
-#include "event.h"
+#include "message.h"
 #include "lock.h"
 
 using std::move;
@@ -13,7 +13,7 @@ using std::back_inserter;
 using std::copy;
 using std::unique_ptr;
 
-Queue::Queue() : Errable(), active{new vector<Event>}
+Queue::Queue() : Errable(), active{new vector<Message>}
 {
   int err;
 
@@ -35,15 +35,15 @@ void Queue::enqueue_all(InputIt begin, InputIt end)
   copy(begin, end, back_inserter(*active));
 }
 
-unique_ptr<vector<Event>> Queue::accept_all()
+unique_ptr<vector<Message>> Queue::accept_all()
 {
   if (!is_healthy()) return nullptr;
 
   Lock lock = {mutex};
 
   if (active->empty()) return nullptr;
-  unique_ptr<vector<Event>> consumed = move(active);
-  active.reset(new vector<Event>);
+  unique_ptr<vector<Message>> consumed = move(active);
+  active.reset(new vector<Message>);
 
   return consumed;
 }

@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <utility>
 
-#include "event.h"
+#include "message.h"
 
 using std::move;
 using std::string;
@@ -11,7 +11,7 @@ using std::ostringstream;
 using std::hex;
 using std::dec;
 
-FileSystemEvent::FileSystemEvent(
+FileSystemPayload::FileSystemPayload(
   const FileSystemAction action,
   const EntryKind entryKind,
   const string &&dirname,
@@ -27,7 +27,7 @@ FileSystemEvent::FileSystemEvent(
   //
 }
 
-FileSystemEvent(FileSystemEvent&& original) :
+FileSystemPayload::FileSystemPayload(FileSystemPayload&& original) :
   action{original.action},
   entryKind{original.entryKind},
   dirname{move(original.dirname)},
@@ -37,10 +37,10 @@ FileSystemEvent(FileSystemEvent&& original) :
   //
 }
 
-string FileSystemEvent::describe()
+string FileSystemPayload::describe() const
 {
   ostringstream builder;
-  builder << "[FileSystemEvent ";
+  builder << "[FileSystemPayload ";
 
   switch (entryKind) {
     case KIND_FILE:
@@ -76,34 +76,34 @@ string FileSystemEvent::describe()
   return builder.str();
 }
 
-CommandEvent::CommandEvent(const CommandAction action, const std::string &&root) :
+CommandPayload::CommandPayload(const CommandAction action, const std::string &&root) :
   action{action},
   root{move(root)}
 {
   //
 }
 
-CommandEvent(CommandEvent&& original) :
+CommandPayload::CommandPayload(CommandPayload&& original) :
   action{original.action},
   root{move(original.root)}
 {
   //
 }
 
-const CommandAction& CommandEvent::get_action()
+const CommandAction& CommandPayload::get_action() const
 {
   return action;
 }
 
-const string& CommandEvent::get_root()
+const string& CommandPayload::get_root() const
 {
   return root;
 }
 
-string CommandEvent::describe()
+string CommandPayload::describe() const
 {
   ostringstream builder;
-  builder << "[CommandEvent ";
+  builder << "[CommandPayload ";
 
   switch (action) {
     case COMMAND_ADD:
@@ -123,82 +123,97 @@ string CommandEvent::describe()
       break;
   }
 
-  builder << " ]"
+  builder << " ]";
   return builder.str();
 }
 
-AckEvent::AckEvent(const void* event) :
+AckPayload::AckPayload(const void* event) :
   event{event}
 {
   //
 }
 
-string AckEvent::describe()
+string AckPayload::describe() const
 {
   ostringstream builder;
-  builder << "[AckEvent ack " << hex << event << " ]";
+  builder << "[AckPayload ack " << hex << event << " ]";
   return builder.str();
 }
 
-FileSystemEvent* Event::as_filesystem()
+const FileSystemPayload* Message::as_filesystem() const
 {
-  return kind == KIND_FILESYSTEM ? &fsEvent : nullptr;
+  return kind == KIND_FILESYSTEM ? &fileSystemPayload : nullptr;
 }
 
-CommandEvent* Event::as_command()
+const CommandPayload* Message::as_command() const
 {
-  return kind == KIND_COMMAND ? &commandEvent : nullptr;
+  return kind == KIND_COMMAND ? &commandPayload : nullptr;
 }
 
-AckEvent* Event::as_ack()
+const AckPayload* Message::as_ack() const
 {
-  return kind == KIND_ACK ? &ackEvent : nullptr;
+  return kind == KIND_ACK ? &ackPayload : nullptr;
 }
 
-Event::Event(FileSystemEvent &&e) : kind{KIND_FILESYSTEM}, fsEvent{move(e)}
-{
-  //
-}
-
-Event::Event(CommandEvent &&e) : kind{KIND_COMMAND}, commandEvent{move(e)}
+Message::Message(FileSystemPayload &&p) : kind{KIND_FILESYSTEM}, fileSystemPayload{move(p)}
 {
   //
 }
 
-Event::Event(AckEvent &&e) : kind{KIND_ACK}, ackEvent{move(e)}
+Message::Message(CommandPayload &&p) : kind{KIND_COMMAND}, commandPayload{move(p)}
 {
   //
 }
 
-Event(Event&& original) : kind{original.kind}
+Message::Message(AckPayload &&p) : kind{KIND_ACK}, ackPayload{move(p)}
+{
+  //
+}
+
+Message::Message(Message&& original) : kind{original.kind}, pending{true}
 {
   switch (kind) {
     case KIND_FILESYSTEM:
-      fsEvent = move(original.fsEvent);
+      new (&fileSystemPayload) FileSystemPayload(move(original.fileSystemPayload));
       break;
     case KIND_COMMAND:
-      commandEvent = move(original.commandEvent);
+      new (&commandPayload) CommandPayload(move(original.commandPayload));
       break;
     case KIND_ACK:
-      ackEvent = move(original.ackEvent);
+      new (&ackPayload) AckPayload(move(original.ackPayload));
       break;
   };
 }
 
-string Event::describe()
+Message::~Message()
+{
+  switch (kind) {
+    case KIND_FILESYSTEM:
+      fileSystemPayload.~FileSystemPayload();
+      break;
+    case KIND_COMMAND:
+      commandPayload.~CommandPayload();
+      break;
+    case KIND_ACK:
+      ackPayload.~AckPayload();
+      break;
+  };
+}
+
+string Message::describe() const
 {
   ostringstream builder;
-  builder << "[Event id " << hex << this << dec << " ";
+  builder << "[Message id " << hex << this << dec << " ";
 
   switch (kind) {
     case KIND_FILESYSTEM:
-      builder << fsEvent;
+      builder << fileSystemPayload;
       break;
     case KIND_COMMAND:
-      builder << commandEvent;
+      builder << commandPayload;
       break;
     case KIND_ACK:
-      builder << ackEvent;
+      builder << ackPayload;
       break;
     default:
       builder << "!!kind=" << kind;
@@ -209,25 +224,25 @@ string Event::describe()
   return builder.str();
 }
 
-std::ostream& operator<<(std::ostream& stream, const FileSystemEvent& e)
+std::ostream& operator<<(std::ostream& stream, const FileSystemPayload& e)
 {
   stream << e.describe();
   return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, const CommandEvent& e)
+std::ostream& operator<<(std::ostream& stream, const CommandPayload& e)
 {
   stream << e.describe();
   return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, const AckEvent& e)
+std::ostream& operator<<(std::ostream& stream, const AckPayload& e)
 {
   stream << e.describe();
   return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, const Event& e)
+std::ostream& operator<<(std::ostream& stream, const Message& e)
 {
   stream << e.describe();
   return stream;

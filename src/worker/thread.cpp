@@ -7,7 +7,7 @@
 #include "thread.h"
 #include "../log.h"
 #include "../queue.h"
-#include "../event.h"
+#include "../message.h"
 
 using std::endl;
 using std::vector;
@@ -42,18 +42,18 @@ void WorkerThread::handle_events()
 {
   LOGGER << "Handling events." << endl;
 
-  unique_ptr<vector<Event>> accepted = in.accept_all();
+  unique_ptr<vector<Message>> accepted = in.accept_all();
   if (!accepted) {
     LOGGER << "No events waiting." << endl;
     return;
   }
 
   LOGGER << "Handling " << accepted->size() << " events." << endl;
-  vector<Event> acks;
+  vector<Message> acks;
   acks.reserve(accepted->size());
 
   for (auto it = accepted->begin(); it != accepted->end(); ++it) {
-    CommandEvent *command = it->as_command();
+    const CommandPayload *command = it->as_command();
     if (!command) {
       LOGGER << "Received unexpected event " << *it << "." << endl;
       continue;
@@ -78,8 +78,8 @@ void WorkerThread::handle_events()
         break;
     }
 
-    AckEvent ack(&*it);
-    Event response(move(ack));
+    AckPayload ack(&*it);
+    Message response(move(ack));
     acks.push_back(move(response));
   }
 
