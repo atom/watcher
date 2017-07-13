@@ -25,8 +25,10 @@ public:
     const std::string &&oldBaseName,
     const std::string &&newBaseName
   );
+  FileSystemEvent(FileSystemEvent&& original);
   ~FileSystemEvent() {};
 
+  std::string describe();
 private:
   const FileSystemAction action;
   const EntryKind entryKind;
@@ -45,7 +47,13 @@ enum CommandAction {
 class CommandEvent {
 public:
   CommandEvent(const CommandAction action, const std::string &&root);
+  CommandEvent(CommandEvent&& original);
+  ~CommandEvent() {};
 
+  const CommandAction& get_action();
+  const std::string& get_root();
+
+  std::string describe();
 private:
   const CommandAction action;
   const std::string root;
@@ -54,23 +62,33 @@ private:
 class AckEvent {
 public:
   AckEvent(const void *event);
+  AckEvent(AckEvent&& original) = default;
   ~AckEvent() {};
 
+  std::string describe();
 private:
   const void* event;
 };
 
 enum EventKind {
-  FILESYSTEM,
-  COMMAND,
-  ACK
+  KIND_FILESYSTEM,
+  KIND_COMMAND,
+  KIND_ACK
 };
 
 class Event {
 public:
-  Event() {};
+  explicit Event(FileSystemEvent &&e);
+  explicit Event(CommandEvent &&e);
+  explicit Event(AckEvent &&e);
+  Event(Event&& original);
   ~Event() {};
 
+  FileSystemEvent *as_filesystem();
+  CommandEvent *as_command();
+  AckEvent *as_ack();
+
+  std::string describe();
 private:
   EventKind kind;
   union
@@ -80,5 +98,10 @@ private:
     AckEvent ackEvent;
   };
 };
+
+std::ostream& operator<<(std::ostream& stream, const FileSystemEvent& e);
+std::ostream& operator<<(std::ostream& stream, const CommandEvent& e);
+std::ostream& operator<<(std::ostream& stream, const AckEvent& e);
+std::ostream& operator<<(std::ostream& stream, const Event& e);
 
 #endif
