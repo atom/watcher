@@ -7,15 +7,20 @@
 #include "../callbacks.h"
 #include "../errable.h"
 
+class WorkerPlatform;
+
 class WorkerThread : public Errable {
 public:
   WorkerThread(Queue &in, Queue &out, uv_async_t *main_callback);
+  ~WorkerThread();
 
   void run();
+  void wake();
+
+  void handle_commands();
 
 private:
-  void work();
-  void handle_events();
+  void listen();
 
   Queue &in;
   Queue &out;
@@ -24,6 +29,8 @@ private:
 
   ThreadCallback start_callback;
   uv_thread_t thread;
+
+  WorkerPlatform *platform;
 };
 
 #endif

@@ -5,6 +5,7 @@
 #include <uv.h>
 
 #include "thread.h"
+#include "platform.h"
 #include "../log.h"
 #include "../queue.h"
 #include "../message.h"
@@ -18,9 +19,15 @@ WorkerThread::WorkerThread(Queue &in, Queue &out, uv_async_t *main_callback) :
   in{in},
   out{out},
   main_callback{main_callback},
-  start_callback{this, &WorkerThread::work}
+  start_callback{this, &WorkerThread::listen},
+  platform{WorkerPlatform::for_worker(this)}
 {
   //
+}
+
+WorkerThread::~WorkerThread()
+{
+  delete platform;
 }
 
 void WorkerThread::run()
@@ -31,14 +38,17 @@ void WorkerThread::run()
   report_uv_error(err);
 }
 
-void WorkerThread::work()
+void WorkerThread::wake()
 {
-  Logger::to_file("worker.log");
-
-  LOGGER << "What's up" << endl;
+  platform->wake();
 }
 
-void WorkerThread::handle_events()
+void WorkerThread::listen()
+{
+  platform->listen();
+}
+
+void WorkerThread::handle_commands()
 {
   LOGGER << "Handling events." << endl;
 
@@ -61,10 +71,10 @@ void WorkerThread::handle_events()
 
     switch (command->get_action()) {
       case COMMAND_ADD:
-        LOGGER << "Adding watcher for path " << command->get_root() << "." << endl;
+        platform->handle_add_command(command->get_root());
         break;
       case COMMAND_REMOVE:
-        LOGGER << "Removing watcher for path " << command->get_root() << "." << endl;
+        platform->handle_remove_command(command->get_root());
         break;
       case COMMAND_LOG_FILE:
         Logger::to_file(command->get_root().c_str());

@@ -17,6 +17,9 @@
         ],
         "conditions": [
             ["OS=='mac'", {
+                "sources": [
+                    "src/worker/platform_macos.cpp"
+                ],
                 "link_settings": {
                     "xcode_settings": {
                         "OTHER_LDFLAGS": [
