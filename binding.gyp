@@ -8,6 +8,7 @@
             "src/errable.cpp",
             "src/queue.cpp",
             "src/lock.cpp",
+            "src/callbacks.cpp",
             "src/worker/thread.cpp"
         ],
         "include_dirs": [
