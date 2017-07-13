@@ -1,65 +1,108 @@
+#include <memory>
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <functional>
 #include <nan.h>
 #include <v8.h>
 #include <uv.h>
 
 #include "log.h"
 #include "queue.h"
+#include "callbacks.h"
 #include "worker/thread.h"
 
 using namespace v8;
+using std::unique_ptr;
 using std::string;
+using std::ostringstream;
 using std::endl;
+
+static void handle_events_helper(uv_async_t *handle);
 
 class Main {
 public:
-  Main() : workerThread{out, in}
+  Main() : worker_thread{out, in, &event_handler}
   {
-    //
+    int err;
+    err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
+    if (err) return;
+
+    worker_thread.run();
   }
 
-  void mainLogFile(string &&mainLogFile)
+  void use_main_log_file(string &&main_log_file)
   {
-    Logger::toFile(mainLogFile.c_str());
+    Logger::toFile(main_log_file.c_str());
   }
 
-  void handleEvents()
+  void handle_events()
   {
-    //
+    LOGGER << "Handling events." << endl;
   }
 
 private:
   Queue in;
   Queue out;
+  uv_async_t event_handler;
 
-  WorkerThread workerThread;
+  WorkerThread worker_thread;
 };
 
 static Main instance;
 
-static Nan::Persistent<String> mainLogFileKey;
+static void handle_events_helper(uv_async_t *handle)
+{
+  instance.handle_events();
+}
+
+static bool get_string_option(Local<Object>& options, const char *key_name, string &out)
+{
+  Nan::HandleScope scope;
+  const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
+
+  Nan::MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
+  if (!as_maybe_value.IsEmpty()) {
+    return true;
+  }
+  Local<Value> as_value = as_maybe_value.ToLocalChecked();
+  if (!as_value->IsUndefined()) {
+    return true;
+  }
+
+  if (!as_value->IsString()) {
+    ostringstream message;
+    message << "configure() option " << key_name << " must be a String";
+    Nan::ThrowError(message.str().c_str());
+    return false;
+  }
+
+  Nan::Utf8String as_string(as_value);
+
+  if (*as_string == nullptr) {
+    ostringstream message;
+    message << "configure() option " << key_name << " must be a valid UTF-8 String";
+    Nan::ThrowError(message.str().c_str());
+    return false;
+  }
+
+  out.assign(*as_string, as_string.length());
+  return true;
+}
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
 {
-  if (info.Length() != 1) {
-    return Nan::ThrowError("configure() requires one argument");
-  }
+  string main_log_file;
+  string worker_log_file;
 
-  Nan::MaybeLocal<Object> maybeConfObject = Nan::To<Object>(info[0]);
-  if (maybeConfObject.IsEmpty()) {
-    return Nan::ThrowError("configure() requires an option object");
-  }
-  Local<Object> conf = maybeConfObject.ToLocalChecked();
+  Local<Object> options = Nan::To<Object>(info[0]).ToLocalChecked();
+  if (!get_string_option(options, "mainLogFile", main_log_file)) return;
+  if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
 
-  Nan::MaybeLocal<Value> maybeMainLogFile = Nan::Get(conf, Nan::New(mainLogFileKey));
-  if (!maybeMainLogFile.IsEmpty()) {
-    Nan::MaybeLocal<String> maybeMainLogFileString = Nan::To<String>(maybeMainLogFile.ToLocalChecked());
-    if (maybeMainLogFileString.IsEmpty()) {
-      return Nan::ThrowError("options.mainLogFile must be a String");
-    }
-    Local<String> mainLogFileString = maybeMainLogFileString.ToLocalChecked();
-    instance.mainLogFile(*String::Utf8Value(mainLogFileString));
+  Nan::Callback *callback = new Nan::Callback(info[1].As<Function>());
+
+  if (!main_log_file.empty()) {
+    instance.use_main_log_file(move(main_log_file));
   }
 }
 
@@ -79,8 +122,6 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 
 void initialize(Local<Object> exports)
 {
-  mainLogFileKey.Reset(Nan::New<String>("mainLogFile").ToLocalChecked());
-
   exports->Set(
     Nan::New<String>("configure").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked()
