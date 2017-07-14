@@ -29,7 +29,7 @@ FileSystemPayload::FileSystemPayload(
   //
 }
 
-FileSystemPayload::FileSystemPayload(FileSystemPayload&& original) :
+FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) :
   channel_id{original.channel_id},
   action{original.action},
   entry_kind{original.entry_kind},
