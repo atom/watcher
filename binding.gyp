@@ -9,8 +9,8 @@
             "src/queue.cpp",
             "src/lock.cpp",
             "src/message.cpp",
-            "src/callbacks.cpp",
-            "src/worker/thread.cpp"
+            "src/thread.cpp",
+            "src/worker/worker_thread.cpp"
         ],
         "include_dirs": [
             "<!(node -e \"require('nan')\")"
@@ -34,7 +34,10 @@
         ],
     }],
     "target_defaults": {
-        "cflags_cc": ["-std=c++11"],
+        "cflags_cc": [
+            "-std=c++11",
+            "-Wall"
+        ],
         "conditions": [
             ['OS=="mac"', {
                 "xcode_settings": {
