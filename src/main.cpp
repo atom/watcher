@@ -65,6 +65,21 @@ public:
     worker_thread.send(move(log_file_message));
   }
 
+  void watch(string &&root, unique_ptr<Nan::Callback> callback)
+  {
+    CommandID command_id = next_command_id;
+
+    CommandPayload command_payload(next_command_id, COMMAND_ADD, move(root));
+    Message add_root_message(move(command_payload));
+
+    pending_callbacks.emplace(command_id, move(callback));
+
+    next_command_id++;
+
+    LOGGER << "Sending command " << add_root_message << " to worker thread." << endl;
+    worker_thread.send(move(add_root_message));
+  }
+
   void handle_events()
   {
     Nan::HandleScope scope;
@@ -192,6 +207,23 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   if (info.Length() != 2) {
     return Nan::ThrowError("watch() requires two arguments");
   }
+
+  Nan::MaybeLocal<String> maybe_root = Nan::To<String>(info[0]);
+  if (maybe_root.IsEmpty()) {
+    Nan::ThrowError("watch() requires a string as argument one");
+    return;
+  }
+  Local<String> root_v8_string = maybe_root.ToLocalChecked();
+  Nan::Utf8String root_utf8(root_v8_string);
+  if (*root_utf8 == nullptr) {
+    Nan::ThrowError("watch() argument one must be a valid UTF-8 string");
+    return;
+  }
+  string root_str(*root_utf8, root_utf8.length());
+
+  unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
+
+  instance.watch(move(root_str), move(callback));
 }
 
 void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
