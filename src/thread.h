@@ -10,8 +10,6 @@
 #include "queue.h"
 #include "message.h"
 
-#include <iostream>
-
 void thread_callback_helper(void *arg);
 
 class Thread : Errable {
