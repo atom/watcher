@@ -7,11 +7,20 @@ describe('entry point', function () {
   let mainLogFile, workerLogFile
 
   beforeEach(function () {
-    mainLogFile = path.join(__dirname, '..', 'main.log')
-    workerLogFile = path.join(__dirname, '..', 'worker.log')
+    mainLogFile = path.join(__dirname, '..', 'main.test.log')
+    workerLogFile = path.join(__dirname, '..', 'worker.test.log')
   })
 
   afterEach(async function () {
+    if (this.currentTest.state === 'failed') {
+      const [mainLog, workerLog] = await Promise.all(
+        [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
+      )
+
+      console.log(`main log:\n${mainLog}`)
+      console.log(`worker log:\n${workerLog}`)
+    }
+
     await Promise.all(
       [mainLogFile, workerLogFile].map(fname => fs.unlink(fname).catch(() => {}))
     )
