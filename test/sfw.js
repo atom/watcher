@@ -45,4 +45,24 @@ describe('entry point', function () {
       assert.match(contents, /FileLogger opened/)
     })
   })
+
+  describe('watching a directory', function () {
+    it('begins receiving events within that directory')
+    it('can watch multiple directories at once and dispatch events appropriately')
+
+    describe('events', function () {
+      it('when a file is created')
+      it('when a file is modified')
+      it('when a file is renamed')
+      it('when a file is deleted')
+      it('when a directory is created')
+      it('when a directory is renamed')
+      it('when a directory is deleted')
+    })
+  })
+
+  describe('unwatching a directory', function () {
+    it('unwatches a previously watched directory')
+    it('is a no-op if the directory is not being watched')
+  })
 })
