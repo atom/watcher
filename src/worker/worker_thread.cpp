@@ -4,7 +4,7 @@
 #include <utility>
 #include <uv.h>
 
-#include "thread.h"
+#include "worker_thread.h"
 #include "platform.h"
 #include "../log.h"
 #include "../queue.h"
@@ -15,27 +15,19 @@ using std::vector;
 using std::unique_ptr;
 using std::move;
 
-WorkerThread::WorkerThread(Queue &in, Queue &out, uv_async_t *main_callback) :
-  in{in},
-  out{out},
+#include <iomanip>
+
+WorkerThread::WorkerThread(uv_async_t *main_callback) :
+  Thread(this, &WorkerThread::listen),
   main_callback{main_callback},
-  start_callback{this, &WorkerThread::listen},
   platform{WorkerPlatform::for_worker(this)}
 {
-  //
+  std::cout << "WorkerThread::WorkerThread constructor" << std::endl;
 }
 
 WorkerThread::~WorkerThread()
 {
-  delete platform;
-}
-
-void WorkerThread::run()
-{
-  int err;
-
-  err = start_callback.create_thread(&thread);
-  report_uv_error(err);
+  // Necessary so that unique_ptr can see the full definition of WorkerPlatform
 }
 
 void WorkerThread::wake()
@@ -45,27 +37,43 @@ void WorkerThread::wake()
 
 void WorkerThread::listen()
 {
+  std::cout << "In WorkerThread::listen()" << endl;
+
+  std::cout << "Let's access this to see if it blows up:" << endl;
+  wat();
+  this->wat();
+
+  std::cout << "Before handle_commands() call" << endl;
+
+  // Handle any commands that were enqueued while the thread was starting.
+  handle_commands();
+
+  std::cout << "After handle::commands()" << endl;
+
   platform->listen();
+
+  std::cout << "After platform::listen()" << endl;
 }
 
 void WorkerThread::handle_commands()
 {
-  LOGGER << "Handling events." << endl;
+  LOGGER << "Handling command messages from the main thread." << endl;
 
-  unique_ptr<vector<Message>> accepted = in.accept_all();
+  unique_ptr<vector<Message>> accepted = process_all();
   if (!accepted) {
-    LOGGER << "No events waiting." << endl;
+    LOGGER << "No messages waiting." << endl;
     return;
   }
 
-  LOGGER << "Handling " << accepted->size() << " events." << endl;
+  LOGGER << accepted->size() << " message(s) to process." << endl;
   vector<Message> acks;
   acks.reserve(accepted->size());
 
   for (auto it = accepted->begin(); it != accepted->end(); ++it) {
+    LOGGER << "Processing: " << *it << endl;
     const CommandPayload *command = it->as_command();
     if (!command) {
-      LOGGER << "Received unexpected event " << *it << "." << endl;
+      LOGGER << "Received unexpected message " << *it << "." << endl;
       continue;
     }
 
@@ -88,12 +96,15 @@ void WorkerThread::handle_commands()
         break;
     }
 
-    AckPayload ack(&*it);
+    AckPayload ack(command->get_id());
     Message response(move(ack));
+    LOGGER << "Ack produced: " << response << endl;
     acks.push_back(move(response));
   }
 
-  LOGGER << "Replying with " << acks.size() << " acks." << endl;
-  out.enqueue_all(acks.begin(), acks.end());
+  LOGGER << "Replying with " << acks.size() << " ack(s)." << endl;
+  emit_all(acks.begin(), acks.end());
+  LOGGER << "Reply sent." << endl;
   uv_async_send(main_callback);
+  LOGGER << "Main thread handler scheduled." << endl;
 }
