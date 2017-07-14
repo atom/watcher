@@ -26,13 +26,12 @@ Queue::~Queue()
   uv_mutex_destroy(&mutex);
 }
 
-template <class InputIt>
-void Queue::enqueue_all(InputIt begin, InputIt end)
+void Queue::enqueue(Message &&message)
 {
   if (!is_healthy()) return;
 
-  Lock lock = {mutex};
-  copy(begin, end, back_inserter(*active));
+  Lock lock(mutex);
+  active->push_back(move(message));
 }
 
 unique_ptr<vector<Message>> Queue::accept_all()

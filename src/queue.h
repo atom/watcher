@@ -1,10 +1,12 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 #include <uv.h>
 
+#include "lock.h"
 #include "message.h"
 #include "errable.h"
 
@@ -18,10 +20,19 @@ public:
   Queue();
   ~Queue();
 
+  // Atomically enqueue a single Message.
+  void enqueue(Message &&message);
+
   // Atomically enqueue a collection of Messages from a source STL container type between
   // the iterators [begin, end).
   template <class InputIt>
-  void enqueue_all(InputIt begin, InputIt end);
+  void enqueue_all(InputIt begin, InputIt end)
+  {
+    if (!is_healthy()) return;
+
+    Lock lock(mutex);
+    std::move(begin, end, back_inserter(*active));
+  }
 
   // Atomically consume the current contents of the queue, emptying it.
   //
