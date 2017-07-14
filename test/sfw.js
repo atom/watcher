@@ -1,14 +1,19 @@
 const sfw = require('../lib')
 
 const path = require('path')
-const fs = require('mz/fs')
+const fs = require('fs-extra')
 
 describe('entry point', function () {
-  let mainLogFile, workerLogFile
+  let fixtureDir, watchDir, mainLogFile, workerLogFile
 
-  beforeEach(function () {
-    mainLogFile = path.join(__dirname, '..', 'main.test.log')
-    workerLogFile = path.join(__dirname, '..', 'worker.test.log')
+  beforeEach(async function () {
+    fixtureDir = path.join(__dirname, 'fixture')
+    watchDir = path.join(fixtureDir, 'watched')
+
+    mainLogFile = path.join(fixtureDir, 'main.test.log')
+    workerLogFile = path.join(fixtureDir, 'worker.test.log')
+
+    await fs.mkdir(watchDir)
   })
 
   afterEach(async function () {
@@ -21,9 +26,10 @@ describe('entry point', function () {
       console.log(`worker log:\n${workerLog}`)
     }
 
-    await Promise.all(
-      [mainLogFile, workerLogFile].map(fname => fs.unlink(fname).catch(() => {}))
-    )
+    const promises = [mainLogFile, workerLogFile].map(fname => fs.unlink(fname).catch(() => {}))
+    promises.push(fs.remove(watchDir))
+
+    await Promise.all(promises)
   })
 
   describe('configuration', function () {
@@ -47,7 +53,25 @@ describe('entry point', function () {
   })
 
   describe('watching a directory', function () {
-    it('begins receiving events within that directory')
+    beforeEach(async function () {
+      await sfw.configure({mainLogFile, workerLogFile})
+    })
+
+    it('begins receiving events within that directory', async function () {
+      let error = null
+      const events = []
+
+      await sfw.watch(watchDir, (err, event) => {
+        error = err
+        events.push(event)
+      })
+
+      await fs.writeFile(path.join(watchDir, 'file.txt'), 'indeed')
+
+      await until('an event arrives', () => events.length > 0)
+      assert.isNull(error)
+    })
+
     it('can watch multiple directories at once and dispatch events appropriately')
 
     describe('events', function () {
