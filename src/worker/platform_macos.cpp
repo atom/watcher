@@ -1,21 +1,23 @@
+#include <memory>
 #include <string>
 #include <CoreServices/CoreServices.h>
 
 #include "platform.h"
-#include "thread.h"
+#include "worker_thread.h"
 #include "../log.h"
 
 using std::string;
 using std::endl;
+using std::unique_ptr;
 
 static void command_perform_helper(void *info);
 
 class MacOSWorkerPlatform : public WorkerPlatform {
 public:
   MacOSWorkerPlatform(WorkerThread *thread) :
+    WorkerPlatform(thread),
     run_loop{nullptr},
-    command_source{nullptr},
-    thread{thread}
+    command_source{nullptr}
   {
     //
   };
@@ -54,12 +56,6 @@ public:
 
     CFRunLoopRun();
     LOGGER << "Run loop ended unexpectedly." << endl;
-    thread->report_error("Run loop ended unexpectedly");
-  }
-
-  void handle_commands()
-  {
-    thread->handle_commands();
   }
 
   void handle_add_command(const string &root_path) override
@@ -75,7 +71,6 @@ public:
 private:
   CFRunLoopRef run_loop;
   CFRunLoopSourceRef command_source;
-  WorkerThread *thread;
 };
 
 static void command_perform_helper(void *info)
@@ -83,7 +78,7 @@ static void command_perform_helper(void *info)
   ((MacOSWorkerPlatform*) info)->handle_commands();
 }
 
-WorkerPlatform *WorkerPlatform::for_worker(WorkerThread *thread)
+unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
 {
-  return new MacOSWorkerPlatform(thread);
+  return unique_ptr<WorkerPlatform>(new MacOSWorkerPlatform(thread));
 }
