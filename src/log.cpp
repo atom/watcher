@@ -5,9 +5,12 @@
 
 #include "log.h"
 
+#include <iomanip>
+
 using std::endl;
 using std::ostream;
 using std::ofstream;
+using std::setw;
 
 class NullLogger : public Logger {
 public:
@@ -40,7 +43,7 @@ public:
 
   virtual Logger* prefix(const char *file, int line) override
   {
-    log_stream << "[" << file << ":" << line << "] ";
+    log_stream << "[" << setw(15) << file << ":" << setw(3) << line << "] ";
     return this;
   }
 
@@ -54,7 +57,7 @@ private:
 };
 
 static uv_key_t current_logger_key;
-static const NullLogger the_null_logger;
+static NullLogger the_null_logger;
 static uv_once_t make_key_once = UV_ONCE_INIT;
 
 static void make_key()
@@ -70,6 +73,7 @@ Logger* Logger::current()
 
   if (logger == nullptr) {
     uv_key_set(&current_logger_key, (void*) &the_null_logger);
+    logger = &the_null_logger;
   }
 
   return logger;
