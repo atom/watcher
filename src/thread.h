@@ -20,7 +20,7 @@ public:
   Thread(T* self, void (T::*fn)()) :
     work_fn{std::bind(std::mem_fn(fn), self)}
   {
-    std::cout << "Thread::Thread constructor" << std::endl;
+    //
   };
 
   void run();
