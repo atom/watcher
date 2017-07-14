@@ -4,9 +4,11 @@ const path = require('path')
 const fs = require('fs-extra')
 
 describe('entry point', function () {
-  let fixtureDir, watchDir, mainLogFile, workerLogFile
+  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
 
   beforeEach(async function () {
+    subs = []
+
     fixtureDir = path.join(__dirname, 'fixture')
     watchDir = path.join(fixtureDir, 'watched')
 
@@ -28,6 +30,7 @@ describe('entry point', function () {
 
     const promises = [mainLogFile, workerLogFile].map(fname => fs.unlink(fname).catch(() => {}))
     promises.push(fs.remove(watchDir))
+    promises.push(...subs.map(sub => sub.unwatch()))
 
     await Promise.all(promises)
   })
@@ -61,10 +64,10 @@ describe('entry point', function () {
       let error = null
       const events = []
 
-      await sfw.watch(watchDir, (err, event) => {
+      subs.push(await sfw.watch(watchDir, (err, event) => {
         error = err
         events.push(event)
-      })
+      }))
 
       await fs.writeFile(path.join(watchDir, 'file.txt'), 'indeed')
 
