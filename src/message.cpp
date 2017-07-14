@@ -12,12 +12,14 @@ using std::hex;
 using std::dec;
 
 FileSystemPayload::FileSystemPayload(
+  const ChannelID channel_id,
   const FileSystemAction action,
   const EntryKind entry_kind,
   const string &&dirname,
   const string &&old_base_name,
   const string &&new_base_name
 ) :
+  channel_id{channel_id},
   action{action},
   entry_kind{entry_kind},
   dirname{move(dirname)},
@@ -28,6 +30,7 @@ FileSystemPayload::FileSystemPayload(
 }
 
 FileSystemPayload::FileSystemPayload(FileSystemPayload&& original) :
+  channel_id{original.channel_id},
   action{original.action},
   entry_kind{original.entry_kind},
   dirname{move(original.dirname)},
@@ -72,22 +75,36 @@ string FileSystemPayload::describe() const
       break;
   }
 
-  builder << " ]";
+  builder << "]";
   return builder.str();
 }
 
-CommandPayload::CommandPayload(const CommandAction action, const std::string &&root) :
+CommandPayload::CommandPayload(
+  const CommandID id,
+  const CommandAction action,
+  const std::string &&root,
+  const ChannelID channel_id
+) :
+  id{id},
   action{action},
-  root{move(root)}
+  root{move(root)},
+  channel_id{channel_id}
 {
   //
 }
 
-CommandPayload::CommandPayload(CommandPayload&& original) :
+CommandPayload::CommandPayload(CommandPayload &&original) :
+  id{original.id},
   action{original.action},
-  root{move(original.root)}
+  root{move(original.root)},
+  channel_id{original.channel_id}
 {
   //
+}
+
+CommandID CommandPayload::get_id() const
+{
+  return id;
 }
 
 const CommandAction& CommandPayload::get_action() const
@@ -103,7 +120,7 @@ const string& CommandPayload::get_root() const
 string CommandPayload::describe() const
 {
   ostringstream builder;
-  builder << "[CommandPayload ";
+  builder << "[CommandPayload id " << id << " ";
 
   switch (action) {
     case COMMAND_ADD:
@@ -123,20 +140,24 @@ string CommandPayload::describe() const
       break;
   }
 
-  builder << " ]";
+  builder << "]";
   return builder.str();
 }
 
-AckPayload::AckPayload(const void* event) :
-  event{event}
+AckPayload::AckPayload(const CommandID key) : key{key}
 {
   //
+}
+
+CommandID AckPayload::get_key() const
+{
+  return key;
 }
 
 string AckPayload::describe() const
 {
   ostringstream builder;
-  builder << "[AckPayload ack " << hex << event << " ]";
+  builder << "[AckPayload ack " << key << "]";
   return builder.str();
 }
 
@@ -203,7 +224,7 @@ Message::~Message()
 string Message::describe() const
 {
   ostringstream builder;
-  builder << "[Message id " << hex << this << dec << " ";
+  builder << "[Message ";
 
   switch (kind) {
     case KIND_FILESYSTEM:

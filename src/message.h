@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <cstdint>
 
 enum FileSystemAction {
   ACTION_CREATED = 0,
@@ -16,20 +17,26 @@ enum EntryKind {
   KIND_DIRECTORY = 1
 };
 
+typedef uint_fast32_t ChannelID;
+
+static const ChannelID NULL_CHANNEL_ID = 0;
+
 class FileSystemPayload {
 public:
   FileSystemPayload(
+    const ChannelID channel_id,
     const FileSystemAction action,
     const EntryKind entry_kind,
     const std::string &&dir_name,
     const std::string &&old_base_name,
     const std::string &&new_base_name
   );
-  FileSystemPayload(FileSystemPayload&& original);
+  FileSystemPayload(FileSystemPayload &&original);
   ~FileSystemPayload() {};
 
   std::string describe() const;
 private:
+  const ChannelID channel_id;
   const FileSystemAction action;
   const EntryKind entry_kind;
   const std::string dirname;
@@ -44,30 +51,43 @@ enum CommandAction {
   COMMAND_LOG_DISABLE
 };
 
+typedef uint_fast32_t CommandID;
+
 class CommandPayload {
 public:
-  CommandPayload(const CommandAction action, const std::string &&root);
-  CommandPayload(CommandPayload&& original);
+  CommandPayload(
+    const CommandID id,
+    const CommandAction action,
+    const std::string &&root,
+    const ChannelID channel_id = NULL_CHANNEL_ID
+  );
+  CommandPayload(CommandPayload &&original);
   ~CommandPayload() {};
 
-  const CommandAction& get_action() const;
-  const std::string& get_root() const;
+  CommandID get_id() const;
+  const CommandAction &get_action() const;
+  const std::string &get_root() const;
+  const ChannelID &get_channel_id() const;
 
   std::string describe() const;
 private:
+  const CommandID id;
   const CommandAction action;
   const std::string root;
+  const ChannelID channel_id;
 };
 
 class AckPayload {
 public:
-  AckPayload(const void *event);
-  AckPayload(AckPayload&& original) = default;
+  AckPayload(const CommandID key);
+  AckPayload(AckPayload &&original) = default;
   ~AckPayload() {};
+
+  CommandID get_key() const;
 
   std::string describe() const;
 private:
-  const void* event;
+  const CommandID key;
 };
 
 enum MessageKind {
