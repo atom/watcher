@@ -7,9 +7,6 @@
 #include "thread.h"
 #include "message.h"
 
-#include <iostream>
-#include <iomanip>
-
 using std::function;
 using std::unique_ptr;
 using std::vector;
@@ -17,12 +14,8 @@ using std::move;
 
 void thread_callback_helper(void *arg)
 {
-  std::cout << "About to dispatch to member function " << std::hex << arg << std::endl;
-
   function<void()> *bound_fn = (std::function<void()>*) arg;
   (*bound_fn)();
-
-  std::cout << "After member function dispatch" << std::endl;
 }
 
 void Thread::run()

@@ -15,14 +15,12 @@ using std::vector;
 using std::unique_ptr;
 using std::move;
 
-#include <iomanip>
-
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
   Thread(this, &WorkerThread::listen),
   main_callback{main_callback},
   platform{WorkerPlatform::for_worker(this)}
 {
-  std::cout << "WorkerThread::WorkerThread constructor" << std::endl;
+  //
 }
 
 WorkerThread::~WorkerThread()
@@ -37,22 +35,10 @@ void WorkerThread::wake()
 
 void WorkerThread::listen()
 {
-  std::cout << "In WorkerThread::listen()" << endl;
-
-  std::cout << "Let's access this to see if it blows up:" << endl;
-  wat();
-  this->wat();
-
-  std::cout << "Before handle_commands() call" << endl;
-
   // Handle any commands that were enqueued while the thread was starting.
   handle_commands();
 
-  std::cout << "After handle::commands()" << endl;
-
   platform->listen();
-
-  std::cout << "After platform::listen()" << endl;
 }
 
 void WorkerThread::handle_commands()
