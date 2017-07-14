@@ -38,11 +38,40 @@ public:
     int err;
 
     next_command_id = 0;
+    next_channel_id = NULL_CHANNEL_ID + 1;
 
     err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
     if (err) return;
 
     worker_thread.run();
+  }
+
+  ChannelID send_worker_command(
+    const CommandAction action,
+    const std::string &&root,
+    unique_ptr<Nan::Callback> callback,
+    bool assign_channel_id = false
+  )
+  {
+    CommandID command_id = next_command_id;
+    ChannelID channel_id = NULL_CHANNEL_ID;
+
+    if (assign_channel_id) {
+      channel_id = next_channel_id;
+      next_channel_id++;
+    }
+
+    CommandPayload command_payload(next_command_id, action, move(root), channel_id);
+    Message command_message(move(command_payload));
+
+    pending_callbacks.emplace(command_id, move(callback));
+
+    next_command_id++;
+
+    LOGGER << "Sending command " << command_message << " to worker thread." << endl;
+    worker_thread.send(move(command_message));
+
+    return channel_id;
   }
 
   void use_main_log_file(string &&main_log_file)
@@ -52,32 +81,15 @@ public:
 
   void use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
-    CommandID command_id = next_command_id;
-
-    CommandPayload command_payload(next_command_id, COMMAND_LOG_FILE, move(worker_log_file));
-    Message log_file_message(move(command_payload));
-
-    pending_callbacks.emplace(command_id, move(callback));
-
-    next_command_id++;
-
-    LOGGER << "Sending command " << log_file_message << " to worker thread." << endl;
-    worker_thread.send(move(log_file_message));
+    send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
   }
 
   void watch(string &&root, unique_ptr<Nan::Callback> callback)
   {
-    CommandID command_id = next_command_id;
+    string root_dup(root);
+    ChannelID channel_id = send_worker_command(COMMAND_ADD, move(root), move(callback), true);
 
-    CommandPayload command_payload(next_command_id, COMMAND_ADD, move(root));
-    Message add_root_message(move(command_payload));
-
-    pending_callbacks.emplace(command_id, move(callback));
-
-    next_command_id++;
-
-    LOGGER << "Sending command " << add_root_message << " to worker thread." << endl;
-    worker_thread.send(move(add_root_message));
+    LOGGER << "Worker is listening for changes at " << root_dup << " on channel " << channel_id << "." << endl;
   }
 
   void handle_events()
@@ -126,6 +138,7 @@ private:
   WorkerThread worker_thread;
 
   CommandID next_command_id;
+  ChannelID next_channel_id;
   unordered_map<CommandID, unique_ptr<Nan::Callback>> pending_callbacks;
 };
 
