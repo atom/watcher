@@ -1,0 +1,20 @@
+machine:
+  xcode:
+    version: 8.3
+  environment:
+    NVM_DIR: ${HOME}/.nvm
+    NODE_VERSION: "7.4.0"
+
+dependencies:
+  pre:
+  - brew install nvm
+  - mkdir -p ~/.nvm
+  - echo "source $(brew --prefix)/nvm.sh" >> ~/.bash_profile
+  - nvm install ${NODE_VERSION}
+  - nvm alias default ${NODE_VERSION}
+  override:
+  - npm install
+
+test:
+  override:
+  - npm run ci:circle
