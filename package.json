@@ -7,7 +7,8 @@
     "lint": "standard",
     "mocha": "mocha --require test/global.js --harmony",
     "test": "npm run lint && npm run mocha",
-    "ci:appveyor": "npm run mocha -- --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5"
+    "ci:appveyor": "npm run mocha -- --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
+    "ci:circle": "npm run mocha -- --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml"
   },
   "keywords": [
     "filewatch",
@@ -24,6 +25,7 @@
     "chai-as-promised": "7.1.1",
     "mocha": "3.4.2",
     "mocha-appveyor-reporter": "^0.4.0",
+    "mocha-junit-reporter": "^1.13.0",
     "mz": "^2.6.0",
     "standard": "10.0.2"
   },
