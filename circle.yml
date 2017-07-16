@@ -9,7 +9,7 @@ dependencies:
   pre:
   - brew install nvm
   - mkdir -p ${NVM_DIR}
-  - echo "source $(brew --prefix)/nvm.sh" >> ~/.bashrc
+  - echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
   - nvm install ${NODE_VERSION}
   - nvm alias default ${NODE_VERSION}
   override:
