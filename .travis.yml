@@ -23,6 +23,10 @@ env:
   - CXX=clang++
   - npm_config_clang=1
 
+script:
+- find . -type f
+- npm test
+
 notifications:
   email:
     on_success: never
