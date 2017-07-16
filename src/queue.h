@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <iterator>
 #include <uv.h>
 
 #include "lock.h"
@@ -31,7 +32,7 @@ public:
     if (!is_healthy()) return;
 
     Lock lock(mutex);
-    std::move(begin, end, back_inserter(*active));
+    std::move(begin, end, std::back_inserter(*active));
   }
 
   // Atomically consume the current contents of the queue, emptying it.
