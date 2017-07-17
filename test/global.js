@@ -6,3 +6,5 @@ const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 
 global.assert = chai.assert
+
+global.until = require('test-until')
