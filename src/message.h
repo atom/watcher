@@ -27,9 +27,8 @@ public:
     const ChannelID channel_id,
     const FileSystemAction action,
     const EntryKind entry_kind,
-    const std::string &&dir_name,
-    const std::string &&old_base_name,
-    const std::string &&new_base_name
+    const std::string &&old_path,
+    const std::string &&new_path
   );
   FileSystemPayload(FileSystemPayload &&original);
   ~FileSystemPayload() {};
@@ -39,9 +38,8 @@ private:
   const ChannelID channel_id;
   const FileSystemAction action;
   const EntryKind entry_kind;
-  const std::string dirname;
-  const std::string old_base_name;
-  const std::string new_base_name;
+  const std::string old_path;
+  const std::string new_path;
 };
 
 enum CommandAction {

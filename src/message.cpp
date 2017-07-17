@@ -15,16 +15,14 @@ FileSystemPayload::FileSystemPayload(
   const ChannelID channel_id,
   const FileSystemAction action,
   const EntryKind entry_kind,
-  const string &&dirname,
-  const string &&old_base_name,
-  const string &&new_base_name
+  const string &&old_path,
+  const string &&new_path
 ) :
   channel_id{channel_id},
   action{action},
   entry_kind{entry_kind},
-  dirname{move(dirname)},
-  old_base_name{move(old_base_name)},
-  new_base_name{move(new_base_name)}
+  old_path{move(old_path)},
+  new_path{move(new_path)}
 {
   //
 }
@@ -33,9 +31,8 @@ FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) :
   channel_id{original.channel_id},
   action{original.action},
   entry_kind{original.entry_kind},
-  dirname{move(original.dirname)},
-  old_base_name{move(original.old_base_name)},
-  new_base_name{move(original.new_base_name)}
+  old_path{move(original.old_path)},
+  new_path{move(original.new_path)}
 {
   //
 }
@@ -59,16 +56,16 @@ string FileSystemPayload::describe() const
 
   switch (action) {
     case ACTION_CREATED:
-      builder << "created " << dirname << " " << old_base_name;
+      builder << "created " << old_path;
       break;
     case ACTION_DELETED:
-      builder << "deleted " << dirname << " " << old_base_name;
+      builder << "deleted " << old_path;
       break;
     case ACTION_MODIFIED:
-      builder << "modified " << dirname << " " << old_base_name;
+      builder << "modified " << old_path;
       break;
     case ACTION_RENAMED:
-      builder << "renamed " << dirname << " {" << old_base_name << " => " << new_base_name << "}";
+      builder << "renamed {" << old_path << " => " << new_path << "}";
       break;
     default:
       builder << "!!action=" << action << " ";
