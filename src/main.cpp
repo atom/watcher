@@ -18,8 +18,11 @@ using v8::Local;
 using v8::Value;
 using v8::Object;
 using v8::String;
+using v8::Number;
 using v8::Function;
 using v8::FunctionTemplate;
+using v8::Array;
+using std::shared_ptr;
 using std::unique_ptr;
 using std::string;
 using std::ostringstream;
@@ -108,6 +111,8 @@ public:
 
     LOGGER << accepted->size() << " messages to process." << endl;
 
+    unordered_map<ChannelID, vector<Local<Object>>> to_deliver;
+
     for (auto it = accepted->begin(); it != accepted->end(); ++it) {
       const AckPayload *ack_message = it->as_ack();
       if (ack_message) {
@@ -128,20 +133,59 @@ public:
       if (filesystem_message) {
         LOGGER << "Received filesystem event message " << *it << endl;
 
-        auto maybe_callback = channel_callbacks.find(filesystem_message->get_channel_id());
-        if (maybe_callback == channel_callbacks.end()) {
-          LOGGER << "Ignoring unexpected filesystem event " << *it << endl;
-          continue;
-        }
+        ChannelID channel_id = filesystem_message->get_channel_id();
 
-        unique_ptr<Nan::Callback> callback = move(maybe_callback->second);
-        channel_callbacks.erase(maybe_callback);
+        Local<Object> js_event = Nan::New<Object>();
+        js_event->Set(
+          Nan::New<String>("actionType").ToLocalChecked(),
+          Nan::New<Number>(static_cast<int>(filesystem_message->get_filesystem_action()))
+        );
+        js_event->Set(
+          Nan::New<String>("entryKind").ToLocalChecked(),
+          Nan::New<Number>(static_cast<int>(filesystem_message->get_entry_kind()))
+        );
+        js_event->Set(
+          Nan::New<String>("oldPath").ToLocalChecked(),
+          Nan::New<String>(filesystem_message->get_old_path()).ToLocalChecked()
+        );
+        js_event->Set(
+          Nan::New<String>("newPath").ToLocalChecked(),
+          Nan::New<String>(filesystem_message->get_new_path()).ToLocalChecked()
+        );
 
-        callback->Call(0, nullptr);
+        to_deliver[channel_id].push_back(js_event);
         continue;
       }
 
       LOGGER << "Received unexpected message " << *it << endl;
+    }
+
+    for (auto it = to_deliver.begin(); it != to_deliver.end(); ++it) {
+      ChannelID channel_id = it->first;
+      vector<Local<Object>> js_events = it->second;
+
+      auto maybe_callback = channel_callbacks.find(channel_id);
+      if (maybe_callback == channel_callbacks.end()) {
+        LOGGER << "Ignoring unexpected filesystem event channel " << channel_id << endl;
+        continue;
+      }
+      shared_ptr<Nan::Callback> callback = maybe_callback->second;
+
+      LOGGER << "Dispatching " << js_events.size() << " events on channel " << channel_id << "." << endl;
+
+      Local<Array> js_array = Nan::New<Array>(js_events.size());
+
+      int index = 0;
+      for (auto et = js_events.begin(); et != js_events.end(); ++et) {
+        js_array->Set(index, *et);
+        index++;
+      }
+
+      Local<Value> argv[] = {
+        Nan::Null(),
+        js_array
+      };
+      callback->Call(2, argv);
     }
   }
 
@@ -154,7 +198,7 @@ private:
   ChannelID next_channel_id;
 
   unordered_map<CommandID, unique_ptr<Nan::Callback>> pending_callbacks;
-  unordered_map<ChannelID, unique_ptr<Nan::Callback>> channel_callbacks;
+  unordered_map<ChannelID, shared_ptr<Nan::Callback>> channel_callbacks;
 };
 
 static Main instance;
