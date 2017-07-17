@@ -2,6 +2,7 @@
 #define PLATFORM_H
 
 #include <memory>
+#include <utility>
 #include <string>
 
 #include "worker_thread.h"
@@ -28,6 +29,17 @@ protected:
   WorkerPlatform(WorkerThread *thread) : thread{thread}
   {
     //
+  }
+
+  void emit(Message &&message)
+  {
+    thread->emit(std::move(message));
+  }
+
+  template <class InputIt>
+  void emit_all(InputIt begin, InputIt end)
+  {
+    thread->emit_all(begin, end);
   }
 
   WorkerThread *thread;
