@@ -75,7 +75,39 @@ describe('entry point', function () {
       assert.isNull(error)
     })
 
-    it('can watch multiple directories at once and dispatch events appropriately')
+    it('can watch multiple directories at once and dispatch events appropriately', async function () {
+      let errors = []
+      const eventsA = []
+      const eventsB = []
+
+      const watchDirA = path.join(watchDir, 'dir_a')
+      const watchDirB = path.join(watchDir, 'dir_b')
+      await Promise.all(
+        [watchDirA, watchDirB].map(subdir => fs.mkdir(subdir))
+      )
+
+      subs.push(await sfw.watch(watchDirA, (err, es) => {
+        errors.push(err)
+        eventsA.push(...es)
+      }))
+      subs.push(await sfw.watch(watchDirB, (err, es) => {
+        errors.push(err)
+        eventsB.push(...es)
+      }))
+
+      const fileA = path.join(watchDirA, 'a.txt')
+      await fs.writeFile(fileA, 'file a')
+      await until('watcher A picks up its event', () => eventsA.some(event => event.oldPath === fileA))
+
+      const fileB = path.join(watchDirB, 'b.txt')
+      await fs.writeFile(fileB, 'file b')
+      await until('watcher B picks up its event', () => eventsB.some(event => event.oldPath === fileB))
+
+      // Assert that the streams weren't crossed
+      assert.isTrue(errors.every(err => err === null))
+      assert.isTrue(eventsA.every(event => event.oldPath !== fileB))
+      assert.isTrue(eventsB.every(event => event.oldPath !== fileA))
+    })
 
     describe('events', function () {
       it('when a file is created')
