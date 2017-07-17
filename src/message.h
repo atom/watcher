@@ -33,6 +33,12 @@ public:
   FileSystemPayload(FileSystemPayload &&original);
   ~FileSystemPayload() {};
 
+  const ChannelID &get_channel_id() const;
+  const FileSystemAction &get_filesystem_action() const;
+  const EntryKind &get_entry_kind() const;
+  const std::string &get_old_path() const;
+  const std::string &get_new_path() const;
+
   std::string describe() const;
 private:
   const ChannelID channel_id;

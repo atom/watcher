@@ -37,6 +37,31 @@ FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) :
   //
 }
 
+const ChannelID &FileSystemPayload::get_channel_id() const
+{
+  return channel_id;
+}
+
+const FileSystemAction &FileSystemPayload::get_filesystem_action() const
+{
+  return action;
+}
+
+const EntryKind &FileSystemPayload::get_entry_kind() const
+{
+  return entry_kind;
+}
+
+const string &FileSystemPayload::get_old_path() const
+{
+  return old_path;
+}
+
+const string &FileSystemPayload::get_new_path() const
+{
+  return new_path;
+}
+
 string FileSystemPayload::describe() const
 {
   ostringstream builder;
