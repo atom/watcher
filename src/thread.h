@@ -15,7 +15,8 @@ void thread_callback_helper(void *arg);
 class Thread : Errable {
 public:
   template< class T >
-  Thread(T* self, void (T::*fn)()) :
+  Thread(T* self, void (T::*fn)(), uv_async_t *main_callback) :
+    main_callback{main_callback},
     work_fn{std::bind(std::mem_fn(fn), self)}
   {
     //
@@ -45,7 +46,7 @@ protected:
   {
     if (!is_healthy()) return;
     out.enqueue_all(begin, end);
-    wake();
+    uv_async_send(main_callback);
   }
 
   std::unique_ptr<std::vector<Message>> process_all();
@@ -53,6 +54,8 @@ protected:
 private:
   Queue in;
   Queue out;
+
+  uv_async_t *main_callback;
 
   uv_thread_t uv_handle;
   std::function<void()> work_fn;

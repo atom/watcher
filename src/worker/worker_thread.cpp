@@ -16,8 +16,7 @@ using std::unique_ptr;
 using std::move;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
-  Thread(this, &WorkerThread::listen),
-  main_callback{main_callback},
+  Thread(this, &WorkerThread::listen, main_callback),
   platform{WorkerPlatform::for_worker(this)}
 {
   //
@@ -91,6 +90,4 @@ void WorkerThread::handle_commands()
   LOGGER << "Replying with " << acks.size() << " ack(s)." << endl;
   emit_all(acks.begin(), acks.end());
   LOGGER << "Reply sent." << endl;
-  uv_async_send(main_callback);
-  LOGGER << "Main thread handler scheduled." << endl;
 }

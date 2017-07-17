@@ -43,6 +43,7 @@ void Thread::emit(Message &&message)
 {
   if (!is_healthy()) return;
   out.enqueue(move(message));
+  uv_async_send(main_callback);
 }
 
 unique_ptr<vector<Message>> Thread::process_all()
