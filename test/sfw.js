@@ -64,9 +64,9 @@ describe('entry point', function () {
       let error = null
       const events = []
 
-      subs.push(await sfw.watch(watchDir, (err, event) => {
+      subs.push(await sfw.watch(watchDir, (err, es) => {
         error = err
-        events.push(event)
+        events.push(...es)
       }))
 
       await fs.writeFile(path.join(watchDir, 'file.txt'), 'indeed')
