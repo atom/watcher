@@ -21,8 +21,6 @@ private:
   void listen();
   void handle_commands();
 
-  void wat() {};
-
   uv_async_t *main_callback;
 
   std::unique_ptr<WorkerPlatform> platform;
