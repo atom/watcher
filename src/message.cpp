@@ -117,6 +117,11 @@ const string& CommandPayload::get_root() const
   return root;
 }
 
+const ChannelID &CommandPayload::get_channel_id() const
+{
+  return channel_id;
+}
+
 string CommandPayload::describe() const
 {
   ostringstream builder;
