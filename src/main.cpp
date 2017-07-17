@@ -304,6 +304,9 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
   if (info.Length() != 2) {
     return Nan::ThrowError("watch() requires two arguments");
   }
+
+  unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
+  ack_callback->Call(0, nullptr);
 }
 
 void initialize(Local<Object> exports)
