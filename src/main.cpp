@@ -93,32 +93,27 @@ public:
     ChannelID channel_id = send_worker_command(COMMAND_ADD, move(root), move(ack_callback), true);
 
     channel_callbacks.emplace(channel_id, move(event_callback));
-
-    LOGGER << "Worker is listening for changes at " << root_dup << " on channel " << channel_id << "." << endl;
   }
 
   void handle_events()
   {
     Nan::HandleScope scope;
 
-    LOGGER << "Handling messages from the worker thread." << endl;
-
     unique_ptr<vector<Message>> accepted = worker_thread.receive_all();
     if (!accepted) {
-      LOGGER << "No messages waiting." << endl;
       return;
     }
-
-    LOGGER << accepted->size() << " messages to process." << endl;
 
     unordered_map<ChannelID, vector<Local<Object>>> to_deliver;
 
     for (auto it = accepted->begin(); it != accepted->end(); ++it) {
       const AckPayload *ack_message = it->as_ack();
       if (ack_message) {
+        LOGGER << "Received ack message " << *it << "." << endl;
+
         auto maybe_callback = pending_callbacks.find(ack_message->get_key());
         if (maybe_callback == pending_callbacks.end()) {
-          LOGGER << "Ignoring unexpected ack " << *it << endl;
+          LOGGER << "Ignoring unexpected ack " << *it << "." << endl;
           continue;
         }
 
@@ -131,7 +126,7 @@ public:
 
       const FileSystemPayload *filesystem_message = it->as_filesystem();
       if (filesystem_message) {
-        LOGGER << "Received filesystem event message " << *it << endl;
+        LOGGER << "Received filesystem event message " << *it << "." << endl;
 
         ChannelID channel_id = filesystem_message->get_channel_id();
 
@@ -157,7 +152,7 @@ public:
         continue;
       }
 
-      LOGGER << "Received unexpected message " << *it << endl;
+      LOGGER << "Received unexpected message " << *it << "." << endl;
     }
 
     for (auto it = to_deliver.begin(); it != to_deliver.end(); ++it) {
@@ -166,12 +161,13 @@ public:
 
       auto maybe_callback = channel_callbacks.find(channel_id);
       if (maybe_callback == channel_callbacks.end()) {
-        LOGGER << "Ignoring unexpected filesystem event channel " << channel_id << endl;
+        LOGGER << "Ignoring unexpected filesystem event channel " << channel_id << "." << endl;
         continue;
       }
       shared_ptr<Nan::Callback> callback = maybe_callback->second;
 
-      LOGGER << "Dispatching " << js_events.size() << " events on channel " << channel_id << "." << endl;
+      LOGGER << "Dispatching " << js_events.size()
+        << " event(s) on channel " << channel_id << " to node callbacks." << endl;
 
       Local<Array> js_array = Nan::New<Array>(js_events.size());
 

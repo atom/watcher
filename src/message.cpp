@@ -65,7 +65,7 @@ const string &FileSystemPayload::get_new_path() const
 string FileSystemPayload::describe() const
 {
   ostringstream builder;
-  builder << "[FileSystemPayload ";
+  builder << "[FileSystemPayload channel " << channel_id << " ";
 
   switch (entry_kind) {
     case KIND_FILE:

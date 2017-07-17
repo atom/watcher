@@ -179,7 +179,6 @@ public:
     const FSEventStreamEventFlags *event_flags,
     const FSEventStreamEventId *event_ids)
   {
-    LOGGER << "Filesystem events received on channel " << channel << "." << endl;
     char **paths = reinterpret_cast<char**>(event_paths);
     vector<Message> messages;
     messages.reserve(num_events);
@@ -233,7 +232,7 @@ public:
       FileSystemPayload payload(channel, action, kind, move(old_path), move(new_path));
       Message event_message(move(payload));
 
-      LOGGER << "Producing message " << event_message << endl;
+      LOGGER << "Emitting filesystem message " << event_message << endl;
 
       messages.push_back(move(event_message));
     }

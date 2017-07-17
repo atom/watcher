@@ -42,20 +42,15 @@ void WorkerThread::listen()
 
 void WorkerThread::handle_commands()
 {
-  LOGGER << "Handling command messages from the main thread." << endl;
-
   unique_ptr<vector<Message>> accepted = process_all();
   if (!accepted) {
-    LOGGER << "No messages waiting." << endl;
     return;
   }
 
-  LOGGER << accepted->size() << " message(s) to process." << endl;
   vector<Message> acks;
   acks.reserve(accepted->size());
 
   for (auto it = accepted->begin(); it != accepted->end(); ++it) {
-    LOGGER << "Processing: " << *it << endl;
     const CommandPayload *command = it->as_command();
     if (!command) {
       LOGGER << "Received unexpected message " << *it << "." << endl;
@@ -83,11 +78,8 @@ void WorkerThread::handle_commands()
 
     AckPayload ack(command->get_id());
     Message response(move(ack));
-    LOGGER << "Ack produced: " << response << endl;
     acks.push_back(move(response));
   }
 
-  LOGGER << "Replying with " << acks.size() << " ack(s)." << endl;
   emit_all(acks.begin(), acks.end());
-  LOGGER << "Reply sent." << endl;
 }
