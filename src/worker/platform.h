@@ -16,8 +16,8 @@ public:
   virtual void wake() = 0;
 
   virtual void listen() = 0;
-  virtual void handle_add_command(const std::string &root_path) = 0;
-  virtual void handle_remove_command(const std::string &root_path) = 0;
+  virtual void handle_add_command(const ChannelID channel, const std::string &root_path) = 0;
+  virtual void handle_remove_command(const ChannelID channel) = 0;
 
   void handle_commands()
   {

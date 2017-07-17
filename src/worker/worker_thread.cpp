@@ -65,10 +65,10 @@ void WorkerThread::handle_commands()
 
     switch (command->get_action()) {
       case COMMAND_ADD:
-        platform->handle_add_command(command->get_root());
+        platform->handle_add_command(command->get_channel_id(), command->get_root());
         break;
       case COMMAND_REMOVE:
-        platform->handle_remove_command(command->get_root());
+        platform->handle_remove_command(command->get_channel_id());
         break;
       case COMMAND_LOG_FILE:
         Logger::to_file(command->get_root().c_str());
