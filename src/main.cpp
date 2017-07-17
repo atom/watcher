@@ -84,10 +84,12 @@ public:
     send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
   }
 
-  void watch(string &&root, unique_ptr<Nan::Callback> callback)
+  void watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
   {
     string root_dup(root);
-    ChannelID channel_id = send_worker_command(COMMAND_ADD, move(root), move(callback), true);
+    ChannelID channel_id = send_worker_command(COMMAND_ADD, move(root), move(ack_callback), true);
+
+    channel_callbacks.emplace(channel_id, move(event_callback));
 
     LOGGER << "Worker is listening for changes at " << root_dup << " on channel " << channel_id << "." << endl;
   }
@@ -125,6 +127,17 @@ public:
       const FileSystemPayload *filesystem_message = it->as_filesystem();
       if (filesystem_message) {
         LOGGER << "Received filesystem event message " << *it << endl;
+
+        auto maybe_callback = channel_callbacks.find(filesystem_message->get_channel_id());
+        if (maybe_callback == channel_callbacks.end()) {
+          LOGGER << "Ignoring unexpected filesystem event " << *it << endl;
+          continue;
+        }
+
+        unique_ptr<Nan::Callback> callback = move(maybe_callback->second);
+        channel_callbacks.erase(maybe_callback);
+
+        callback->Call(0, nullptr);
         continue;
       }
 
@@ -139,7 +152,9 @@ private:
 
   CommandID next_command_id;
   ChannelID next_channel_id;
+
   unordered_map<CommandID, unique_ptr<Nan::Callback>> pending_callbacks;
+  unordered_map<ChannelID, unique_ptr<Nan::Callback>> channel_callbacks;
 };
 
 static Main instance;
@@ -217,8 +232,8 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
 {
-  if (info.Length() != 2) {
-    return Nan::ThrowError("watch() requires two arguments");
+  if (info.Length() != 3) {
+    return Nan::ThrowError("watch() requires three arguments");
   }
 
   Nan::MaybeLocal<String> maybe_root = Nan::To<String>(info[0]);
@@ -234,9 +249,10 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   }
   string root_str(*root_utf8, root_utf8.length());
 
-  unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
+  unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
+  unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[2].As<Function>()));
 
-  instance.watch(move(root_str), move(callback));
+  instance.watch(move(root_str), move(ack_callback), move(event_callback));
 }
 
 void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
