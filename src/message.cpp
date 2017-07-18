@@ -151,10 +151,10 @@ string CommandPayload::describe() const
 
   switch (action) {
     case COMMAND_ADD:
-      builder << "add " << root;
+      builder << "add " << root << " at channel " << channel_id;
       break;
     case COMMAND_REMOVE:
-      builder << "remove " << root;
+      builder << "remove channel " << channel_id;
       break;
     case COMMAND_LOG_FILE:
       builder << "log to file " << root;
