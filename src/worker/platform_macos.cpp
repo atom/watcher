@@ -169,6 +169,21 @@ public:
   void handle_remove_command(const ChannelID channel) override
   {
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
+
+    auto maybe_subscription = subscriptions.find(channel);
+    if (maybe_subscription != subscriptions.end()) {
+      LOGGER << "No subscription for channel " << channel << "." << endl;
+      return;
+    }
+
+    Subscription *subscription = maybe_subscription->second;
+
+    FSEventStreamStop(subscription->event_stream);
+    FSEventStreamUnscheduleFromRunLoop(subscription->event_stream, run_loop, kCFRunLoopDefaultMode);
+    FSEventStreamInvalidate(subscription->event_stream);
+    FSEventStreamRelease(subscription->event_stream);
+
+    delete subscription;
   }
 
   void handle_fs_event(
