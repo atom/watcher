@@ -151,6 +151,17 @@ describe('entry point', function () {
       assert.lengthOf(events, eventCount)
     })
 
-    it('is a no-op if the directory is not being watched')
+    it('is a no-op if the directory is not being watched', async function () {
+      let error = null
+      const sub = await sfw.watch(watchDir, err => (error = err))
+      subs.push(sub)
+      assert.isNull(error)
+
+      await sub.unwatch()
+      assert.isNull(error)
+
+      await sub.unwatch()
+      assert.isNull(error)
+    })
   })
 })
