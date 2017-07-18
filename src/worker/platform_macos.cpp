@@ -177,9 +177,9 @@ public:
     }
 
     Subscription *subscription = maybe_subscription->second;
+    subscriptions.erase(maybe_subscription);
 
     FSEventStreamStop(subscription->event_stream);
-    FSEventStreamUnscheduleFromRunLoop(subscription->event_stream, run_loop, kCFRunLoopDefaultMode);
     FSEventStreamInvalidate(subscription->event_stream);
     FSEventStreamRelease(subscription->event_stream);
 
