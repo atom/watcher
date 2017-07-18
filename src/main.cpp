@@ -49,20 +49,14 @@ public:
     worker_thread.run();
   }
 
-  ChannelID send_worker_command(
+  void send_worker_command(
     const CommandAction action,
     const std::string &&root,
     unique_ptr<Nan::Callback> callback,
-    bool assign_channel_id = false
+    ChannelID channel_id = NULL_CHANNEL_ID
   )
   {
     CommandID command_id = next_command_id;
-    ChannelID channel_id = NULL_CHANNEL_ID;
-
-    if (assign_channel_id) {
-      channel_id = next_channel_id;
-      next_channel_id++;
-    }
 
     CommandPayload command_payload(next_command_id, action, move(root), channel_id);
     Message command_message(move(command_payload));
@@ -73,8 +67,6 @@ public:
 
     LOGGER << "Sending command " << command_message << " to worker thread." << endl;
     worker_thread.send(move(command_message));
-
-    return channel_id;
   }
 
   void use_main_log_file(string &&main_log_file)
@@ -89,10 +81,13 @@ public:
 
   void watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
   {
-    string root_dup(root);
-    ChannelID channel_id = send_worker_command(COMMAND_ADD, move(root), move(ack_callback), true);
+    ChannelID channel_id = next_channel_id;
+    next_channel_id++;
 
     channel_callbacks.emplace(channel_id, move(event_callback));
+
+    send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+  }
   }
 
   void handle_events()
