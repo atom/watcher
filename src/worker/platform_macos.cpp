@@ -171,7 +171,7 @@ public:
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
 
     auto maybe_subscription = subscriptions.find(channel);
-    if (maybe_subscription != subscriptions.end()) {
+    if (maybe_subscription == subscriptions.end()) {
       LOGGER << "No subscription for channel " << channel << "." << endl;
       return;
     }
