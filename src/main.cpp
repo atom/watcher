@@ -88,6 +88,18 @@ public:
 
     send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
   }
+
+  void unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
+  {
+    string root;
+    send_worker_command(COMMAND_REMOVE, move(root), move(ack_callback), channel_id);
+
+    auto maybe_event_callback = channel_callbacks.find(channel_id);
+    if (maybe_event_callback == channel_callbacks.end()) {
+      LOGGER << "Channel " << channel_id << " already has no event callback." << endl;
+      return;
+    }
+    channel_callbacks.erase(maybe_event_callback);
   }
 
   void handle_events()
@@ -115,7 +127,14 @@ public:
         unique_ptr<Nan::Callback> callback = move(maybe_callback->second);
         pending_callbacks.erase(maybe_callback);
 
-        callback->Call(0, nullptr);
+        ChannelID channel_id = ack_message->get_channel_id();
+        if (channel_id != NULL_CHANNEL_ID) {
+          Local<Value> argv[] = {Nan::Null(), Nan::New<Number>(channel_id)};
+          callback->Call(2, argv);
+        } else {
+          callback->Call(0, nullptr);
+        }
+
         continue;
       }
 
@@ -293,11 +312,20 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
 void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 {
   if (info.Length() != 2) {
-    return Nan::ThrowError("watch() requires two arguments");
+    Nan::ThrowError("watch() requires two arguments");
+    return;
   }
 
+  Nan::Maybe<ChannelID> maybe_channel_id = Nan::To<ChannelID>(info[0]);
+  if (maybe_channel_id.IsNothing()) {
+    Nan::ThrowError("unwatch() requires a channel ID as its first argument");
+    return;
+  }
+  ChannelID channel_id = maybe_channel_id.FromJust();
+
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
-  ack_callback->Call(0, nullptr);
+
+  instance.unwatch(channel_id, move(ack_callback));
 }
 
 void initialize(Local<Object> exports)
