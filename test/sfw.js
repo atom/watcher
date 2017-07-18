@@ -74,7 +74,7 @@ describe('entry point', function () {
     })
 
     it('can watch multiple directories at once and dispatch events appropriately', async function () {
-      let errors = []
+      const errors = []
       const eventsA = []
       const eventsB = []
 
@@ -108,7 +108,28 @@ describe('entry point', function () {
     })
 
     describe('events', function () {
-      it('when a file is created')
+      it('when a file is created', async function () {
+        const errors = []
+        const events = []
+
+        subs.push(await sfw.watch(watchDir, (err, es) => {
+          errors.push(err)
+          events.push(...es)
+        }))
+
+        const createdFile = path.join(watchDir, 'file.txt')
+        await fs.writeFile(createdFile, 'contents')
+
+        await until('the creation event arrives', () => {
+          return events.some(event => {
+            return event.type === 'created' &&
+              event.kind === 'file' &&
+              event.oldPath === createdFile &&
+              event.newPath === ''
+          })
+        })
+      })
+
       it('when a file is modified')
       it('when a file is renamed')
       it('when a file is deleted')
