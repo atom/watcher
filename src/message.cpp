@@ -171,14 +171,33 @@ string CommandPayload::describe() const
   return builder.str();
 }
 
-AckPayload::AckPayload(const CommandID key) : key{key}
+AckPayload::AckPayload(const CommandID key, const ChannelID channel_id, bool success, const string &&message) :
+  key{key},
+  channel_id{channel_id},
+  success{success},
+  message{move(message)}
 {
   //
 }
 
-CommandID AckPayload::get_key() const
+const CommandID &AckPayload::get_key() const
 {
   return key;
+}
+
+const ChannelID &AckPayload::get_channel_id() const
+{
+  return channel_id;
+}
+
+const bool &AckPayload::was_successful() const
+{
+  return success;
+}
+
+const string &AckPayload::get_message() const
+{
+  return message;
 }
 
 string AckPayload::describe() const

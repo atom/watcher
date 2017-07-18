@@ -83,15 +83,21 @@ private:
 
 class AckPayload {
 public:
-  AckPayload(const CommandID key);
+  AckPayload(const CommandID key, const ChannelID channel_id, bool success, const std::string &&message);
   AckPayload(AckPayload &&original) = default;
   ~AckPayload() {};
 
-  CommandID get_key() const;
+  const CommandID &get_key() const;
+  const ChannelID &get_channel_id() const;
+  const bool &was_successful() const;
+  const std::string &get_message() const;
 
   std::string describe() const;
 private:
   const CommandID key;
+  const ChannelID channel_id;
+  const bool success;
+  const std::string message;
 };
 
 enum MessageKind {

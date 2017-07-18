@@ -76,7 +76,7 @@ void WorkerThread::handle_commands()
         break;
     }
 
-    AckPayload ack(command->get_id());
+    AckPayload ack(command->get_id(), command->get_channel_id(), true, "");
     Message response(move(ack));
     acks.push_back(move(response));
   }
