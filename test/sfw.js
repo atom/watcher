@@ -290,9 +290,42 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is created')
-      it('when a directory is renamed')
-      it('when a directory is deleted')
+      it('when a directory is created', async function () {
+        const subdir = path.join(watchDir, 'subdir')
+        await fs.mkdirs(subdir)
+
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'directory', oldPath: subdir}
+        ))
+      })
+
+      it('when a directory is renamed', async function () {
+        const oldDir = path.join(watchDir, 'subdir')
+        const newDir = path.join(watchDir, 'newdir')
+
+        await fs.mkdirs(oldDir)
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'directory', oldPath: oldDir}
+        ))
+
+        await fs.rename(oldDir, newDir)
+        await until('directory rename event arrives', eventMatching(
+          {type: 'renamed', kind: 'directory', oldPath: oldDir, newPath: newDir}
+        ))
+      })
+
+      it('when a directory is deleted', async function () {
+        const subdir = path.join(watchDir, 'subdir')
+        await fs.mkdirs(subdir)
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'directory', oldPath: subdir}
+        ))
+
+        await fs.rmdir(subdir)
+        await until('directory deletion event arrives', eventMatching(
+          {type: 'deleted', kind: 'directory', oldPath: subdir}
+        ))
+      })
     })
   })
 
