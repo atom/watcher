@@ -26,6 +26,7 @@ using std::make_pair;
 using std::unordered_set;
 using std::unordered_map;
 using std::multimap;
+using std::dec;
 using std::hex;
 using std::chrono::steady_clock;
 using std::chrono::time_point;
@@ -275,7 +276,7 @@ public:
         << " deleted=" << deleted
         << " modified=" << modified
         << " renamed=" << renamed
-        << " flags=" << hex << event_flags[i]
+        << " flags=" << hex << event_flags[i] << dec
         << endl;
 
       EntryKind kind;
@@ -286,7 +287,8 @@ public:
       } else {
         // FIXME will file and directory events ever be coalesced?
         // FIXME handle symlinks, named pipes, etc
-        LOGGER << "Unknown or ambiguous filesystem event entry kind from flags " << hex << event_flags[i] << "." << endl;
+        LOGGER << "Unknown or ambiguous filesystem entry kind from event flags "
+          << hex << event_flags[i] << dec << "." << endl;
 
         if (lstat(event_path.c_str(), &path_stat) != 0) {
           stat_errno = errno;
