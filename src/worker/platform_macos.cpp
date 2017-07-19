@@ -247,9 +247,10 @@ public:
   {
     char **paths = reinterpret_cast<char**>(event_paths);
     vector<Message> messages;
-    messages.reserve(num_events);
+    string rename_old_path;
 
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
+    messages.reserve(num_events);
 
     for (size_t i = 0; i < num_events; i++) {
       bool created = (event_flags[i] & CREATE_FLAGS) != 0;
@@ -291,7 +292,7 @@ public:
           stat_errno = errno;
         }
         stat_performed = true;
-        // FIXME handle stat errors
+        // FIXME handle other stat errors
 
         if ((path_stat.st_mode & S_IFDIR) != 0) {
           kind = KIND_DIRECTORY;
@@ -303,7 +304,7 @@ public:
         }
       }
 
-      // Uncoalesed, single-event flags.
+      // Uncoalesed, single-event, non-rename flags.
 
       if (created && !(deleted || modified || renamed)) {
         cache.does_exist(event_path);
@@ -332,24 +333,35 @@ public:
       }
 
       if (stat_errno == ENOENT) {
-        // The entry no longer exists. Emit a creation event if it has never been seen before, then emit a deletion
-        // event.
+        // The entry no longer exists. If this is a rename event, note this as the old name of the renamed file and
+        // wait for the other half of the notification to arrive. Otherwise, emit a creation event if it has never been
+        // seen before, then emit a deletion event.
 
-        if (!cache.has_been_seen(event_path)) {
-          enqueue_creation(messages, channel, kind, event_path);
+        if (renamed) {
+          rename_old_path = event_path;
+        } else {
+          if (!cache.has_been_seen(event_path)) {
+            enqueue_creation(messages, channel, kind, event_path);
+          }
+          enqueue_deletion(messages, channel, kind, event_path);
         }
-        enqueue_deletion(messages, channel, kind, event_path);
         continue;
       }
 
-      // The entry currently exists. Determine if a creation or a modification event is appropriate.
+      // The entry currently exists. Use the event flags to determine the sequence of actions performed on that path.
 
       bool seen_before = cache.has_been_seen(event_path);
       cache.does_exist(event_path);
 
       if (seen_before) {
         // This is *not* the first time an event at this path has been seen.
-        if (deleted) {
+        if (renamed && !rename_old_path.empty()) {
+          // The existing file must have been deleted and a new file renamed in its place.
+          enqueue_deletion(messages, channel, kind, event_path);
+          enqueue_rename(messages, channel, kind, rename_old_path, event_path);
+
+          rename_old_path.clear();
+        } else if (deleted) {
           // Rapid creation and deletion. There may be a lost modification event just before deletion or just after
           // recreation.
           enqueue_deletion(messages, channel, kind, event_path);
@@ -360,7 +372,12 @@ public:
         }
       } else {
         // This *is* the first time an event has been seen at this path.
-        if (deleted) {
+        if (renamed && !rename_old_path.empty()) {
+          // The other half of an existing rename.
+          enqueue_rename(messages, channel, kind, rename_old_path, event_path);
+
+          rename_old_path.clear();
+        } else if (deleted) {
           // The only way for the deletion flag to be set on a file we haven't seen before is for the file to
           // be rapidly created, deleted, and created again.
           enqueue_creation(messages, channel, kind, event_path);
@@ -438,7 +455,7 @@ private:
     string old_path,
     string new_path)
   {
-    FileSystemPayload payload(channel, ACTION_DELETED, kind, move(old_path), move(new_path));
+    FileSystemPayload payload(channel, ACTION_RENAMED, kind, move(old_path), move(new_path));
     Message event_message(move(payload));
 
     LOGGER << "Emitting filesystem message " << event_message << endl;
