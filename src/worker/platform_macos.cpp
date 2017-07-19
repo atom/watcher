@@ -1,10 +1,15 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <unordered_map>
+#include <map>
+#include <chrono>
 #include <utility>
 #include <iomanip>
 #include <CoreServices/CoreServices.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #include "platform.h"
 #include "worker_thread.h"
@@ -18,10 +23,16 @@ using std::unique_ptr;
 using std::move;
 using std::pair;
 using std::make_pair;
+using std::unordered_set;
 using std::unordered_map;
+using std::multimap;
 using std::hex;
+using std::chrono::steady_clock;
+using std::chrono::time_point;
+using std::chrono::duration;
+using std::chrono::seconds;
 
-static const CFAbsoluteTime LATENCY = 0.001;
+static const CFAbsoluteTime LATENCY = 0;
 
 static const FSEventStreamEventFlags CREATE_FLAGS = kFSEventStreamEventFlagItemCreated;
 
@@ -58,6 +69,46 @@ struct Subscription {
   {
     //
   }
+};
+
+class RecentFileCache {
+public:
+  void does_exist(const string &path)
+  {
+    bool inserted = seen_paths.insert(path).second;
+    if (inserted) {
+      time_point<steady_clock> ts = steady_clock::now();
+      by_timestamp.insert({ts, path});
+    }
+  }
+
+  void does_not_exist(const string &path)
+  {
+    seen_paths.erase(path);
+  }
+
+  bool has_been_seen(const string &path)
+  {
+    return seen_paths.find(path) != seen_paths.end();
+  }
+
+  void purge()
+  {
+    time_point<steady_clock> oldest = steady_clock::now() - seconds(5);
+
+    auto to_keep = by_timestamp.upper_bound(oldest);
+    for (auto it = by_timestamp.begin(); it != to_keep && it != by_timestamp.end(); ++it) {
+      seen_paths.erase(it->second);
+    }
+
+    if (to_keep != by_timestamp.begin()) {
+      by_timestamp.erase(by_timestamp.begin(), to_keep);
+    }
+  }
+
+private:
+  unordered_set<string> seen_paths;
+  multimap<time_point<steady_clock>, string> by_timestamp;
 };
 
 class MacOSWorkerPlatform : public WorkerPlatform {
@@ -198,6 +249,8 @@ public:
     vector<Message> messages;
     messages.reserve(num_events);
 
+    LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
+
     for (size_t i = 0; i < num_events; i++) {
       bool created = (event_flags[i] & CREATE_FLAGS) != 0;
       bool deleted = (event_flags[i] & DELETED_FLAGS) != 0;
@@ -207,9 +260,16 @@ public:
       bool is_file = (event_flags[i] & IS_FILE) != 0;
       bool is_directory = (event_flags[i] & IS_DIRECTORY) != 0;
 
+      string event_path(paths[i]);
+      bool stat_performed = false;
+      int stat_errno = 0;
+
+      struct stat path_stat;
+
       LOGGER << "Received event: "
+        << event_ids[i] << " => "
         << (is_directory ? "directory" : "file")
-        << " at [" << paths[i] << "]"
+        << " at [" << event_path << "]"
         << " created=" << created
         << " deleted=" << deleted
         << " modified=" << modified
@@ -217,49 +277,180 @@ public:
         << " flags=" << hex << event_flags[i]
         << endl;
 
-      FileSystemAction action;
-      if (created) {
-        action = ACTION_CREATED;
-      } else if (deleted) {
-        action = ACTION_DELETED;
-      } else if (modified) {
-        action = ACTION_MODIFIED;
-      } else if (renamed) {
-        action = ACTION_RENAMED;
-      } else {
-        LOGGER << "Unknown filesystem event action from flags " << hex << event_flags[i] << "." << endl;
-        continue;
-      }
-
       EntryKind kind;
-      if (is_file) {
+      if (is_file && !is_directory) {
         kind = KIND_FILE;
-      } else if (is_directory) {
+      } else if (is_directory && !is_file) {
         kind = KIND_DIRECTORY;
       } else {
-        LOGGER << "Unknown filesystem event entry kind from flags" << hex << event_flags[i] << "." << endl;
+        // FIXME will file and directory events ever be coalesced?
+        // FIXME handle symlinks, named pipes, etc
+        LOGGER << "Unknown or ambiguous filesystem event entry kind from flags " << hex << event_flags[i] << "." << endl;
+
+        if (lstat(event_path.c_str(), &path_stat) != 0) {
+          stat_errno = errno;
+        }
+        stat_performed = true;
+        // FIXME handle stat errors
+
+        if ((path_stat.st_mode & S_IFDIR) != 0) {
+          kind = KIND_DIRECTORY;
+        } else if ((path_stat.st_mode & S_IFREG) != 0) {
+          kind = KIND_FILE;
+        } else {
+          LOGGER << "Unhandled stat() flags " << hex << path_stat.st_mode << "." << endl;
+          continue;
+        }
+      }
+
+      // Uncoalesed, single-event flags.
+
+      if (created && !(deleted || modified || renamed)) {
+        cache.does_exist(event_path);
+        enqueue_creation(messages, channel, kind, event_path);
         continue;
       }
 
-      string old_path(paths[i]);
-      string new_path;
+      if (deleted && !(created || modified || renamed)) {
+        cache.does_not_exist(event_path);
+        enqueue_deletion(messages, channel, kind, event_path);
+        continue;
+      }
 
-      FileSystemPayload payload(channel, action, kind, move(old_path), move(new_path));
-      Message event_message(move(payload));
+      if (modified && !(created || deleted || renamed)) {
+        cache.does_exist(event_path);
+        enqueue_modification(messages, channel, kind, event_path);
+        continue;
+      }
 
-      LOGGER << "Emitting filesystem message " << event_message << endl;
+      // Call lstat() to note the final state of the entry.
+      if (!stat_performed) {
+        if (lstat(event_path.c_str(), &path_stat) != 0) {
+          stat_errno = errno;
+        }
+        stat_performed = true;
+      }
 
-      messages.push_back(move(event_message));
+      if (stat_errno == ENOENT) {
+        // The entry no longer exists. Emit a creation event if it has never been seen before, then emit a deletion
+        // event.
+
+        if (!cache.has_been_seen(event_path)) {
+          enqueue_creation(messages, channel, kind, event_path);
+        }
+        enqueue_deletion(messages, channel, kind, event_path);
+        continue;
+      }
+
+      // The entry currently exists. Determine if a creation or a modification event is appropriate.
+
+      bool seen_before = cache.has_been_seen(event_path);
+      cache.does_exist(event_path);
+
+      if (seen_before) {
+        // This is *not* the first time an event at this path has been seen.
+        if (deleted) {
+          // Rapid creation and deletion. There may be a lost modification event just before deletion or just after
+          // recreation.
+          enqueue_deletion(messages, channel, kind, event_path);
+          enqueue_creation(messages, channel, kind, event_path);
+        } else {
+          // Modification of an existing file.
+          enqueue_modification(messages, channel, kind, event_path);
+        }
+      } else {
+        // This *is* the first time an event has been seen at this path.
+        if (deleted) {
+          // The only way for the deletion flag to be set on a file we haven't seen before is for the file to
+          // be rapidly created, deleted, and created again.
+          enqueue_creation(messages, channel, kind, event_path);
+          enqueue_deletion(messages, channel, kind, event_path);
+          enqueue_creation(messages, channel, kind, event_path);
+        } else {
+          // Otherwise, it must have been created. This may conceal a separate modification event just after
+          // the file's creation.
+          enqueue_creation(messages, channel, kind, event_path);
+        }
+      }
     }
 
     emit_all(messages.begin(), messages.end());
+
+    LOGGER << "Filesystem event batch of size " << num_events << " completed. "
+      << messages.size() << " message(s) produced." << endl;
+
+    cache.purge();
   }
 
 private:
+  void enqueue_creation(
+    vector<Message> &messages,
+    const ChannelID &channel,
+    const EntryKind &kind,
+    string created_path)
+  {
+    string empty_path;
+
+    FileSystemPayload payload(channel, ACTION_CREATED, kind, move(created_path), move(empty_path));
+    Message event_message(move(payload));
+
+    LOGGER << "Emitting filesystem message " << event_message << endl;
+
+    messages.push_back(move(event_message));
+  }
+
+  void enqueue_modification(
+    vector<Message> &messages,
+    const ChannelID &channel,
+    const EntryKind &kind,
+    string modified_path)
+  {
+    string empty_path;
+
+    FileSystemPayload payload(channel, ACTION_MODIFIED, kind, move(modified_path), move(empty_path));
+    Message event_message(move(payload));
+
+    LOGGER << "Emitting filesystem message " << event_message << endl;
+
+    messages.push_back(move(event_message));
+  }
+
+  void enqueue_deletion(
+    vector<Message> &messages,
+    const ChannelID &channel,
+    const EntryKind &kind,
+    string deleted_path)
+  {
+    string empty_path;
+
+    FileSystemPayload payload(channel, ACTION_DELETED, kind, move(deleted_path), move(empty_path));
+    Message event_message(move(payload));
+
+    LOGGER << "Emitting filesystem message " << event_message << endl;
+
+    messages.push_back(move(event_message));
+  }
+
+  void enqueue_rename(
+    vector<Message> &messages,
+    const ChannelID &channel,
+    const EntryKind &kind,
+    string old_path,
+    string new_path)
+  {
+    FileSystemPayload payload(channel, ACTION_DELETED, kind, move(old_path), move(new_path));
+    Message event_message(move(payload));
+
+    LOGGER << "Emitting filesystem message " << event_message << endl;
+
+    messages.push_back(move(event_message));
+  }
+
   CFRunLoopRef run_loop;
   CFRunLoopSourceRef command_source;
 
   unordered_map<ChannelID, Subscription*> subscriptions;
+  RecentFileCache cache;
 };
 
 static void command_perform_helper(void *info)
