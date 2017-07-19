@@ -108,31 +108,142 @@ describe('entry point', function () {
     })
 
     describe('events', function () {
-      it('when a file is created', async function () {
-        const errors = []
-        const events = []
+      let errors, events
+
+      beforeEach(async function () {
+        errors = []
+        events = []
 
         subs.push(await sfw.watch(watchDir, (err, es) => {
           errors.push(err)
           events.push(...es)
         }))
+      })
 
+      function specMatches (spec, event) {
+        return (spec.type === undefined || event.type === spec.type) &&
+          (event.kind === undefined || event.kind === spec.kind) &&
+          (event.oldPath === undefined || event.oldPath === spec.oldPath) &&
+          (event.newPath === (spec.newPath || ''))
+      }
+
+      function eventMatching (spec) {
+        const isMatch = specMatches.bind(null, spec)
+        return function () {
+          return events.some(isMatch)
+        }
+      }
+
+      function allEventsMatching (...specs) {
+        return function () {
+          let specIndex = 0
+
+          for (const event of events) {
+            if (specMatches(specs[specIndex], event)) {
+              specIndex++
+            }
+          }
+
+          return specIndex >= specs.length
+        }
+      }
+
+      it('when a file is created', async function () {
         const createdFile = path.join(watchDir, 'file.txt')
         await fs.writeFile(createdFile, 'contents')
 
-        await until('the creation event arrives', () => {
-          return events.some(event => {
-            return event.type === 'created' &&
-              event.kind === 'file' &&
-              event.oldPath === createdFile &&
-              event.newPath === ''
-          })
-        })
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath: createdFile
+        }))
       })
 
-      it('when a file is modified')
-      it('when a file is renamed')
-      it('when a file is deleted')
+      it('when a file is modified', async function () {
+        const modifiedFile = path.join(watchDir, 'file.txt')
+        await fs.writeFile(modifiedFile, 'initial contents\n')
+
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath: modifiedFile
+        }))
+
+        await fs.appendFile(modifiedFile, 'changed contents\n')
+        await until('the modification event arrives', eventMatching({
+          type: 'modified',
+          kind: 'file',
+          oldPath: modifiedFile
+        }))
+      })
+
+      it('when a file is renamed', async function () {
+        const oldPath = path.join(watchDir, 'old-file.txt')
+        await fs.writeFile(oldPath, 'initial contents\n')
+
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath,
+          newPath: ''
+        }))
+
+        const newPath = path.join(watchDir, 'new-file.txt')
+
+        await fs.rename(oldPath, newPath)
+
+        await until('the rename event arrives', eventMatching({
+          type: 'renamed',
+          kind: 'file',
+          oldPath,
+          newPath
+        }))
+      })
+
+      it('when a file is deleted', async function () {
+        const deletedPath = path.join(watchDir, 'file.txt')
+        await fs.writeFile(deletedPath, 'initial contents\n')
+
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath: deletedPath
+        }))
+
+        await fs.unlink(deletedPath)
+
+        await until('the deletion event arrives', eventMatching({
+          type: 'deleted',
+          kind: 'file',
+          oldPath: deletedPath
+        }))
+      })
+
+      it('understands coalesced creation and deletion events', async function () {
+        const deletedPath = path.join(watchDir, 'deleted.txt')
+        const recreatedPath = path.join(watchDir, 'recreated.txt')
+        const createdPath = path.join(watchDir, 'created.txt')
+
+        await fs.writeFile(deletedPath, 'initial contents\n')
+        await until('file creation event arrives', eventMatching(
+          {type: 'created', kind: 'file', oldPath: deletedPath}
+        ))
+
+        await fs.unlink(deletedPath)
+        await fs.writeFile(recreatedPath, 'initial contents\n')
+        await fs.unlink(recreatedPath)
+        await fs.writeFile(recreatedPath, 'newly created\n')
+        await fs.writeFile(createdPath, 'and another\n')
+
+        await until('all events arrive', allEventsMatching(
+          {type: 'deleted', kind: 'file', oldPath: deletedPath},
+          {type: 'created', kind: 'file', oldPath: recreatedPath},
+          {type: 'deleted', kind: 'file', oldPath: recreatedPath},
+          {type: 'created', kind: 'file', oldPath: recreatedPath},
+          {type: 'created', kind: 'file', oldPath: createdPath}
+        ))
+      })
+
       it('when a directory is created')
       it('when a directory is renamed')
       it('when a directory is deleted')
