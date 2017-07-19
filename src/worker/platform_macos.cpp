@@ -294,14 +294,13 @@ public:
           stat_errno = errno;
         }
         stat_performed = true;
-        // FIXME handle other stat errors
 
-        if ((path_stat.st_mode & S_IFDIR) != 0) {
+        if (!stat_errno && (path_stat.st_mode & S_IFDIR) != 0) {
           kind = KIND_DIRECTORY;
-        } else if ((path_stat.st_mode & S_IFREG) != 0) {
+        } else if (!stat_errno && (path_stat.st_mode & S_IFREG) != 0) {
           kind = KIND_FILE;
         } else {
-          LOGGER << "Unhandled stat() flags " << hex << path_stat.st_mode << "." << endl;
+          LOGGER << "Unhandled lstat() flags " << hex << path_stat.st_mode << dec << "." << endl;
           continue;
         }
       }
@@ -347,6 +346,21 @@ public:
           }
           enqueue_deletion(messages, channel, kind, event_path);
         }
+        continue;
+      }
+
+      // Ignore entries that:
+      // (a) we aren't allowed to see
+      // (b) are at paths with too many symlinks or looping symlinks
+      // (c) have names that are too long
+      // (d) have a path component that is (no longer) a directory
+      if (stat_errno == EACCES || stat_errno == ELOOP || stat_errno == ENAMETOOLONG || stat_errno == ENOTDIR) {
+        continue;
+      }
+
+      // Log any other errno that we see.
+      if (stat_errno) {
+        LOGGER << "lstat() on " << event_path << " failed with errno " << errno << "." << endl;
         continue;
       }
 
