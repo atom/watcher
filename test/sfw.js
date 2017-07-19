@@ -135,6 +135,22 @@ describe('entry point', function () {
       }
 
       function allEventsMatching (...specs) {
+        const remaining = new Set(specs)
+
+        return function () {
+          for (const event of events) {
+            for (const spec of remaining) {
+              if (specMatches(spec, event)) {
+                remaining.delete(spec)
+              }
+            }
+          }
+
+          return remaining.size === 0
+        }
+      }
+
+      function orderedEventsMatching (...specs) {
         return function () {
           let specIndex = 0
 
@@ -235,12 +251,42 @@ describe('entry point', function () {
         await fs.writeFile(recreatedPath, 'newly created\n')
         await fs.writeFile(createdPath, 'and another\n')
 
-        await until('all events arrive', allEventsMatching(
+        await until('all events arrive', orderedEventsMatching(
           {type: 'deleted', kind: 'file', oldPath: deletedPath},
           {type: 'created', kind: 'file', oldPath: recreatedPath},
           {type: 'deleted', kind: 'file', oldPath: recreatedPath},
           {type: 'created', kind: 'file', oldPath: recreatedPath},
           {type: 'created', kind: 'file', oldPath: createdPath}
+        ))
+      })
+
+      it('correlates rapid file rename events', async function () {
+        const oldPath0 = path.join(watchDir, 'old-file-0.txt')
+        const oldPath1 = path.join(watchDir, 'old-file-1.txt')
+        const oldPath2 = path.join(watchDir, 'old-file-2.txt')
+        const newPath0 = path.join(watchDir, 'new-file-0.txt')
+        const newPath1 = path.join(watchDir, 'new-file-1.txt')
+        const newPath2 = path.join(watchDir, 'new-file-2.txt')
+
+        await Promise.all(
+          [oldPath0, oldPath1, oldPath2].map(oldPath => fs.writeFile(oldPath, 'original\n'))
+        )
+        await until('all creation events arrive', allEventsMatching(
+          {type: 'created', kind: 'file', oldPath: oldPath0},
+          {type: 'created', kind: 'file', oldPath: oldPath1},
+          {type: 'created', kind: 'file', oldPath: oldPath2}
+        ))
+
+        await Promise.all([
+          fs.rename(oldPath0, newPath0),
+          fs.rename(oldPath1, newPath1),
+          fs.rename(oldPath2, newPath2)
+        ])
+
+        await until('all rename events arrive', allEventsMatching(
+          {type: 'renamed', kind: 'file', oldPath: oldPath0, newPath: newPath0},
+          {type: 'renamed', kind: 'file', oldPath: oldPath1, newPath: newPath1},
+          {type: 'renamed', kind: 'file', oldPath: oldPath2, newPath: newPath2}
         ))
       })
 
