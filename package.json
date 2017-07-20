@@ -10,7 +10,7 @@
     "test": "npm run lint && npm run mocha",
     "ci:appveyor": "npm run mocha -- --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
     "ci:circle": "npm run mocha -- --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
-    "aw:test": "npm run build:debug && clear && npm run mocha"
+    "aw:test": "clear && npm run build:debug && clear && npm run mocha"
   },
   "keywords": [
     "filewatch",
