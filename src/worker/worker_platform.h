@@ -1,5 +1,5 @@
-#ifndef PLATFORM_H
-#define PLATFORM_H
+#ifndef WORKER_PLATFORM_H
+#define WORKER_PLATFORM_H
 
 #include <memory>
 #include <utility>
