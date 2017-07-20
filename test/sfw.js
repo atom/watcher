@@ -326,6 +326,164 @@ describe('entry point', function () {
           {type: 'deleted', kind: 'directory', oldPath: subdir}
         ))
       })
+
+      it('when a directory is deleted and a file is created in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        await fs.mkdir(reusedPath)
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'directory', oldPath: reusedPath}
+        ))
+
+        await fs.rmdir(reusedPath)
+        await fs.writeFile(reusedPath, 'IMMA FILE NOW, SURPRIIIISE\n')
+
+        await until('deletion and creation events arrive', orderedEventsMatching(
+          {type: 'deleted', kind: 'directory', oldPath: reusedPath},
+          {type: 'created', kind: 'file', oldPath: reusedPath}
+        ))
+      })
+
+      it('when a directory is deleted and a file is renamed in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        const oldFilePath = path.join(watchDir, 'oldfile')
+
+        await Promise.all([
+          fs.mkdirs(reusedPath),
+          fs.writeFile(oldFilePath, 'original\n')
+        ])
+        await until('directory and file creation events arrive', allEventsMatching(
+          {type: 'created', kind: 'directory', oldPath: reusedPath},
+          {type: 'created', kind: 'file', oldPath: oldFilePath}
+        ))
+
+        await fs.rmdir(reusedPath)
+        await fs.rename(oldFilePath, reusedPath)
+
+        await until('deletion and rename events arrive', orderedEventsMatching(
+          {type: 'deleted', kind: 'directory', oldPath: reusedPath},
+          {type: 'renamed', kind: 'file', oldPath: oldFilePath, newPath: reusedPath}
+        ))
+      })
+
+      it('when a directory is renamed and a file is created in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        const newDirPath = path.join(watchDir, 'newdir')
+
+        await fs.mkdirs(reusedPath)
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'directory', oldPath: reusedPath}
+        ))
+
+        await fs.rename(reusedPath, newDirPath)
+        await fs.writeFile(reusedPath, 'oh look a file\n')
+
+        await until('rename and creation events arrive', orderedEventsMatching(
+          {type: 'renamed', kind: 'directory', oldPath: reusedPath, newPath: newDirPath},
+          {type: 'created', kind: 'file', oldPath: reusedPath}
+        ))
+      })
+
+      it('when a directory is renamed and a file is renamed in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        const oldFilePath = path.join(watchDir, 'oldfile')
+        const newDirPath = path.join(watchDir, 'newdir')
+
+        await Promise.all([
+          fs.mkdirs(reusedPath),
+          fs.writeFile(oldFilePath, 'started as a file\n')
+        ])
+        await until('directory and file creation evenst arrive', allEventsMatching(
+          {type: 'created', kind: 'directory', oldPath: reusedPath},
+          {type: 'created', kind: 'file', oldPath: oldFilePath}
+        ))
+
+        await fs.rename(reusedPath, newDirPath)
+        await fs.rename(oldFilePath, reusedPath)
+
+        await until('rename events arrive', orderedEventsMatching(
+          {type: 'renamed', kind: 'directory', oldPath: reusedPath, newPath: newDirPath},
+          {type: 'renamed', kind: 'file', oldPath: oldFilePath, newPath: reusedPath}
+        ))
+      })
+
+      it('when a file is deleted and a directory is created in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        await fs.writeFile(reusedPath, 'something\n')
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'file', oldPath: reusedPath}
+        ))
+
+        await fs.unlink(reusedPath)
+        await fs.mkdir(reusedPath)
+
+        await until('delete and create events arrive', orderedEventsMatching(
+          {type: 'deleted', kind: 'directory', oldPath: reusedPath},
+          {type: 'created', kind: 'file', oldPath: reusedPath}
+        ))
+      })
+
+      it('when a file is deleted and a directory is renamed in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        const oldDirPath = path.join(watchDir, 'olddir')
+
+        await Promise.all([
+          fs.writeFile(reusedPath, 'something\n'),
+          fs.mkdir(oldDirPath)
+        ])
+        await until('creation events arrive', eventMatching(
+          {type: 'created', kind: 'file', oldPath: reusedPath},
+          {type: 'created', kind: 'directory', oldPath: oldDirPath}
+        ))
+
+        await fs.unlink(reusedPath)
+        await fs.rename(oldDirPath, reusedPath)
+
+        await until('delete and rename events arrive', orderedEventsMatching(
+          {type: 'deleted', kind: 'file', oldPath: reusedPath},
+          {type: 'renamed', kind: 'directory', oldPath: oldDirPath, newPath: reusedPath}
+        ))
+      })
+
+      it('when a file is renamed and a directory is created in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        const newFilePath = path.join(watchDir, 'newfile')
+
+        await fs.writeFile(reusedPath, 'something\n')
+        await until('directory creation event arrives', eventMatching(
+          {type: 'created', kind: 'file', oldPath: reusedPath}
+        ))
+
+        await fs.rename(reusedPath, newFilePath)
+        await fs.mkdir(reusedPath)
+
+        await until('rename and create events arrive', orderedEventsMatching(
+          {type: 'renamed', kind: 'file', oldPath: reusedPath, newPath: newFilePath},
+          {type: 'created', kind: 'directory', oldPath: reusedPath}
+        ))
+      })
+
+      it('when a file is renamed and a directory is renamed in its place', async function () {
+        const reusedPath = path.join(watchDir, 'reused')
+        const oldDirPath = path.join(watchDir, 'olddir')
+        const newFilePath = path.join(watchDir, 'newfile')
+
+        await Promise.all([
+          fs.writeFile(reusedPath, 'something\n'),
+          fs.mkdir(oldDirPath)
+        ])
+        await until('file and directory creation events arrive', allEventsMatching(
+          {type: 'created', kind: 'file', oldPath: reusedPath},
+          {type: 'created', kind: 'directory', oldPath: oldDirPath}
+        ))
+
+        await fs.rename(reusedPath, newFilePath)
+        await fs.rename(oldDirPath, reusedPath)
+
+        await until('rename events arrive', orderedEventsMatching(
+          {type: 'renamed', kind: 'file', oldPath: reusedPath, newPath: newFilePath},
+          {type: 'renamed', kind: 'directory', oldPath: oldDirPath, newPath: reusedPath}
+        ))
+      })
     })
   })
 
