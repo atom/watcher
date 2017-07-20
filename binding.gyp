@@ -18,7 +18,9 @@
         "conditions": [
             ["OS=='mac'", {
                 "sources": [
-                    "src/worker/platform_macos.cpp"
+                    "src/worker/macos/macos_worker_platform.cpp",
+                    "src/worker/macos/recent_file_cache.cpp",
+                    "src/worker/macos/event_handler.cpp"
                 ],
                 "link_settings": {
                     "xcode_settings": {
