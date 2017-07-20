@@ -155,7 +155,7 @@ private:
       return true;
     }
 
-    if (flag_deleted && (!flag_created || flag_modified || flag_renamed)) {
+    if (flag_deleted && !(flag_created || flag_modified || flag_renamed)) {
       LOGGER << "Unambiguous deletion." << endl;
       handler.cache.does_not_exist(event_path);
       handler.enqueue_deletion(event_path, current_kind);
@@ -276,7 +276,7 @@ private:
         LOGGER << "lstat(" << event_path << ") failed with errno " << errno << "." << endl;
       }
     } else {
-      is_present = true;      
+      is_present = true;
     }
 
     stat_performed = true;
