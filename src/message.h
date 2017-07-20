@@ -14,7 +14,8 @@ enum FileSystemAction {
 
 enum EntryKind {
   KIND_FILE = 0,
-  KIND_DIRECTORY = 1
+  KIND_DIRECTORY = 1,
+  KIND_UNKNOWN = 2
 };
 
 typedef uint_fast32_t ChannelID;
