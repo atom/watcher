@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <iostream>
 #include <iomanip>
 #include <errno.h>
@@ -10,11 +11,14 @@
 #include <CoreServices/CoreServices.h>
 
 #include "flags.h"
+#include "recent_file_cache.h"
+#include "rename_buffer.h"
 #include "../../message.h"
 #include "../../log.h"
 
 using std::vector;
 using std::string;
+using std::shared_ptr;
 using std::move;
 using std::ostream;
 using std::hex;
@@ -25,6 +29,8 @@ class EventFunctor {
 public:
   EventFunctor(EventHandler &handler, string &event_path, FSEventStreamEventFlags flags) :
     handler{handler},
+    cache{handler.cache},
+    rename_buffer{handler.rename_buffer},
     event_path{event_path},
     flags{flags},
     stat_performed{false}
@@ -116,7 +122,8 @@ private:
     ensure_lstat();
     if (!is_present) {
       // Check the cache to see what this entry was the last time it produced an event.
-      former_kind = handler.cache.last_known_kind(event_path);
+      shared_ptr<CacheEntry> entry = cache.at_path(event_path);
+      former_kind = entry ? entry->entry_kind : KIND_UNKNOWN;
 
       // Because both flags are set on the event, it must have changed from one to the other over the lifespan
       // of this entry.
@@ -141,31 +148,52 @@ private:
   // Check the recently-seen entry cache for this entry.
   void check_cache()
   {
-    seen_before = handler.cache.has_been_seen(event_path, current_kind);
-    was_different_entry = current_kind != former_kind && handler.cache.has_been_seen(event_path, former_kind);
+    shared_ptr<CacheEntry> maybe = cache.at_path(event_path);
+
+    seen_before = maybe && maybe->entry_kind == current_kind;
+    was_different_entry = current_kind != former_kind && maybe;
   }
 
   // Emit messages for events that have unambiguous flags.
   bool emit_if_unambiguous()
   {
+    ensure_lstat();
+
     if (flag_created && !(flag_deleted || flag_modified || flag_renamed)) {
       LOGGER << "Unambiguous creation." << endl;
-      handler.cache.does_exist(event_path, current_kind);
+      cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
       handler.enqueue_creation(event_path, current_kind);
       return true;
     }
 
     if (flag_deleted && !(flag_created || flag_modified || flag_renamed)) {
       LOGGER << "Unambiguous deletion." << endl;
-      handler.cache.does_not_exist(event_path);
+      cache.does_not_exist(event_path);
       handler.enqueue_deletion(event_path, current_kind);
       return true;
     }
 
-    if (flag_modified && !(flag_created || flag_modified || flag_renamed)) {
+    if (flag_modified && !(flag_created || flag_deleted || flag_renamed)) {
       LOGGER << "Unambiguous modification." << endl;
-      handler.cache.does_exist(event_path, current_kind);
+      cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
       handler.enqueue_modification(event_path, current_kind);
+      return true;
+    }
+
+    if (flag_renamed && !(flag_created || flag_deleted || flag_modified)) {
+      LOGGER << "Unambiguous rename." << endl;
+
+      if (is_present) {
+        rename_buffer.observe_present_entry(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+      } else {
+        shared_ptr<CacheEntry> entry = cache.at_path(event_path);
+        if (entry != nullptr) {
+          rename_buffer.observe_absent_entry(event_path, current_kind, entry->inode, entry->size);
+        } else {
+          rename_buffer.observe_absent_entry(event_path, current_kind);
+        }
+      }
+
       return true;
     }
 
@@ -178,10 +206,17 @@ private:
     ensure_lstat();
     if (is_present) return false;
 
-    handler.cache.does_not_exist(event_path);
+    LOGGER << "Entry is no longer present." << endl;
+
+    shared_ptr<CacheEntry> entry = cache.at_path(event_path);
+    cache.does_not_exist(event_path);
 
     if (flag_renamed) {
-      handler.rename_old_path = event_path;
+      if (entry != nullptr) {
+        rename_buffer.observe_absent_entry(event_path, current_kind, entry->inode, entry->size);
+      } else {
+        rename_buffer.observe_absent_entry(event_path, current_kind);
+      }
       return true;
     }
 
@@ -207,17 +242,18 @@ private:
     ensure_lstat();
     if (!is_present) return false;
 
-    handler.cache.does_exist(event_path, current_kind);
+    LOGGER << "Entry is still present." << endl;
+
+    cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+
+    if (flag_renamed) {
+      rename_buffer.observe_present_entry(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+      return true;
+    }
 
     if (seen_before) {
       // This is *not* the first time an event at this path has been seen.
-      if (flag_renamed && !handler.rename_old_path.empty()) {
-        // The existing entry must have been deleted and a new entry renamed in its place.
-        handler.enqueue_deletion(event_path, former_kind);
-        handler.enqueue_rename(handler.rename_old_path, event_path, current_kind);
-
-        handler.rename_old_path.clear();
-      } else if (flag_deleted) {
+      if (flag_deleted) {
         // Rapid creation and deletion. There may be a lost modification event just before deletion or just after
         // recreation.
         handler.enqueue_deletion(event_path, former_kind);
@@ -228,12 +264,7 @@ private:
       }
     } else {
       // This *is* the first time an event has been seen at this path.
-      if (flag_renamed && !handler.rename_old_path.empty()) {
-        // The other half of an existing rename.
-        handler.enqueue_rename(handler.rename_old_path, event_path, current_kind);
-
-        handler.rename_old_path.clear();
-      } else if (flag_deleted) {
+      if (flag_deleted) {
         // The only way for the deletion flag to be set on an entry we haven't seen before is for the entry to
         // be rapidly created, deleted, and created again.
         handler.enqueue_creation(event_path, former_kind);
@@ -283,6 +314,8 @@ private:
   }
 
   EventHandler &handler;
+  RecentFileCache &cache;
+  RenameBuffer &rename_buffer;
 
   string &event_path;
   FSEventStreamEventFlags flags;
@@ -307,8 +340,9 @@ private:
 
 EventHandler::EventHandler(vector<Message> &messages, RecentFileCache &cache, ChannelID channel_id) :
   messages{messages},
+  channel_id{channel_id},
   cache{cache},
-  channel_id{channel_id}
+  rename_buffer(this)
 {
   //
 }
