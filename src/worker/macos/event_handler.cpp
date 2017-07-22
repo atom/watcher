@@ -46,11 +46,14 @@ public:
   void operator()()
   {
     report();
+    ensure_lstat();
+    check_cache();
     determine_entry_kinds();
+
     LOGGER
       << "Entry kinds: current_kind=" << current_kind
       << " former_kind=" << former_kind << "." << endl;
-    check_cache();
+
     LOGGER
       << "Cache status: seen_before=" << seen_before
       << " was_different_entry=" << was_different_entry << "." << endl;
@@ -104,64 +107,97 @@ private:
       << endl;
   }
 
-  // Use the event flags and, if necessary, lstat() result to determine the current and previous kinds of
-  // this entry.
-  void determine_entry_kinds()
+  // Call lstat() on the entry path if it has not already been called. After this function returns,
+  // path_stat and is_present will be populated.
+  void ensure_lstat()
   {
-    if (flag_file && !flag_directory) {
-      former_kind = current_kind = KIND_FILE;
-      return;
+    if (stat_performed) return;
+
+    if (lstat(event_path.c_str(), &path_stat) != 0) {
+      errno_t stat_errno = errno;
+
+      if (stat_errno == ENOENT) {
+        is_present = false;
+      }
+
+      // Ignore lstat() errors on entries that:
+      // (a) we aren't allowed to see
+      // (b) are at paths with too many symlinks or looping symlinks
+      // (c) have names that are too long
+      // (d) have a path component that is (no longer) a directory
+      // Log any other errno that we see.
+      if (stat_errno != ENOENT &&
+          stat_errno != EACCES &&
+          stat_errno != ELOOP &&
+          stat_errno != ENAMETOOLONG &&
+          stat_errno != ENOTDIR) {
+        LOGGER << "lstat(" << event_path << ") failed with errno " << errno << "." << endl;
+      }
+    } else {
+      is_present = true;
     }
 
-    if (flag_directory && !flag_file) {
-      former_kind = current_kind = KIND_DIRECTORY;
-      return;
-    }
-
-    // Flags are ambiguous. Try to check lstat().
-    ensure_lstat();
-    if (!is_present) {
-      // Check the cache to see what this entry was the last time it produced an event.
-      shared_ptr<CacheEntry> entry = cache.at_path(event_path);
-      former_kind = entry ? entry->entry_kind : KIND_UNKNOWN;
-
-      // Because both flags are set on the event, it must have changed from one to the other over the lifespan
-      // of this entry.
-      if (former_kind == KIND_FILE) current_kind = KIND_DIRECTORY;
-      if (former_kind == KIND_DIRECTORY) current_kind = KIND_FILE;
-
-      return;
-    }
-
-    // We know what the entry is now. Because both flags have been set on the event, it must have been different before.
-    if ((path_stat.st_mode & S_IFREG) != 0) {
-      former_kind = KIND_DIRECTORY;
-      current_kind = KIND_FILE;
-    } else if ((path_stat.st_mode & S_IFDIR) != 0) {
-      former_kind = KIND_FILE;
-      current_kind = KIND_DIRECTORY;
-    }
-
-    // Leave both as KIND_UNKNOWN.
+    stat_performed = true;
   }
 
   // Check the recently-seen entry cache for this entry.
   void check_cache()
   {
-    shared_ptr<CacheEntry> maybe = cache.at_path(event_path);
+    former_entry = cache.at_path(event_path);
 
-    seen_before = maybe && maybe->entry_kind == current_kind;
-    was_different_entry = current_kind != former_kind && maybe;
+    seen_before = former_entry && former_entry->entry_kind == current_kind;
+    was_different_entry = current_kind != former_kind && former_entry;
+  }
+
+  // Use the event flags and, if necessary, lstat() result to determine the current and previous kinds of
+  // this entry.
+  void determine_entry_kinds()
+  {
+    // Check the cache to see what this entry was the last time it produced an event.
+    former_kind = former_entry ? former_entry->entry_kind : KIND_UNKNOWN;
+
+    if (flag_file && !flag_directory) {
+      current_kind = KIND_FILE;
+      if (former_kind == KIND_UNKNOWN) former_kind = KIND_FILE;
+      return;
+    }
+
+    if (flag_directory && !flag_file) {
+      former_kind = current_kind = KIND_DIRECTORY;
+      if (former_kind == KIND_UNKNOWN) former_kind = KIND_DIRECTORY;
+      return;
+    }
+
+    // Flags are ambiguous. Try to check lstat() results.
+    if (is_present) {
+      // We know what the entry is now. Because both flags have been set on the event, it must have been different before.
+      if ((path_stat.st_mode & S_IFREG) != 0) {
+        former_kind = KIND_DIRECTORY;
+        current_kind = KIND_FILE;
+      } else if ((path_stat.st_mode & S_IFDIR) != 0) {
+        former_kind = KIND_FILE;
+        current_kind = KIND_DIRECTORY;
+      }
+
+      return;
+    }
+
+    // Because both flags are set on the event, it must have changed from one to the other over the lifespan
+    // of this entry.
+    if (former_kind == KIND_FILE) current_kind = KIND_DIRECTORY;
+    if (former_kind == KIND_DIRECTORY) current_kind = KIND_FILE;
+
+    // Leave both as KIND_UNKNOWN.
   }
 
   // Emit messages for events that have unambiguous flags.
   bool emit_if_unambiguous()
   {
-    ensure_lstat();
-
     if (flag_created && !(flag_deleted || flag_modified || flag_renamed)) {
       LOGGER << "Unambiguous creation." << endl;
-      cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+      if (is_present) {
+        cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+      }
       handler.enqueue_creation(event_path, current_kind);
       return true;
     }
@@ -175,7 +211,9 @@ private:
 
     if (flag_modified && !(flag_created || flag_deleted || flag_renamed)) {
       LOGGER << "Unambiguous modification." << endl;
-      cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+      if (is_present) {
+        cache.does_exist(event_path, current_kind, path_stat.st_ino, path_stat.st_size);
+      }
       handler.enqueue_modification(event_path, current_kind);
       return true;
     }
@@ -203,7 +241,6 @@ private:
   // Emit messages based on the last observed state of this entry if it no longer exists.
   bool emit_if_absent()
   {
-    ensure_lstat();
     if (is_present) return false;
 
     LOGGER << "Entry is no longer present." << endl;
@@ -239,7 +276,6 @@ private:
   // Emit messages based on the event flags and the current lstat() output.
   bool emit_if_present()
   {
-    ensure_lstat();
     if (!is_present) return false;
 
     LOGGER << "Entry is still present." << endl;
@@ -280,39 +316,6 @@ private:
     return true;
   }
 
-  // Call lstat() on the entry path if it has not already been called. After this function returns,
-  // path_stat and is_present will be populated.
-  void ensure_lstat()
-  {
-    if (stat_performed) return;
-
-    if (lstat(event_path.c_str(), &path_stat) != 0) {
-      errno_t stat_errno = errno;
-
-      if (stat_errno == ENOENT) {
-        is_present = false;
-      }
-
-      // Ignore lstat() errors on entries that:
-      // (a) we aren't allowed to see
-      // (b) are at paths with too many symlinks or looping symlinks
-      // (c) have names that are too long
-      // (d) have a path component that is (no longer) a directory
-      // Log any other errno that we see.
-      if (stat_errno != ENOENT &&
-          stat_errno != EACCES &&
-          stat_errno != ELOOP &&
-          stat_errno != ENAMETOOLONG &&
-          stat_errno != ENOTDIR) {
-        LOGGER << "lstat(" << event_path << ") failed with errno " << errno << "." << endl;
-      }
-    } else {
-      is_present = true;
-    }
-
-    stat_performed = true;
-  }
-
   EventHandler &handler;
   RecentFileCache &cache;
   RenameBuffer &rename_buffer;
@@ -334,6 +337,7 @@ private:
   EntryKind former_kind = KIND_UNKNOWN;
   EntryKind current_kind = KIND_UNKNOWN;
 
+  shared_ptr<CacheEntry> former_entry;
   bool seen_before;
   bool was_different_entry;
 };
