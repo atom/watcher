@@ -32,7 +32,7 @@ public:
   {
     //
   }
-}
+};
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
 {
