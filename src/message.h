@@ -23,6 +23,8 @@ enum EntryKind {
 
 std::ostream &operator<<(std::ostream &out, EntryKind kind);
 
+bool kinds_are_different(EntryKind a, EntryKind b);
+
 typedef uint_fast32_t ChannelID;
 
 static const ChannelID NULL_CHANNEL_ID = 0;

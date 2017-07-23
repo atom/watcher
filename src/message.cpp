@@ -50,6 +50,12 @@ ostream &operator<<(ostream &out, EntryKind kind)
   }
   return out;
 }
+
+bool kinds_are_different(EntryKind a, EntryKind b)
+{
+  return a != KIND_UNKNOWN && b != KIND_UNKNOWN && a != b;
+}
+
 FileSystemPayload::FileSystemPayload(
   const ChannelID channel_id,
   const FileSystemAction action,
