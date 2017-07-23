@@ -198,6 +198,7 @@ public:
       string event_path(paths[i]);
       handler.handle(event_path, event_flags[i]);
     }
+    handler.flush();
 
     emit_all(messages.begin(), messages.end());
 

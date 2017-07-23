@@ -357,6 +357,11 @@ void EventHandler::handle(string &event_path, FSEventStreamEventFlags flags)
   callable();
 }
 
+void EventHandler::flush()
+{
+  rename_buffer.flush_unmatched();
+}
+
 void EventHandler::enqueue_creation(string event_path, const EntryKind &kind)
 {
   string empty_path;

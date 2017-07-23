@@ -16,6 +16,7 @@ public:
   EventHandler(EventHandler &&) = delete;
 
   void handle(std::string &event_path, FSEventStreamEventFlags flags);
+  void flush();
 
   void enqueue_creation(std::string event_path, const EntryKind &kind);
   void enqueue_modification(std::string event_path, const EntryKind &kind);
