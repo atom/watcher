@@ -359,7 +359,7 @@ describe('entry point', function () {
         await fs.rmdir(reusedPath)
         await fs.rename(oldFilePath, reusedPath)
 
-        await until('deletion and rename events arrive', orderedEventsMatching(
+        await until('deletion and rename events arrive', allEventsMatching(
           {type: 'deleted', kind: 'directory', oldPath: reusedPath},
           {type: 'renamed', kind: 'file', oldPath: oldFilePath, newPath: reusedPath}
         ))
@@ -377,7 +377,7 @@ describe('entry point', function () {
         await fs.rename(reusedPath, newDirPath)
         await fs.writeFile(reusedPath, 'oh look a file\n')
 
-        await until('rename and creation events arrive', orderedEventsMatching(
+        await until('rename and creation events arrive', allEventsMatching(
           {type: 'renamed', kind: 'directory', oldPath: reusedPath, newPath: newDirPath},
           {type: 'created', kind: 'file', oldPath: reusedPath}
         ))
@@ -400,7 +400,7 @@ describe('entry point', function () {
         await fs.rename(reusedPath, newDirPath)
         await fs.rename(oldFilePath, reusedPath)
 
-        await until('rename events arrive', orderedEventsMatching(
+        await until('rename events arrive', allEventsMatching(
           {type: 'renamed', kind: 'directory', oldPath: reusedPath, newPath: newDirPath},
           {type: 'renamed', kind: 'file', oldPath: oldFilePath, newPath: reusedPath}
         ))
@@ -417,8 +417,8 @@ describe('entry point', function () {
         await fs.mkdir(reusedPath)
 
         await until('delete and create events arrive', orderedEventsMatching(
-          {type: 'deleted', kind: 'directory', oldPath: reusedPath},
-          {type: 'created', kind: 'file', oldPath: reusedPath}
+          {type: 'deleted', kind: 'file', oldPath: reusedPath},
+          {type: 'created', kind: 'directory', oldPath: reusedPath}
         ))
       })
 
@@ -430,7 +430,7 @@ describe('entry point', function () {
           fs.writeFile(reusedPath, 'something\n'),
           fs.mkdir(oldDirPath)
         ])
-        await until('creation events arrive', eventMatching(
+        await until('creation events arrive', allEventsMatching(
           {type: 'created', kind: 'file', oldPath: reusedPath},
           {type: 'created', kind: 'directory', oldPath: oldDirPath}
         ))
@@ -438,7 +438,7 @@ describe('entry point', function () {
         await fs.unlink(reusedPath)
         await fs.rename(oldDirPath, reusedPath)
 
-        await until('delete and rename events arrive', orderedEventsMatching(
+        await until('delete and rename events arrive', allEventsMatching(
           {type: 'deleted', kind: 'file', oldPath: reusedPath},
           {type: 'renamed', kind: 'directory', oldPath: oldDirPath, newPath: reusedPath}
         ))
