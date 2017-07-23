@@ -3,6 +3,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <memory>
 #include <utility>
 #include <sys/stat.h>
 
@@ -14,27 +15,16 @@ class EventHandler;
 // Filesystem entry that was flagged as participating in a rename by a received filesystem event.
 class RenameBufferEntry {
 public:
-  RenameBufferEntry(RenameBufferEntry &&other) :
-    path{std::move(other.path)},
-    entry_is_present{other.entry_is_present},
-    kind{other.kind},
-    inode{other.inode},
-    size{other.size} {};
-
-  static RenameBufferEntry present(const std::string &path, EntryKind kind, ino_t inode, size_t size);
-  static RenameBufferEntry absent(const std::string &path, EntryKind kind, ino_t last_inode, size_t last_size);
-
-  bool is_present();
+  RenameBufferEntry(RenameBufferEntry &&original) :
+    entry{std::move(original.entry)},
+    current{original.current} {};
 
 private:
-  RenameBufferEntry(const std::string &path, EntryKind kind, bool present, ino_t inode, size_t size) :
-    path{path}, entry_is_present{present}, kind{kind}, inode{inode}, size{size} {};
+  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) :
+    entry{entry}, current{current} {};
 
-  std::string path;
-  bool entry_is_present;
-  EntryKind kind;
-  ino_t inode;
-  size_t size;
+  std::shared_ptr<PresentEntry> entry;
+  bool current;
 
   friend class RenameBuffer;
 };
@@ -44,22 +34,16 @@ public:
   // Create a new buffer with a reference to the EventHandler it should use to enqueue messages.
   RenameBuffer(EventHandler *handler) : handler{handler} {};
 
-  // Observe a rename event for an entry that's still present in the filesystem, with the results of a successful
-  // lstat() call. May emit a "rename" message.
-  void observe_present_entry(const std::string &path, EntryKind kind, ino_t inode, size_t size);
-
-  // Observe a rename event for an entry that is no longer present in the filesystem and has no historic lstat()
-  // data in the cache. May emit a "rename" message.
-  void observe_absent_entry(const std::string &path, EntryKind kind);
-
-  // Observe a rename event for an entry that is no longer present in the filesystem, but does have lstat() data
-  // in the cache.
-  void observe_absent_entry(const std::string &path, EntryKind kind, ino_t last_inode, size_t last_size);
+  // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
+  // based on the previous and currently observed state of the entry at that path.
+  void observe_entry(std::shared_ptr<StatResult> former, std::shared_ptr<StatResult> current);
 
   // Enqueue creation and removal events for any buffer entries that have not been paired during the current
   // event handler callback invocation.
   void flush_unmatched();
 private:
+  void observe_present_entry(std::shared_ptr<PresentEntry> present, bool current);
+
   EventHandler *handler;
 
   std::unordered_map<ino_t, RenameBufferEntry> observed_by_inode;

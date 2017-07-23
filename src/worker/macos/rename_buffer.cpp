@@ -1,94 +1,82 @@
 #include "rename_buffer.h"
 
 #include <string>
+#include <memory>
 #include <utility>
 #include <sys/stat.h>
 
 #include "event_handler.h"
+#include "recent_file_cache.h"
 #include "../../log.h"
 
 using std::string;
 using std::move;
 using std::endl;
+using std::shared_ptr;
+using std::static_pointer_cast;
 
-RenameBufferEntry RenameBufferEntry::present(const string &path, EntryKind kind, ino_t inode, size_t size)
+void RenameBuffer::observe_entry(shared_ptr<StatResult> former, shared_ptr<StatResult> current)
 {
-  return RenameBufferEntry(path, kind, true, inode, size);
+  if (!former->has_changed_from(*current)) {
+    // The entry is still there with the same inode.
+    // Moved away and back, maybe?
+    return;
+  }
+
+  if (former->is_present()) {
+    shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
+    observe_present_entry(former_present, false);
+  }
+
+  if (current->is_present()) {
+    shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
+    observe_present_entry(current_present, true);
+  }
 }
 
-RenameBufferEntry RenameBufferEntry::absent(const string &path, EntryKind kind, ino_t inode, size_t size)
+void RenameBuffer::observe_present_entry(shared_ptr<PresentEntry> present, bool current)
 {
-  return RenameBufferEntry(path, kind, false, inode, size);
-}
-
-bool RenameBufferEntry::is_present()
-{
-  return entry_is_present;
-}
-
-void RenameBuffer::observe_present_entry(const string &path, EntryKind kind, ino_t inode, size_t size)
-{
-  auto maybe_entry = observed_by_inode.find(inode);
+  auto maybe_entry = observed_by_inode.find(present->get_inode());
   if (maybe_entry == observed_by_inode.end()) {
-    // The first-seen half of this rename event. Observe a new entry to be paired with the second half when it's
+    // The first-seen half of this rename event. Buffer a new entry to be paired with the second half when or if it's
     // observed.
-    RenameBufferEntry entry = RenameBufferEntry::present(path, kind, inode, size);
-    observed_by_inode.emplace(inode, move(entry));
-    LOGGER << "First half of rename (present) observed at: " << path << " #" << inode << " @" << size << "." << endl;
+    RenameBufferEntry entry(present, current);
+    observed_by_inode.emplace(present->get_inode(), move(entry));
+    LOGGER << "First half of rename (present) observed: " << *present << "." << endl;
     return;
   }
   RenameBufferEntry &existing = maybe_entry->second;
 
-  if (existing.kind == kind && existing.size == size && !existing.is_present()) {
-    // The inodes, size, and entry kinds match, so with high probability, we've found the other half of the rename.
+  LOGGER << "Found existing entry with same inode: " << *(existing.entry) << endl;
+
+  if (present->could_be_rename_of(*(existing.entry))) {
+    // The inodes and entry kinds match, so with high probability, we've found the other half of the rename.
     // Huzzah! Huzzah forever!
-    LOGGER << "Second half of rename (present) observed at: " << path << " #" << inode << " @" << size << "." << endl;
+    LOGGER << "Second half of rename (present) observed: " << *present << "." << endl;
 
-    // The absent end is the "from" end and the present end is the "to" end.
-    handler->enqueue_rename(existing.path, path, kind);
+    // The former end is the "from" end and the current end is the "to" end.
+    if (!existing.current && current) {
+      handler->enqueue_rename(existing.entry->get_path(), present->get_path(), present->get_entry_kind());
+    } else if (existing.current && !current) {
+      handler->enqueue_rename(present->get_path(), existing.entry->get_path(), existing.entry->get_entry_kind());
+    } else {
+      // Either both entries are still present (re-used inode?) or both are missing (rapidly renamed and deleted?)
+      // This could happen if the entry is renamed again between the lstat() calls, possibly.
+      string existing_desc = existing.current ? " (current) " : " (former) ";
+      string incoming_desc = current ? " (current) " : " (former) ";
+
+      LOGGER
+        << "Current entry: "
+        << *present << incoming_desc
+        << " conflicts with buffered entry: "
+        << *(existing.entry) << existing_desc
+        << ". Unable to correlate rename event."
+        << endl;
+    }
+
     observed_by_inode.erase(maybe_entry);
   } else {
-    LOGGER << "Conflict with existing entry: "
-      << path << " #" << inode << " @" << size << " != "
-      << existing.path << " #" << existing.inode << " @" << existing.size
-      << " present=" << existing.is_present() << "." << endl;
-  }
-}
-
-void RenameBuffer::observe_absent_entry(const std::string &path, EntryKind kind)
-{
-  LOGGER << "Absent entry without an inode. Emitting deletion" << endl;
-
-  // If we don't have a cached inode to correllate against, just interpret this as a deletion.
-  handler->enqueue_deletion(path, kind);
-}
-
-void RenameBuffer::observe_absent_entry(const std::string &path, EntryKind kind, ino_t last_inode, size_t last_size)
-{
-  auto maybe_entry = observed_by_inode.find(last_inode);
-  if (maybe_entry == observed_by_inode.end()) {
-    // The first-seen half of this rename event. Observe a new entry to be paired with the second half when it's
-    // observed.
-    LOGGER << "First half of rename (absent) observed at: " << path << " #" << last_inode << " @" << last_size << "." << endl;
-
-    RenameBufferEntry entry = RenameBufferEntry::absent(path, kind, last_inode, last_size);
-    observed_by_inode.emplace(last_inode, move(entry));
-    return;
-  }
-  RenameBufferEntry &existing = maybe_entry->second;
-
-  if (existing.kind == kind && existing.size == last_size && existing.is_present()) {
-    // The inodes, size, and entry kinds match, so with high probability, we've found the other half of the rename.
-    LOGGER << "Second half of rename (absent) observed at: " << path << " #" << last_inode
-      << " @" << last_size << "." << endl;
-
-    handler->enqueue_rename(path, existing.path, kind);
-    observed_by_inode.erase(maybe_entry);
-  } else {
-    LOGGER << "Conflict with existing entry: "
-      << path << " #" << last_inode << " @" << last_size << " != "
-      << existing.path << " #" << existing.inode << " @" << existing.size
-      << " present=" << existing.is_present() << "." << endl;
+    LOGGER << "Rename entry " << *present << " conflicts with existing entry " << *(existing.entry) << "." << endl;
   }
 }
 
@@ -96,10 +84,12 @@ void RenameBuffer::flush_unmatched()
 {
   for (auto it = observed_by_inode.begin(); it != observed_by_inode.end(); ++it) {
     RenameBufferEntry &existing = it->second;
-    if (existing.is_present()) {
-      handler->enqueue_creation(existing.path, existing.kind);
+    shared_ptr<PresentEntry> entry = existing.entry;
+
+    if (existing.current) {
+      handler->enqueue_creation(entry->get_path(), entry->get_entry_kind());
     } else {
-      handler->enqueue_deletion(existing.path, existing.kind);
+      handler->enqueue_deletion(entry->get_path(), entry->get_entry_kind());
     }
   }
 }
