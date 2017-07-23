@@ -316,12 +316,12 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
     return;
   }
 
-  Nan::Maybe<ChannelID> maybe_channel_id = Nan::To<ChannelID>(info[0]);
+  Nan::Maybe<uint32_t> maybe_channel_id = Nan::To<uint32_t>(info[0]);
   if (maybe_channel_id.IsNothing()) {
     Nan::ThrowError("unwatch() requires a channel ID as its first argument");
     return;
   }
-  ChannelID channel_id = maybe_channel_id.FromJust();
+  ChannelID channel_id = static_cast<ChannelID>(maybe_channel_id.FromJust());
 
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
 
