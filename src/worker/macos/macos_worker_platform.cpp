@@ -205,7 +205,7 @@ public:
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
       << messages.size() << " message(s) produced." << endl;
 
-    cache.purge();
+    cache.prune();
   }
 
 private:
