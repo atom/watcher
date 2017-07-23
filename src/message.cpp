@@ -8,8 +8,53 @@
 using std::move;
 using std::string;
 using std::ostringstream;
+using std::ostream;
 using std::hex;
 using std::dec;
+
+ostream &operator<<(ostream &out, FileSystemAction action)
+{
+  switch (action) {
+    case ACTION_CREATED:
+      out << "created";
+      break;
+    case ACTION_DELETED:
+      out << "deleted";
+      break;
+    case ACTION_MODIFIED:
+      out << "modified";
+      break;
+    case ACTION_RENAMED:
+      out << "renamed";
+      break;
+    default:
+      out << "!! FileSystemAction=" << static_cast<int>(action);
+  }
+  return out;
+}
+
+ostream &operator<<(ostream &out, EntryKind kind)
+{
+  switch (kind) {
+    case KIND_FILE:
+      out << "file";
+      break;
+    case KIND_DIRECTORY:
+      out << "directory";
+      break;
+    case KIND_UNKNOWN:
+      out << "unknown";
+      break;
+    default:
+      out << "!! EntryKind=" << static_cast<int>(kind);
+  }
+  return out;
+}
+
+bool kinds_are_different(EntryKind a, EntryKind b)
+{
+  return a != KIND_UNKNOWN && b != KIND_UNKNOWN && a != b;
+}
 
 FileSystemPayload::FileSystemPayload(
   const ChannelID channel_id,

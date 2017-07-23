@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <cstdarg>
+#include <string>
 #include <uv.h>
 
 #include "log.h"
@@ -10,6 +10,8 @@
 using std::endl;
 using std::ostream;
 using std::ofstream;
+using std::string;
+using std::dec;
 using std::setw;
 
 class NullLogger : public Logger {
@@ -43,7 +45,7 @@ public:
 
   virtual Logger* prefix(const char *file, int line) override
   {
-    log_stream << "[" << setw(15) << file << ":" << setw(3) << line << "] ";
+    log_stream << "[" << setw(15) << file << ":" << setw(3) << dec << line << "] ";
     return this;
   }
 
@@ -97,4 +99,25 @@ void Logger::to_file(const char *filename)
 void Logger::disable()
 {
   replace_logger(&the_null_logger);
+}
+
+string plural(long quantity, const string &singular_form, const string &plural_form)
+{
+  string result("");
+  result += quantity;
+  result += " ";
+
+  if (quantity == 1) {
+    result += singular_form;
+  } else {
+    result += plural_form;
+  }
+
+  return result;
+}
+
+string plural(long quantity, const string &singular_form)
+{
+  string plural_form(singular_form + "s");
+  return plural(quantity, singular_form, plural_form);
 }

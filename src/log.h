@@ -1,6 +1,7 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <string>
 #include <ostream>
 
 class Logger {
@@ -14,6 +15,9 @@ public:
   virtual Logger* prefix(const char *file, int line) = 0;
   virtual std::ostream& stream() = 0;
 };
+
+std::string plural(long quantity, const std::string &singular_form, const std::string &plural_form);
+std::string plural(long quantity, const std::string &singular_form);
 
 #define LOGGER (Logger::current()->prefix(__FILE__, __LINE__)->stream())
 

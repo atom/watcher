@@ -5,7 +5,7 @@
 #include <uv.h>
 
 #include "worker_thread.h"
-#include "platform.h"
+#include "worker_platform.h"
 #include "../log.h"
 #include "../queue.h"
 #include "../message.h"

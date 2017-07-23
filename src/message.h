@@ -2,6 +2,7 @@
 #define MESSAGE_H
 
 #include <string>
+#include <iostream>
 #include <memory>
 #include <cstdint>
 
@@ -12,10 +13,17 @@ enum FileSystemAction {
   ACTION_RENAMED = 3
 };
 
+std::ostream &operator<<(std::ostream &out, FileSystemAction action);
+
 enum EntryKind {
   KIND_FILE = 0,
-  KIND_DIRECTORY = 1
+  KIND_DIRECTORY = 1,
+  KIND_UNKNOWN = 2
 };
+
+std::ostream &operator<<(std::ostream &out, EntryKind kind);
+
+bool kinds_are_different(EntryKind a, EntryKind b);
 
 typedef uint_fast32_t ChannelID;
 
