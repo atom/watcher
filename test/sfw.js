@@ -48,7 +48,7 @@ describe('entry point', function () {
       assert.match(contents, /FileLogger opened/)
     })
 
-    it('configures the worker thread logger', async function () {
+    it('configures the worker thread logger ^windows ^linux', async function () {
       await sfw.configure({workerLogFile})
 
       const contents = await fs.readFile(workerLogFile)
@@ -61,7 +61,7 @@ describe('entry point', function () {
       await sfw.configure({mainLogFile, workerLogFile})
     })
 
-    it('begins receiving events within that directory', async function () {
+    it('begins receiving events within that directory ^windows ^linux', async function () {
       let error = null
       const events = []
 
@@ -76,7 +76,7 @@ describe('entry point', function () {
       assert.isNull(error)
     })
 
-    it('can watch multiple directories at once and dispatch events appropriately', async function () {
+    it('can watch multiple directories at once and dispatch events appropriately ^windows ^linux', async function () {
       const errors = []
       const eventsA = []
       const eventsB = []
@@ -167,7 +167,7 @@ describe('entry point', function () {
         }
       }
 
-      it('when a file is created', async function () {
+      it('when a file is created ^windows ^linux', async function () {
         const createdFile = path.join(watchDir, 'file.txt')
         await fs.writeFile(createdFile, 'contents')
 
@@ -178,7 +178,7 @@ describe('entry point', function () {
         }))
       })
 
-      it('when a file is modified', async function () {
+      it('when a file is modified ^windows ^linux', async function () {
         const modifiedFile = path.join(watchDir, 'file.txt')
         await fs.writeFile(modifiedFile, 'initial contents\n')
 
@@ -196,7 +196,7 @@ describe('entry point', function () {
         }))
       })
 
-      it('when a file is renamed', async function () {
+      it('when a file is renamed ^windows ^linux', async function () {
         const oldPath = path.join(watchDir, 'old-file.txt')
         await fs.writeFile(oldPath, 'initial contents\n')
 
@@ -219,7 +219,7 @@ describe('entry point', function () {
         }))
       })
 
-      it('when a file is deleted', async function () {
+      it('when a file is deleted ^windows ^linux', async function () {
         const deletedPath = path.join(watchDir, 'file.txt')
         await fs.writeFile(deletedPath, 'initial contents\n')
 
@@ -238,7 +238,7 @@ describe('entry point', function () {
         }))
       })
 
-      it('understands coalesced creation and deletion events', async function () {
+      it('understands coalesced creation and deletion events ^windows ^linux', async function () {
         const deletedPath = path.join(watchDir, 'deleted.txt')
         const recreatedPath = path.join(watchDir, 'recreated.txt')
         const createdPath = path.join(watchDir, 'created.txt')
@@ -263,7 +263,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('correlates rapid file rename events', async function () {
+      it('correlates rapid file rename events ^windows ^linux', async function () {
         const oldPath0 = path.join(watchDir, 'old-file-0.txt')
         const oldPath1 = path.join(watchDir, 'old-file-1.txt')
         const oldPath2 = path.join(watchDir, 'old-file-2.txt')
@@ -293,7 +293,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is created', async function () {
+      it('when a directory is created ^windows ^linux', async function () {
         const subdir = path.join(watchDir, 'subdir')
         await fs.mkdirs(subdir)
 
@@ -302,7 +302,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is renamed', async function () {
+      it('when a directory is renamed ^windows ^linux', async function () {
         const oldDir = path.join(watchDir, 'subdir')
         const newDir = path.join(watchDir, 'newdir')
 
@@ -317,7 +317,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is deleted', async function () {
+      it('when a directory is deleted ^windows ^linux', async function () {
         const subdir = path.join(watchDir, 'subdir')
         await fs.mkdirs(subdir)
         await until('directory creation event arrives', eventMatching(
@@ -330,7 +330,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is deleted and a file is created in its place', async function () {
+      it('when a directory is deleted and a file is created in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         await fs.mkdir(reusedPath)
         await until('directory creation event arrives', eventMatching(
@@ -346,7 +346,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is deleted and a file is renamed in its place', async function () {
+      it('when a directory is deleted and a file is renamed in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         const oldFilePath = path.join(watchDir, 'oldfile')
 
@@ -368,7 +368,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is renamed and a file is created in its place', async function () {
+      it('when a directory is renamed and a file is created in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         const newDirPath = path.join(watchDir, 'newdir')
 
@@ -386,7 +386,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a directory is renamed and a file is renamed in its place', async function () {
+      it('when a directory is renamed and a file is renamed in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         const oldFilePath = path.join(watchDir, 'oldfile')
         const newDirPath = path.join(watchDir, 'newdir')
@@ -409,7 +409,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a file is deleted and a directory is created in its place', async function () {
+      it('when a file is deleted and a directory is created in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         await fs.writeFile(reusedPath, 'something\n')
         await until('directory creation event arrives', eventMatching(
@@ -425,7 +425,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a file is deleted and a directory is renamed in its place', async function () {
+      it('when a file is deleted and a directory is renamed in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         const oldDirPath = path.join(watchDir, 'olddir')
 
@@ -447,7 +447,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a file is renamed and a directory is created in its place', async function () {
+      it('when a file is renamed and a directory is created in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         const newFilePath = path.join(watchDir, 'newfile')
 
@@ -465,7 +465,7 @@ describe('entry point', function () {
         ))
       })
 
-      it('when a file is renamed and a directory is renamed in its place', async function () {
+      it('when a file is renamed and a directory is renamed in its place ^windows ^linux', async function () {
         const reusedPath = path.join(watchDir, 'reused')
         const oldDirPath = path.join(watchDir, 'olddir')
         const newFilePath = path.join(watchDir, 'newfile')
@@ -495,7 +495,7 @@ describe('entry point', function () {
       await sfw.configure({mainLogFile, workerLogFile})
     })
 
-    it('unwatches a previously watched directory', async function () {
+    it('unwatches a previously watched directory ^windows ^linux', async function () {
       let error = null
       const events = []
 
@@ -523,7 +523,7 @@ describe('entry point', function () {
       assert.lengthOf(events, eventCount)
     })
 
-    it('is a no-op if the directory is not being watched', async function () {
+    it('is a no-op if the directory is not being watched ^windows ^linux', async function () {
       let error = null
       const sub = await sfw.watch(watchDir, err => (error = err))
       subs.push(sub)
