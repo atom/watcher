@@ -12,6 +12,7 @@
 
 #include "log.h"
 #include "queue.h"
+#include "status.h"
 #include "worker/worker_thread.h"
 
 using v8::Local;
@@ -197,6 +198,14 @@ public:
       };
       callback->Call(2, argv);
     }
+  }
+
+  void collect_status(Status &status)
+  {
+    status.pending_callback_count = pending_callbacks.size();
+    status.channel_callback_count = channel_callbacks.size();
+
+    worker_thread.collect_status(status);
   }
 
 private:
