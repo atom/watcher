@@ -46,3 +46,9 @@ unique_ptr<vector<Message>> Queue::accept_all()
 
   return consumed;
 }
+
+size_t Queue::size()
+{
+  Lock lock(mutex);
+  return active->size();
+}

@@ -41,6 +41,9 @@ public:
   // present.
   std::unique_ptr<std::vector<Message>> accept_all();
 
+  // Atomically report the number of items waiting on the queue.
+  size_t size();
+
 private:
   uv_mutex_t mutex;
   std::unique_ptr<std::vector<Message>> active;
