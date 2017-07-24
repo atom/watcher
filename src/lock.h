@@ -14,4 +14,23 @@ private:
   uv_mutex_t &mutex;
 };
 
+// Hold a read lock on a uv_rwlock_t for the lifetime of this instance.
+class ReadLock {
+public:
+  ReadLock(uv_rwlock_t &rwlock);
+  ~ReadLock();
+
+private:
+  uv_rwlock_t &rwlock;
+};
+
+// Hold a write lock on a uv_rwlock_t for the lifetime of this instance.
+class WriteLock {
+  WriteLock(uv_rwlock_t &rwlock);
+  ~WriteLock();
+
+private:
+  uv_rwlock_t &rwlock;
+};
+
 #endif
