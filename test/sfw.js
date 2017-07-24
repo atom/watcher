@@ -58,6 +58,10 @@ describe('entry point', function () {
 
   describe('watching a directory', function () {
     beforeEach(async function () {
+      if (!['darwin'].includes(process.platform)) {
+        this.skip()
+      }
+
       await sfw.configure({mainLogFile, workerLogFile})
     })
 
@@ -114,6 +118,10 @@ describe('entry point', function () {
       let errors, events
 
       beforeEach(async function () {
+        if (!['darwin'].includes(process.platform)) {
+          this.skip()
+        }
+
         errors = []
         events = []
 
