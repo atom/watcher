@@ -12,7 +12,7 @@
 
 void thread_callback_helper(void *arg);
 
-class Thread : Errable {
+class Thread : SyncErrable {
 public:
   template< class T >
   Thread(T* self, void (T::*fn)(), uv_async_t *main_callback) :
