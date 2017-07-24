@@ -2,6 +2,7 @@
 #define ERRABLE_H
 
 #include <string>
+#include <uv.h>
 
 // Superclass for resources that can potentially enter an errored state.
 //
@@ -18,14 +19,28 @@ class Errable {
 public:
   Errable();
 
-  bool is_healthy();
-  void report_error(std::string &&message);
-  bool report_uv_error(int errCode);
-  std::string get_error();
+  virtual bool is_healthy();
+  virtual void report_error(std::string &&message);
+  bool report_uv_error(int err_code);
+  virtual std::string get_error();
 
 private:
   bool healthy;
   std::string message;
+};
+
+// Thread-safe superclass for resources that can enter an errored state.
+class SyncErrable : public Errable {
+public:
+  SyncErrable();
+  ~SyncErrable();
+
+  bool is_healthy() override;
+  void report_error(std::string &&message) override;
+  std::string get_error() override;
+private:
+  bool lock_healthy;
+  uv_rwlock_t rwlock;
 };
 
 #endif
