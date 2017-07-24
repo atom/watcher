@@ -26,6 +26,7 @@ private:
 
 // Hold a write lock on a uv_rwlock_t for the lifetime of this instance.
 class WriteLock {
+public:
   WriteLock(uv_rwlock_t &rwlock);
   ~WriteLock();
 
