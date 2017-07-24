@@ -6,6 +6,7 @@
   "scripts": {
     "lint": "standard",
     "build:debug": "node-gyp rebuild --debug",
+    "build:verbose": "node-gyp rebuild --verbose",
     "mocha": "mocha --require test/global.js --harmony",
     "test": "npm run lint && npm run mocha",
     "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
