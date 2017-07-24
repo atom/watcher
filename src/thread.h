@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include <string>
 #include <memory>
 #include <functional>
 #include <vector>
@@ -9,10 +10,11 @@
 #include "errable.h"
 #include "queue.h"
 #include "message.h"
+#include "status.h"
 
 void thread_callback_helper(void *arg);
 
-class Thread : SyncErrable {
+class Thread : public SyncErrable {
 public:
   template< class T >
   Thread(T* self, void (T::*fn)(), uv_async_t *main_callback) :
@@ -36,6 +38,8 @@ public:
 
   std::unique_ptr<std::vector<Message>> receive_all();
 
+  virtual void collect_status(Status &status) = 0;
+
 protected:
   virtual void wake();
 
@@ -50,6 +54,11 @@ protected:
   }
 
   std::unique_ptr<std::vector<Message>> process_all();
+
+  std::string get_in_queue_error();
+  size_t get_in_queue_size();
+  std::string get_out_queue_error();
+  size_t get_out_queue_size();
 
 private:
   Queue in;

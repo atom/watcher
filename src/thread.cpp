@@ -1,3 +1,4 @@
+#include <string>
 #include <memory>
 #include <functional>
 #include <vector>
@@ -7,6 +8,7 @@
 #include "thread.h"
 #include "message.h"
 
+using std::string;
 using std::function;
 using std::unique_ptr;
 using std::vector;
@@ -55,4 +57,24 @@ unique_ptr<vector<Message>> Thread::process_all()
 void Thread::wake()
 {
   //
+}
+
+string Thread::get_in_queue_error()
+{
+  return in.get_error();
+}
+
+size_t Thread::get_in_queue_size()
+{
+  return in.size();
+}
+
+string Thread::get_out_queue_error()
+{
+  return out.get_error();
+}
+
+size_t Thread::get_out_queue_size()
+{
+  return out.size();
 }
