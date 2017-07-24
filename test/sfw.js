@@ -14,6 +14,10 @@ describe('entry point', function () {
 
     mainLogFile = path.join(fixtureDir, 'main.test.log')
     workerLogFile = path.join(fixtureDir, 'worker.test.log')
+
+    await Promise.all([
+      [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
+    ])
   })
 
   afterEach(async function () {
@@ -26,11 +30,10 @@ describe('entry point', function () {
       console.log(`worker log:\n${workerLog}`)
     }
 
-    const promises = [mainLogFile, workerLogFile].map(fname => fs.unlink(fname).catch(() => {}))
-    promises.push(fs.remove(watchDir))
-    promises.push(...subs.map(sub => sub.unwatch()))
-
-    await Promise.all(promises)
+    await Promise.all([
+      fs.remove(watchDir),
+      ...subs.map(sub => sub.unwatch())
+    ])
   })
 
   describe('configuration', function () {
