@@ -2,7 +2,7 @@
   "name": "@atom/watcher",
   "version": "0.0.1",
   "description": "Atom filesystem watcher",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "lint": "standard",
     "build:debug": "node-gyp rebuild --debug",
