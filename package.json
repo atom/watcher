@@ -8,9 +8,9 @@
     "build:debug": "node-gyp rebuild --debug",
     "mocha": "mocha --require test/global.js --harmony",
     "test": "npm run lint && npm run mocha",
-    "ci:appveyor": "npm run mocha -- --fgrep 'skipwindows' --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
-    "ci:circle": "npm run mocha -- --fgrep 'skipmac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
-    "ci:travis": "npm run mocha -- --fgrep 'skiplinux' --invert --reporter list",
+    "ci:appveyor": "npm run mocha -- --fgrep '^windows' --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
+    "ci:circle": "npm run mocha -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
+    "ci:travis": "npm run mocha -- --fgrep '^linux' --invert --reporter list",
     "aw:test": "clear && npm run build:debug && clear && npm run mocha"
   },
   "keywords": [
