@@ -33,6 +33,16 @@
                         ]
                     }
                 }
+            }],
+            ["OS=='win'", {
+                "sources": [
+                    "src/worker/windows/windows_worker_platform.cpp"
+                ]
+            }],
+            ["OS=='linux'", {
+                "sources": [
+                    "src/worker/linux/linux_worker_platform.cpp"
+                ]
             }]
         ],
     }],
