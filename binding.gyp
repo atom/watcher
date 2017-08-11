@@ -1,6 +1,6 @@
 {
     "targets": [{
-        "target_name": "sfw",
+        "target_name": "watcher",
 
         "sources": [
             "src/main.cpp",
