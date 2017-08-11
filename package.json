@@ -1,7 +1,7 @@
 {
-  "name": "sfw",
+  "name": "@atom/watcher",
   "version": "0.0.1",
-  "description": "scalable filesystem watcher",
+  "description": "Atom filesystem watcher",
   "main": "index.js",
   "scripts": {
     "lint": "standard",
