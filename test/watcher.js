@@ -1,4 +1,4 @@
-const sfw = require('../lib')
+const watcher = require('../lib')
 
 const path = require('path')
 const fs = require('fs-extra')
@@ -38,18 +38,18 @@ describe('entry point', function () {
 
   describe('configuration', function () {
     it('validates its arguments', async function () {
-      await assert.isRejected(sfw.configure(), /requires an option object/)
+      await assert.isRejected(watcher.configure(), /requires an option object/)
     })
 
     it('configures the main thread logger', async function () {
-      await sfw.configure({mainLogFile})
+      await watcher.configure({mainLogFile})
 
       const contents = await fs.readFile(mainLogFile)
       assert.match(contents, /FileLogger opened/)
     })
 
     it('configures the worker thread logger ^windows ^linux', async function () {
-      await sfw.configure({workerLogFile})
+      await watcher.configure({workerLogFile})
 
       const contents = await fs.readFile(workerLogFile)
       assert.match(contents, /FileLogger opened/)
@@ -62,14 +62,14 @@ describe('entry point', function () {
         this.skip()
       }
 
-      await sfw.configure({mainLogFile, workerLogFile})
+      await watcher.configure({mainLogFile, workerLogFile})
     })
 
     it('begins receiving events within that directory ^windows ^linux', async function () {
       let error = null
       const events = []
 
-      subs.push(await sfw.watch(watchDir, (err, es) => {
+      subs.push(await watcher.watch(watchDir, (err, es) => {
         error = err
         events.push(...es)
       }))
@@ -91,11 +91,11 @@ describe('entry point', function () {
         [watchDirA, watchDirB].map(subdir => fs.mkdir(subdir))
       )
 
-      subs.push(await sfw.watch(watchDirA, (err, es) => {
+      subs.push(await watcher.watch(watchDirA, (err, es) => {
         errors.push(err)
         eventsA.push(...es)
       }))
-      subs.push(await sfw.watch(watchDirB, (err, es) => {
+      subs.push(await watcher.watch(watchDirB, (err, es) => {
         errors.push(err)
         eventsB.push(...es)
       }))
@@ -125,7 +125,7 @@ describe('entry point', function () {
         errors = []
         events = []
 
-        subs.push(await sfw.watch(watchDir, (err, es) => {
+        subs.push(await watcher.watch(watchDir, (err, es) => {
           errors.push(err)
           events.push(...es)
         }))
@@ -500,14 +500,14 @@ describe('entry point', function () {
 
   describe('unwatching a directory', function () {
     beforeEach(async function () {
-      await sfw.configure({mainLogFile, workerLogFile})
+      await watcher.configure({mainLogFile, workerLogFile})
     })
 
     it('unwatches a previously watched directory ^windows ^linux', async function () {
       let error = null
       const events = []
 
-      const sub = await sfw.watch(watchDir, (err, es) => {
+      const sub = await watcher.watch(watchDir, (err, es) => {
         error = err
         events.push(...es)
       })
@@ -533,7 +533,7 @@ describe('entry point', function () {
 
     it('is a no-op if the directory is not being watched ^windows ^linux', async function () {
       let error = null
-      const sub = await sfw.watch(watchDir, err => (error = err))
+      const sub = await watcher.watch(watchDir, err => (error = err))
       subs.push(sub)
       assert.isNull(error)
 
