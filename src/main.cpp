@@ -344,4 +344,4 @@ void initialize(Local<Object> exports)
   );
 }
 
-NODE_MODULE(sfw, initialize);
+NODE_MODULE(watcher, initialize);
