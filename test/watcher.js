@@ -48,7 +48,7 @@ describe('entry point', function () {
       assert.match(contents, /FileLogger opened/)
     })
 
-    it('configures the worker thread logger ^windows ^linux', async function () {
+    it('configures the worker thread logger ^linux', async function () {
       await watcher.configure({workerLogFile})
 
       const contents = await fs.readFile(workerLogFile)
