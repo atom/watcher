@@ -20,6 +20,7 @@ using v8::Value;
 using v8::Object;
 using v8::String;
 using v8::Number;
+using v8::Uint32;
 using v8::Function;
 using v8::FunctionTemplate;
 using v8::Array;
@@ -337,19 +338,71 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
   instance.unwatch(channel_id, move(ack_callback));
 }
 
+void status(const Nan::FunctionCallbackInfo<Value> &info)
+{
+  Status status;
+  instance.collect_status(status);
+
+  Local<Object> status_object = Nan::New<Object>();
+  Nan::Set(
+    status_object,
+    Nan::New<String>("pendingCallbackCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("channelCallbackCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerThreadOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_thread_ok).ToLocalChecked()
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerInSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_in_size))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerInOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_in_ok).ToLocalChecked()
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerOutSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_out_size))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerOutOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_out_ok).ToLocalChecked()
+  );
+  info.GetReturnValue().Set(status_object);
+}
+
 void initialize(Local<Object> exports)
 {
-  exports->Set(
+  Nan::Set(
+    exports,
     Nan::New<String>("configure").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked()
   );
-  exports->Set(
+  Nan::Set(
+    exports,
     Nan::New<String>("watch").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(watch)).ToLocalChecked()
   );
-  exports->Set(
+  Nan::Set(
+    exports,
     Nan::New<String>("unwatch").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(unwatch)).ToLocalChecked()
+  );
+  Nan::Set(
+    exports,
+    Nan::New<String>("status").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(status)).ToLocalChecked()
   );
 }
 
