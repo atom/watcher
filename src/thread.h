@@ -3,11 +3,13 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 #include <functional>
 #include <vector>
 #include <uv.h>
 
 #include "errable.h"
+#include "result.h"
 #include "queue.h"
 #include "message.h"
 #include "status.h"
@@ -17,43 +19,60 @@ void thread_callback_helper(void *arg);
 class Thread : public SyncErrable {
 public:
   template< class T >
-  Thread(T* self, void (T::*fn)(), uv_async_t *main_callback) :
+  Thread(T* self, void (T::*fn)(), std::string name, uv_async_t *main_callback) :
+    SyncErrable(name),
+    in(name + " input queue"),
+    out(name + " output queue"),
     main_callback{main_callback},
     work_fn{std::bind(std::mem_fn(fn), self)}
   {
     //
   };
 
-  void run();
+  Result<> &&run();
 
-  void send(Message &&message);
+  Result<> &&send(Message &&message);
 
   template <class InputIt>
-  void send_all(InputIt begin, InputIt end)
+  Result<> &&send_all(InputIt begin, InputIt end)
   {
-    if (!is_healthy()) return;
-    in.enqueue_all(begin, end);
-    wake();
+    if (!is_healthy()) return health_err_result();
+
+    Result<> qr = in.enqueue_all(begin, end);
+    if (qr.is_error()) return std::move(qr);
+
+    Result<> wr = wake();
+    if (wr.is_error()) return std::move(wr);
+
+    return std::move(ok_result());
   }
 
-  std::unique_ptr<std::vector<Message>> receive_all();
+  Result< std::unique_ptr<std::vector<Message>> > &&receive_all();
 
   virtual void collect_status(Status &status) = 0;
 
 protected:
-  virtual void wake();
+  virtual Result<> &&wake();
 
-  void emit(Message &&message);
+  Result<> &&emit(Message &&message);
 
   template <class InputIt>
-  void emit_all(InputIt begin, InputIt end)
+  Result<> &&emit_all(InputIt begin, InputIt end)
   {
-    if (!is_healthy()) return;
-    out.enqueue_all(begin, end);
-    uv_async_send(main_callback);
+    if (!is_healthy()) return health_err_result();
+
+    Result<> qr = out.enqueue_all(begin, end);
+    if (qr.is_error()) return std::move(qr);
+
+    int uv_err = uv_async_send(main_callback);
+    if (uv_err) {
+      return error_result(uv_strerror(uv_err));
+    }
+
+    return ok_result();
   }
 
-  std::unique_ptr<std::vector<Message>> process_all();
+  Result< std::unique_ptr<std::vector<Message>> > &&process_all();
 
   std::string get_in_queue_error();
   size_t get_in_queue_size();

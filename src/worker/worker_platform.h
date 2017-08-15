@@ -7,6 +7,7 @@
 
 #include "worker_thread.h"
 #include "../message.h"
+#include "../result.h"
 
 class WorkerPlatform {
 public:
@@ -14,15 +15,15 @@ public:
 
   virtual ~WorkerPlatform() {};
 
-  virtual void wake() = 0;
+  virtual Result<> &&wake() = 0;
 
-  virtual void listen() = 0;
-  virtual void handle_add_command(const ChannelID channel, const std::string &root_path) = 0;
-  virtual void handle_remove_command(const ChannelID channel) = 0;
+  virtual Result<> &&listen() = 0;
+  virtual Result<> &&handle_add_command(const ChannelID channel, const std::string &root_path) = 0;
+  virtual Result<> &&handle_remove_command(const ChannelID channel) = 0;
 
-  void handle_commands()
+  Result<> &&handle_commands()
   {
-    thread->handle_commands();
+    return thread->handle_commands();
   }
 
 protected:
@@ -31,15 +32,15 @@ protected:
     //
   }
 
-  void emit(Message &&message)
+  Result<> &&emit(Message &&message)
   {
-    thread->emit(std::move(message));
+    return thread->emit(std::move(message));
   }
 
   template <class InputIt>
-  void emit_all(InputIt begin, InputIt end)
+  Result<> &&emit_all(InputIt begin, InputIt end)
   {
-    thread->emit_all(begin, end);
+    return thread->emit_all(begin, end);
   }
 
   WorkerThread *thread;

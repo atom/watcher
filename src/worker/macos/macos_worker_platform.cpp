@@ -6,6 +6,7 @@
 #include <map>
 #include <utility>
 #include <iomanip>
+#include <sstream>
 #include <CoreServices/CoreServices.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -17,10 +18,12 @@
 #include "flags.h"
 #include "../../log.h"
 #include "../../message.h"
+#include "../../result.h"
 
 using std::vector;
 using std::ostream;
 using std::string;
+using std::ostringstream;
 using std::endl;
 using std::unique_ptr;
 using std::move;
@@ -68,13 +71,15 @@ public:
     if (run_loop) CFRelease(run_loop);
   }
 
-  void wake() override
+  Result<> &&wake() override
   {
     CFRunLoopSourceSignal(command_source);
     CFRunLoopWakeUp(run_loop);
+
+    return ok_result();
   }
 
-  void listen() override
+  Result<> &&listen() override
   {
     run_loop = CFRunLoopGetCurrent();
     CFRetain(run_loop);
@@ -95,10 +100,10 @@ public:
     CFRunLoopAddSource(run_loop, command_source, kCFRunLoopDefaultMode);
 
     CFRunLoopRun();
-    LOGGER << "Run loop ended unexpectedly." << endl;
+    return ok_result();
   }
 
-  void handle_add_command(const ChannelID channel, const string &root_path) override
+  Result<> &&handle_add_command(const ChannelID channel, const string &root_path) override
   {
     LOGGER << "Adding watcher for path " << root_path << " at channel " << channel << "." << endl;
 
@@ -120,8 +125,9 @@ public:
       false
     );
     if (watch_root == NULL) {
-      // TODO report error back in Ack
-      return;
+      string msg("Unable to allocate string for root path: ");
+      msg += root_path;
+      return error_result(move(msg));
     }
 
     CFArrayRef watch_roots = CFArrayCreate(
@@ -131,9 +137,11 @@ public:
       NULL
     );
     if (watch_roots == NULL) {
-      // TODO report error back in Ack
+      string msg("Unable to allocate array for watch root: ");
+      msg += root_path;
       CFRelease(watch_root);
-      return;
+
+      return error_result(move(msg));
     }
 
     FSEventStreamRef event_stream = FSEventStreamCreate(
@@ -151,21 +159,28 @@ public:
 
     FSEventStreamScheduleWithRunLoop(event_stream, run_loop, kCFRunLoopDefaultMode);
     if (!FSEventStreamStart(event_stream)) {
-      // TODO Report error back in Ack
+      string msg("Unable start event stream for watch root: ");
+      msg += root_path;
+
+      CFRelease(watch_roots);
+      CFRelease(watch_root);
+      FSEventStreamRelease(event_stream);
+      return error_result(msg);
     }
 
     CFRelease(watch_roots);
     CFRelease(watch_root);
+    return ok_result();
   }
 
-  void handle_remove_command(const ChannelID channel) override
+  Result<> &&handle_remove_command(const ChannelID channel) override
   {
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
 
     auto maybe_subscription = subscriptions.find(channel);
     if (maybe_subscription == subscriptions.end()) {
       LOGGER << "No subscription for channel " << channel << "." << endl;
-      return;
+      return ok_result();
     }
 
     Subscription *subscription = maybe_subscription->second;
@@ -176,6 +191,7 @@ public:
     FSEventStreamRelease(subscription->event_stream);
 
     delete subscription;
+    return ok_result();
   }
 
   void handle_fs_event(
@@ -200,7 +216,11 @@ public:
     }
     handler.flush();
 
-    emit_all(messages.begin(), messages.end());
+    Result<> er = emit_all(messages.begin(), messages.end());
+    if (er.is_error()) {
+      LOGGER << "Unable to emit ack messages: " << er << "." << endl;
+      return;
+    }
 
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
       << messages.size() << " message(s) produced." << endl;
@@ -219,7 +239,10 @@ private:
 static void command_perform_helper(void *info)
 {
   MacOSWorkerPlatform *platform = reinterpret_cast<MacOSWorkerPlatform*>(info);
-  platform->handle_commands();
+  Result<> r = platform->handle_commands();
+  if (r.is_error()) {
+    LOGGER << "Unable to handle incoming commands: " << r << "." << endl;
+  }
 }
 
 static void event_stream_helper(

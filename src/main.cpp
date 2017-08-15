@@ -13,6 +13,7 @@
 #include "log.h"
 #include "queue.h"
 #include "status.h"
+#include "result.h"
 #include "worker/worker_thread.h"
 
 using v8::Local;
@@ -108,7 +109,12 @@ public:
   {
     Nan::HandleScope scope;
 
-    unique_ptr<vector<Message>> accepted = worker_thread.receive_all();
+    Result< unique_ptr<vector<Message>> > rr = worker_thread.receive_all();
+    if (rr.is_error()) {
+      LOGGER << "Unable to fetch pending events from work thread: " << rr << "." << endl;
+    }
+
+    unique_ptr<vector<Message>> &accepted = rr.get_value();
     if (!accepted) {
       return;
     }
