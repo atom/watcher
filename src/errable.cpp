@@ -1,14 +1,20 @@
 #include <string>
 #include <utility>
+#include <sstream>
+#include <iostream>
 #include <uv.h>
 
 #include "errable.h"
 #include "lock.h"
 
+using std::ostream;
 using std::string;
 using std::move;
 
-Errable::Errable() : healthy{true}, message{"ok"}
+Errable::Errable(string source) :
+  healthy{true},
+  source{source},
+  message{"ok"}
 {
   //
 }
@@ -24,21 +30,16 @@ void Errable::report_error(string &&message)
   this->message = move(message);
 }
 
-bool Errable::report_uv_error(int err_code)
+void Errable::report_uv_error(int err_code)
 {
-  if (!err_code) {
-    return false;
-  }
-
   report_error(uv_strerror(err_code));
-  return true;
 }
 
 string Errable::get_error() {
   return message;
 }
 
-SyncErrable::SyncErrable() : Errable()
+SyncErrable::SyncErrable(string source) : Errable(source)
 {
   int err = uv_rwlock_init(&rwlock);
 
