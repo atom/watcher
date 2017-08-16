@@ -99,10 +99,7 @@ private:
     }
   }
 
-  enum {
-    OK = 0,
-    ERROR
-  } state;
+  enum {OK = 0, ERROR = 1} state;
 
   union {
     V value;
