@@ -75,27 +75,45 @@ Result<> WorkerThread::handle_commands()
       continue;
     }
 
-    // TODO detect errors are use them to construct the Ack
+    bool success = true;
+    string message = "";
+
     switch (command->get_action()) {
       case COMMAND_ADD:
-        platform->handle_add_command(command->get_channel_id(), command->get_root());
+        {
+          Result<> r = platform->handle_add_command(command->get_channel_id(), command->get_root());
+          if (r.is_error()) {
+            success = false;
+            message = r.get_error();
+          }
+        }
         break;
+
       case COMMAND_REMOVE:
-        platform->handle_remove_command(command->get_channel_id());
+        {
+          Result<> r = platform->handle_remove_command(command->get_channel_id());
+          if (r.is_error()) {
+            success = false;
+            message = r.get_error();
+          }
+        }
         break;
+
       case COMMAND_LOG_FILE:
         Logger::to_file(command->get_root().c_str());
         break;
+
       case COMMAND_LOG_DISABLE:
         LOGGER << "Disabling logger." << endl;
         Logger::disable();
         break;
+
       default:
         LOGGER << "Received command with unexpected action " << *it << "." << endl;
         break;
     }
 
-    AckPayload ack(command->get_id(), command->get_channel_id(), true, "");
+    AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
     Message response(move(ack));
     acks.push_back(move(response));
   }

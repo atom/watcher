@@ -139,8 +139,14 @@ public:
 
         ChannelID channel_id = ack_message->get_channel_id();
         if (channel_id != NULL_CHANNEL_ID) {
-          Local<Value> argv[] = {Nan::Null(), Nan::New<Number>(channel_id)};
-          callback->Call(2, argv);
+          if (ack_message->was_successful()) {
+            Local<Value> argv[] = {Nan::Null(), Nan::New<Number>(channel_id)};
+            callback->Call(2, argv);
+          } else {
+            Local<Value> err = Nan::Error(ack_message->get_message().c_str());
+            Local<Value> argv[] = {err, Nan::Null()};
+            callback->Call(2, argv);
+          }
         } else {
           callback->Call(0, nullptr);
         }
