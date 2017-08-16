@@ -32,7 +32,7 @@ public:
   // Generate a Result from the current error status of this resource. If it has entered an error state,
   // an errored Result will be created with its error message. Otherwise, an ok Result will be regurned.
   template < class V = void* >
-  Result<V> &&health_err_result()
+  Result<V> health_err_result()
   {
     std::string m = get_error();
     return Result<V>::make_error(std::move(m));

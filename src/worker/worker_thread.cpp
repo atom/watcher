@@ -30,7 +30,7 @@ WorkerThread::~WorkerThread()
   // Necessary so that unique_ptr can see the full definition of WorkerPlatform
 }
 
-Result<> &&WorkerThread::wake()
+Result<> WorkerThread::wake()
 {
   return platform->wake();
 }
@@ -52,7 +52,7 @@ void WorkerThread::listen()
   }
 }
 
-Result<> &&WorkerThread::handle_commands()
+Result<> WorkerThread::handle_commands()
 {
   Result< unique_ptr<vector<Message>> > pr = process_all();
   if (pr.is_error()) {

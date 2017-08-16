@@ -14,22 +14,22 @@ class LinuxWorkerPlatform : public WorkerPlatform {
 public:
   LinuxWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread) {};
 
-  Result<> &&wake() override
+  Result<> wake() override
   {
     return ok_result();
   }
 
-  Result<> &&listen() override
+  Result<> listen() override
   {
     return ok_result();
   }
 
-  Result<> &&handle_add_command(const ChannelID channel, const string &root_path)
+  Result<> handle_add_command(const ChannelID channel, const string &root_path)
   {
     return ok_result();
   }
 
-  Result<> &&handle_remove_command(const ChannelID channel)
+  Result<> handle_remove_command(const ChannelID channel)
   {
     return ok_result();
   }

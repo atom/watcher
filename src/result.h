@@ -5,27 +5,32 @@
 #include <string>
 #include <iostream>
 
+#include "log.h"
+
 template< class V = void* >
 class Result {
 public:
-  static Result<V> &&make_ok(V &&value)
+  static Result<V> make_ok(V &&value)
   {
-    return std::move(Result<V>(std::move(value)));
+    return Result<V>(std::move(value));
   }
 
-  static Result<V> &&make_error(std::string &&message)
+  static Result<V> make_error(std::string &&message)
   {
-    return std::move(Result<V>(std::move(message), true));
+    return Result<V>(std::move(message), true);
   }
 
-  Result(Result &&original) : state{original.state}, pending{true}
+  Result(Result<V> &&original) : state{original.state}, pending{false}
   {
     switch (state) {
-      case OK:
-        value = std::move(original.value);
+      case OK: // wat
+        new (&value) V(std::move(original.value));
         break;
       case ERROR:
-        error = std::move(original.error);
+        new (&error) std::string(std::move(original.error));
+        break;
+      default:
+        LOGGER << "Invalid result state " << state << " in Result::Result(Result&&)." << std::endl;
         break;
     }
   }
@@ -39,8 +44,14 @@ public:
       case ERROR:
         error.~basic_string();
         break;
+      default:
+        LOGGER << "Invalid result state " << state << " in Result::~Result()." << std::endl;
+        break;
     }
   }
+
+  Result<V> &operator=(Result<V>&& original) = delete;
+  Result<V> &operator=(const Result<V> &original) = delete;
 
   bool is_ok() const
   {
@@ -52,7 +63,7 @@ public:
     return state == ERROR;
   }
 
-  V& get_value()
+  V &get_value()
   {
     return value;
   }
@@ -73,14 +84,17 @@ private:
     //
   }
 
-  Result(const Result<V> &other) : state{other.state}, pending{true}
+  Result(const Result<V> &original) : state{original.state}, pending{false}
   {
     switch (state) {
       case OK:
-        value = other.value;
+        new (&value) V(original.value);
         break;
       case ERROR:
-        error = other.error;
+        new (&error) std::string(original.error);
+        break;
+      default:
+        LOGGER << "Invalid result state " << state << " in Result::Result(Result&)" << std::endl;
         break;
     }
   }
@@ -96,21 +110,21 @@ private:
     bool pending;
   };
 
-  friend Result<void*> &&ok_result();
+  friend Result<void*> ok_result();
 };
 
 template < class V >
-Result<V> &&make_ok_result(V &&value)
+Result<V> ok_result(V &&value)
 {
-  return std::move(Result<V>::make_ok(std::move(value)));
+  return Result<V>::make_ok(std::move(value));
 }
 
-inline Result<void*> &&ok_result()
+inline Result<void*> ok_result()
 {
-  return std::move(Result<void*>::make_ok(nullptr));
+  return Result<void*>::make_ok(nullptr);
 }
 
-inline Result<void*> &&error_result(std::string &&message)
+inline Result<void*> error_result(std::string &&message)
 {
   return Result<void*>::make_error(std::move(message));
 }
@@ -120,8 +134,10 @@ std::ostream &operator<<(std::ostream &out, const Result<V> &result)
 {
   if (result.is_error()) {
     out << result.get_error();
-  } else {
+  } else if (result.is_ok()) {
     out << "OK";
+  } else {
+    out << "INVALID";
   }
   return out;
 }

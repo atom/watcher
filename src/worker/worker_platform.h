@@ -15,13 +15,13 @@ public:
 
   virtual ~WorkerPlatform() {};
 
-  virtual Result<> &&wake() = 0;
+  virtual Result<> wake() = 0;
 
-  virtual Result<> &&listen() = 0;
-  virtual Result<> &&handle_add_command(const ChannelID channel, const std::string &root_path) = 0;
-  virtual Result<> &&handle_remove_command(const ChannelID channel) = 0;
+  virtual Result<> listen() = 0;
+  virtual Result<> handle_add_command(const ChannelID channel, const std::string &root_path) = 0;
+  virtual Result<> handle_remove_command(const ChannelID channel) = 0;
 
-  Result<> &&handle_commands()
+  Result<> handle_commands()
   {
     return thread->handle_commands();
   }
@@ -32,13 +32,13 @@ protected:
     //
   }
 
-  Result<> &&emit(Message &&message)
+  Result<> emit(Message &&message)
   {
     return thread->emit(std::move(message));
   }
 
   template <class InputIt>
-  Result<> &&emit_all(InputIt begin, InputIt end)
+  Result<> emit_all(InputIt begin, InputIt end)
   {
     return thread->emit_all(begin, end);
   }

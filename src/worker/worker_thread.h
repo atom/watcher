@@ -20,10 +20,10 @@ public:
   void collect_status(Status &status) override;
 
 private:
-  Result<> &&wake() override;
+  Result<> wake() override;
 
   void listen();
-  Result<> &&handle_commands();
+  Result<> handle_commands();
 
   std::unique_ptr<WorkerPlatform> platform;
   friend WorkerPlatform;

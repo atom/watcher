@@ -31,7 +31,7 @@ Queue::~Queue()
   uv_mutex_destroy(&mutex);
 }
 
-Result<> &&Queue::enqueue(Message &&message)
+Result<> Queue::enqueue(Message &&message)
 {
   if (!is_healthy()) return health_err_result();
 
@@ -40,21 +40,21 @@ Result<> &&Queue::enqueue(Message &&message)
   return ok_result();
 }
 
-Result< unique_ptr<vector<Message>> > &&Queue::accept_all()
+Result< unique_ptr<vector<Message>> > Queue::accept_all()
 {
   if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
 
   Lock lock = {mutex};
 
   if (active->empty()) {
-    unique_ptr<vector<Message>> n = nullptr;
-    return make_ok_result(move(n));
+    unique_ptr<vector<Message>> n;
+    return ok_result(move(n));
   }
 
   unique_ptr<vector<Message>> consumed = move(active);
   active.reset(new vector<Message>);
 
-  return make_ok_result(move(consumed));
+  return ok_result(move(consumed));
 }
 
 size_t Queue::size()

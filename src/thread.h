@@ -29,40 +29,40 @@ public:
     //
   };
 
-  Result<> &&run();
+  Result<> run();
 
-  Result<> &&send(Message &&message);
+  Result<> send(Message &&message);
 
   template <class InputIt>
-  Result<> &&send_all(InputIt begin, InputIt end)
+  Result<> send_all(InputIt begin, InputIt end)
   {
     if (!is_healthy()) return health_err_result();
 
     Result<> qr = in.enqueue_all(begin, end);
-    if (qr.is_error()) return std::move(qr);
+    if (qr.is_error()) return qr;
 
     Result<> wr = wake();
-    if (wr.is_error()) return std::move(wr);
+    if (wr.is_error()) return wr;
 
-    return std::move(ok_result());
+    return ok_result();
   }
 
-  Result< std::unique_ptr<std::vector<Message>> > &&receive_all();
+  Result< std::unique_ptr<std::vector<Message>> > receive_all();
 
   virtual void collect_status(Status &status) = 0;
 
 protected:
-  virtual Result<> &&wake();
+  virtual Result<> wake();
 
-  Result<> &&emit(Message &&message);
+  Result<> emit(Message &&message);
 
   template <class InputIt>
-  Result<> &&emit_all(InputIt begin, InputIt end)
+  Result<> emit_all(InputIt begin, InputIt end)
   {
     if (!is_healthy()) return health_err_result();
 
     Result<> qr = out.enqueue_all(begin, end);
-    if (qr.is_error()) return std::move(qr);
+    if (qr.is_error()) return qr;
 
     int uv_err = uv_async_send(main_callback);
     if (uv_err) {
@@ -72,7 +72,7 @@ protected:
     return ok_result();
   }
 
-  Result< std::unique_ptr<std::vector<Message>> > &&process_all();
+  Result< std::unique_ptr<std::vector<Message>> > process_all();
 
   std::string get_in_queue_error();
   size_t get_in_queue_size();

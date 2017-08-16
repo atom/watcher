@@ -20,7 +20,7 @@ void thread_callback_helper(void *arg)
   (*bound_fn)();
 }
 
-Result<> &&Thread::run()
+Result<> Thread::run()
 {
   int err;
 
@@ -33,32 +33,32 @@ Result<> &&Thread::run()
   }
 }
 
-Result<> &&Thread::send(Message &&message)
+Result<> Thread::send(Message &&message)
 {
   if (!is_healthy()) return health_err_result();
 
   Result<> qr = in.enqueue(move(message));
-  if (qr.is_error()) return move(qr);
+  if (qr.is_error()) return qr;
 
   Result<> wr = wake();
-  if (wr.is_error()) return move(wr);
+  if (wr.is_error()) return wr;
 
   return ok_result();
 }
 
-Result< unique_ptr<vector<Message>> > &&Thread::receive_all()
+Result< unique_ptr<vector<Message>> > Thread::receive_all()
 {
   if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
 
   return out.accept_all();
 }
 
-Result<> &&Thread::emit(Message &&message)
+Result<> Thread::emit(Message &&message)
 {
   if (!is_healthy()) return health_err_result();
 
   Result<> qr = out.enqueue(move(message));
-  if (qr.is_error()) return move(qr);
+  if (qr.is_error()) return qr;
 
   int uv_err = uv_async_send(main_callback);
   if (uv_err) {
@@ -68,14 +68,14 @@ Result<> &&Thread::emit(Message &&message)
   return ok_result();
 }
 
-Result< unique_ptr<vector<Message>> > &&Thread::process_all()
+Result< unique_ptr<vector<Message>> > Thread::process_all()
 {
   if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
 
   return in.accept_all();
 }
 
-Result<> &&Thread::wake()
+Result<> Thread::wake()
 {
   return ok_result();
 }

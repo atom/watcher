@@ -71,7 +71,7 @@ public:
     if (run_loop) CFRelease(run_loop);
   }
 
-  Result<> &&wake() override
+  Result<> wake() override
   {
     CFRunLoopSourceSignal(command_source);
     CFRunLoopWakeUp(run_loop);
@@ -79,7 +79,7 @@ public:
     return ok_result();
   }
 
-  Result<> &&listen() override
+  Result<> listen() override
   {
     run_loop = CFRunLoopGetCurrent();
     CFRetain(run_loop);
@@ -103,7 +103,7 @@ public:
     return ok_result();
   }
 
-  Result<> &&handle_add_command(const ChannelID channel, const string &root_path) override
+  Result<> handle_add_command(const ChannelID channel, const string &root_path) override
   {
     LOGGER << "Adding watcher for path " << root_path << " at channel " << channel << "." << endl;
 
@@ -165,7 +165,7 @@ public:
       CFRelease(watch_roots);
       CFRelease(watch_root);
       FSEventStreamRelease(event_stream);
-      return error_result(msg);
+      return error_result(move(msg));
     }
 
     CFRelease(watch_roots);
@@ -173,7 +173,7 @@ public:
     return ok_result();
   }
 
-  Result<> &&handle_remove_command(const ChannelID channel) override
+  Result<> handle_remove_command(const ChannelID channel) override
   {
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
 
