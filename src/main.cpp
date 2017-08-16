@@ -52,7 +52,7 @@ public:
     worker_thread.run();
   }
 
-  void send_worker_command(
+  Result<> send_worker_command(
     const CommandAction action,
     const std::string &&root,
     unique_ptr<Nan::Callback> callback,
@@ -69,7 +69,7 @@ public:
     next_command_id++;
 
     LOGGER << "Sending command " << command_message << " to worker thread." << endl;
-    worker_thread.send(move(command_message));
+    return worker_thread.send(move(command_message));
   }
 
   void use_main_log_file(string &&main_log_file)
@@ -77,32 +77,33 @@ public:
     Logger::to_file(main_log_file.c_str());
   }
 
-  void use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
+  Result<> use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
-    send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
+    return send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
   }
 
-  void watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
+  Result<> watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
   {
     ChannelID channel_id = next_channel_id;
     next_channel_id++;
 
     channel_callbacks.emplace(channel_id, move(event_callback));
 
-    send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    return send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
   }
 
-  void unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
+  Result<> unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
   {
     string root;
-    send_worker_command(COMMAND_REMOVE, move(root), move(ack_callback), channel_id);
+    Result<> r = send_worker_command(COMMAND_REMOVE, move(root), move(ack_callback), channel_id);
 
     auto maybe_event_callback = channel_callbacks.find(channel_id);
     if (maybe_event_callback == channel_callbacks.end()) {
       LOGGER << "Channel " << channel_id << " already has no event callback." << endl;
-      return;
+      return ok_result();
     }
     channel_callbacks.erase(maybe_event_callback);
+    return r;
   }
 
   void handle_events()
@@ -111,7 +112,7 @@ public:
 
     Result< unique_ptr<vector<Message>> > rr = worker_thread.receive_all();
     if (rr.is_error()) {
-      LOGGER << "Unable to fetch pending events from work thread: " << rr << "." << endl;
+      LOGGER << "Unable to receive messages from the worker thread: " << rr << "." << endl;
       return;
     }
 
@@ -299,7 +300,11 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   if (!worker_log_file.empty()) {
-    instance.use_worker_log_file(move(worker_log_file), move(callback));
+    Result<> r = instance.use_worker_log_file(move(worker_log_file), move(callback));
+    if (r.is_error()) {
+      Nan::ThrowError(r.get_error().c_str());
+      return;
+    }
     async = true;
   }
 
@@ -330,7 +335,10 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
   unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[2].As<Function>()));
 
-  instance.watch(move(root_str), move(ack_callback), move(event_callback));
+  Result<> r = instance.watch(move(root_str), move(ack_callback), move(event_callback));
+  if (r.is_error()) {
+    Nan::ThrowError(r.get_error().c_str());
+  }
 }
 
 void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
@@ -349,7 +357,10 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
 
-  instance.unwatch(channel_id, move(ack_callback));
+  Result<> r = instance.unwatch(channel_id, move(ack_callback));
+  if (r.is_error()) {
+    Nan::ThrowError(r.get_error().c_str());
+  }
 }
 
 void status(const Nan::FunctionCallbackInfo<Value> &info)
