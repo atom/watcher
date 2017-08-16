@@ -73,6 +73,8 @@ public:
 
   Result<> wake() override
   {
+    if (!is_healthy()) return health_err_result();
+
     CFRunLoopSourceSignal(command_source);
     CFRunLoopWakeUp(run_loop);
 
@@ -81,6 +83,8 @@ public:
 
   Result<> listen() override
   {
+    if (!is_healthy()) return health_err_result();
+
     run_loop = CFRunLoopGetCurrent();
     CFRetain(run_loop);
 
@@ -105,6 +109,7 @@ public:
 
   Result<> handle_add_command(const ChannelID channel, const string &root_path) override
   {
+    if (!is_healthy()) return health_err_result();
     LOGGER << "Adding watcher for path " << root_path << " at channel " << channel << "." << endl;
 
     Subscription *subscription = new Subscription(this, channel);
@@ -175,6 +180,7 @@ public:
 
   Result<> handle_remove_command(const ChannelID channel) override
   {
+    if (!is_healthy()) return health_err_result();
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
 
     auto maybe_subscription = subscriptions.find(channel);

@@ -7,12 +7,14 @@
 
 #include "worker_thread.h"
 #include "../message.h"
+#include "../errable.h"
 #include "../result.h"
 
-class WorkerPlatform {
+class WorkerPlatform : public Errable {
 public:
   static std::unique_ptr<WorkerPlatform> for_worker(WorkerThread *thread);
 
+  WorkerPlatform() : Errable("platform") {};
   virtual ~WorkerPlatform() {};
 
   virtual Result<> wake() = 0;
@@ -23,23 +25,29 @@ public:
 
   Result<> handle_commands()
   {
+    if (!is_healthy()) return health_err_result();
+
     return thread->handle_commands();
   }
 
 protected:
-  WorkerPlatform(WorkerThread *thread) : thread{thread}
+  WorkerPlatform(WorkerThread *thread) : Errable("platform"), thread{thread}
   {
     //
   }
 
   Result<> emit(Message &&message)
   {
+    if (!is_healthy()) return health_err_result();
+
     return thread->emit(std::move(message));
   }
 
   template <class InputIt>
   Result<> emit_all(InputIt begin, InputIt end)
   {
+    if (!is_healthy()) return health_err_result();
+
     return thread->emit_all(begin, end);
   }
 
