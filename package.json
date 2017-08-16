@@ -8,6 +8,7 @@
     "build:debug": "node-gyp rebuild --debug",
     "build:verbose": "node-gyp rebuild --verbose",
     "mocha": "mocha --require test/global.js --harmony",
+    "mocha:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js",
     "test": "npm run lint && npm run mocha",
     "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
     "ci:circle": "npm run mocha -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
