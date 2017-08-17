@@ -7,11 +7,6 @@
 
 #include "log.h"
 
-enum ResultState {
-  OK = 0,
-  ERROR = 1
-};
-
 // Container to be returned from method calls that may fail, optionally wrapping a return value.
 //
 // Result objects are expected to be stack-allocated and returned using move semantics or return-value optimization.
@@ -86,10 +81,10 @@ public:
   Result(Result<V> &&original) : state{original.state}, pending{false}
   {
     switch (state) {
-      case OK: // wat
+      case RESULT_OK:
         new (&value) V(std::move(original.value));
         break;
-      case ERROR:
+      case RESULT_ERROR:
         new (&error) std::string(std::move(original.error));
         break;
       default:
@@ -101,10 +96,10 @@ public:
   ~Result()
   {
     switch (state) {
-      case OK:
+      case RESULT_OK:
         value.~V();
         break;
-      case ERROR:
+      case RESULT_ERROR:
         error.~basic_string();
         break;
       default:
@@ -118,12 +113,12 @@ public:
 
   bool is_ok() const
   {
-    return state == OK;
+    return state == RESULT_OK;
   }
 
   bool is_error() const
   {
-    return state == ERROR;
+    return state == RESULT_ERROR;
   }
 
   V &get_value()
@@ -137,12 +132,12 @@ public:
   }
 
 private:
-  Result(V &&value) : state{OK}, value{std::move(value)}
+  Result(V &&value) : state{RESULT_OK}, value{std::move(value)}
   {
     //
   }
 
-  Result(std::string &&error, bool ignored) : state{ERROR}, error{std::move(error)}
+  Result(std::string &&error, bool ignored) : state{RESULT_ERROR}, error{std::move(error)}
   {
     //
   }
@@ -162,7 +157,10 @@ private:
     }
   }
 
-  ResultState state;
+  enum {
+    RESULT_OK = 0,
+    RESULT_ERROR
+  } state;
 
   union {
     V value;
