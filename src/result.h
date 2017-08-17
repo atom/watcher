@@ -145,10 +145,10 @@ private:
   Result(const Result<V> &original) : state{original.state}, pending{false}
   {
     switch (state) {
-      case OK:
+      case RESULT_OK:
         new (&value) V(original.value);
         break;
-      case ERROR:
+      case RESULT_ERROR:
         new (&error) std::string(original.error);
         break;
       default:
