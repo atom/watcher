@@ -2,6 +2,7 @@
 #include <memory>
 #include <iostream>
 #include <utility>
+#include <string>
 #include <uv.h>
 
 #include "worker_thread.h"
@@ -9,14 +10,16 @@
 #include "../log.h"
 #include "../queue.h"
 #include "../message.h"
+#include "../result.h"
 
 using std::endl;
 using std::vector;
 using std::unique_ptr;
 using std::move;
+using std::string;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
-  Thread(this, &WorkerThread::listen, main_callback),
+  Thread(this, &WorkerThread::listen, "worker thread", main_callback),
   platform{WorkerPlatform::for_worker(this)}
 {
   //
@@ -27,24 +30,39 @@ WorkerThread::~WorkerThread()
   // Necessary so that unique_ptr can see the full definition of WorkerPlatform
 }
 
-void WorkerThread::wake()
+Result<> WorkerThread::wake()
 {
-  platform->wake();
+  return platform->wake();
 }
 
 void WorkerThread::listen()
 {
   // Handle any commands that were enqueued while the thread was starting.
-  handle_commands();
+  Result<> cr = handle_commands();
+  if (cr.is_error()) {
+    LOGGER << "Unable to handle initially enqueued commands: " << cr << endl;
+  }
 
-  platform->listen();
+  Result<> lr = platform->listen();
+  if (lr.is_error()) {
+    LOGGER << "Unable to listen: " << lr << endl;
+    report_error(string(lr.get_error()));
+  } else {
+    LOGGER << "listen unexpectedly returned without reporting an error." << endl;
+  }
 }
 
-void WorkerThread::handle_commands()
+Result<> WorkerThread::handle_commands()
 {
-  unique_ptr<vector<Message>> accepted = process_all();
+  Result< unique_ptr<vector<Message>> > pr = process_all();
+  if (pr.is_error()) {
+    return error_result(string(pr.get_error()));
+  }
+
+  unique_ptr<vector<Message>> &accepted = pr.get_value();
   if (!accepted) {
-    return;
+    // No command messages to accept.
+    return ok_result();
   }
 
   vector<Message> acks;
@@ -57,29 +75,57 @@ void WorkerThread::handle_commands()
       continue;
     }
 
+    bool success = true;
+    string message = "";
+
     switch (command->get_action()) {
       case COMMAND_ADD:
-        platform->handle_add_command(command->get_channel_id(), command->get_root());
+        {
+          Result<> r = platform->handle_add_command(command->get_channel_id(), command->get_root());
+          if (r.is_error()) {
+            success = false;
+            message = r.get_error();
+          }
+        }
         break;
+
       case COMMAND_REMOVE:
-        platform->handle_remove_command(command->get_channel_id());
+        {
+          Result<> r = platform->handle_remove_command(command->get_channel_id());
+          if (r.is_error()) {
+            success = false;
+            message = r.get_error();
+          }
+        }
         break;
+
       case COMMAND_LOG_FILE:
         Logger::to_file(command->get_root().c_str());
         break;
+
       case COMMAND_LOG_DISABLE:
         LOGGER << "Disabling logger." << endl;
         Logger::disable();
         break;
+
       default:
         LOGGER << "Received command with unexpected action " << *it << "." << endl;
         break;
     }
 
-    AckPayload ack(command->get_id(), command->get_channel_id(), true, "");
+    AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
     Message response(move(ack));
     acks.push_back(move(response));
   }
 
-  emit_all(acks.begin(), acks.end());
+  return emit_all(acks.begin(), acks.end());
+}
+
+void WorkerThread::collect_status(Status &status)
+{
+  status.worker_thread_ok = get_error();
+  status.worker_in_size = get_in_queue_size();
+  status.worker_in_ok = get_in_queue_error();
+  status.worker_out_size = get_out_queue_size();
+  status.worker_out_ok = get_out_queue_error();
 }

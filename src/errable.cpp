@@ -1,13 +1,20 @@
 #include <string>
 #include <utility>
+#include <sstream>
+#include <iostream>
 #include <uv.h>
 
 #include "errable.h"
+#include "lock.h"
 
+using std::ostream;
 using std::string;
 using std::move;
 
-Errable::Errable() : healthy{true}, message{"ok"}
+Errable::Errable(string source) :
+  healthy{true},
+  source{source},
+  message{"ok"}
 {
   //
 }
@@ -23,16 +30,54 @@ void Errable::report_error(string &&message)
   this->message = move(message);
 }
 
-bool Errable::report_uv_error(int errCode)
+void Errable::report_uv_error(int err_code)
 {
-  if (!errCode) {
-    return false;
-  }
-
-  report_error(uv_strerror(errCode));
-  return true;
+  report_error(uv_strerror(err_code));
 }
 
 string Errable::get_error() {
   return message;
+}
+
+SyncErrable::SyncErrable(string source) : Errable(source)
+{
+  int err = uv_rwlock_init(&rwlock);
+
+  if (err) {
+    Errable::report_error(uv_strerror(err));
+    lock_healthy = false;
+  } else {
+    lock_healthy = true;
+  }
+}
+
+SyncErrable::~SyncErrable()
+{
+  uv_rwlock_destroy(&rwlock);
+}
+
+bool SyncErrable::is_healthy()
+{
+  if (!lock_healthy) {
+    return false;
+  }
+
+  ReadLock lock(rwlock);
+  return Errable::is_healthy();
+}
+
+void SyncErrable::report_error(string &&message)
+{
+  if (!lock_healthy) return;
+
+  WriteLock lock(rwlock);
+  Errable::report_error(move(message));
+}
+
+string SyncErrable::get_error()
+{
+  if (!lock_healthy) return Errable::get_error();
+
+  ReadLock lock(rwlock);
+  return Errable::get_error();
 }

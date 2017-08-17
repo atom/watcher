@@ -5,6 +5,7 @@
 #include "../worker_thread.h"
 #include "../../message.h"
 #include "../../log.h"
+#include "../../result.h"
 
 using std::string;
 using std::unique_ptr;
@@ -13,24 +14,24 @@ class LinuxWorkerPlatform : public WorkerPlatform {
 public:
   LinuxWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread) {};
 
-  void wake() override
+  Result<> wake() override
   {
-    //
+    return ok_result();
   }
 
-  void listen() override
+  Result<> listen() override
   {
-    //
+    return ok_result();
   }
 
-  void handle_add_command(const ChannelID channel, const string &root_path)
+  Result<> handle_add_command(const ChannelID channel, const string &root_path)
   {
-    //
+    return ok_result();
   }
 
-  void handle_remove_command(const ChannelID channel)
+  Result<> handle_remove_command(const ChannelID channel)
   {
-    //
+    return ok_result();
   }
 };
 

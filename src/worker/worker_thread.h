@@ -7,6 +7,8 @@
 #include "../queue.h"
 #include "../message.h"
 #include "../thread.h"
+#include "../status.h"
+#include "../result.h"
 
 class WorkerPlatform;
 
@@ -15,12 +17,13 @@ public:
   WorkerThread(uv_async_t *main_callback);
   ~WorkerThread();
 
+  void collect_status(Status &status) override;
+
 private:
-  void wake() override;
+  Result<> wake() override;
 
   void listen();
-  void handle_commands();
-
+  Result<> handle_commands();
 
   std::unique_ptr<WorkerPlatform> platform;
   friend WorkerPlatform;

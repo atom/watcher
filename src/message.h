@@ -41,6 +41,10 @@ public:
   FileSystemPayload(FileSystemPayload &&original);
   ~FileSystemPayload() {};
 
+  FileSystemPayload(const FileSystemPayload &original) = delete;
+  FileSystemPayload &operator=(const FileSystemPayload &original) = delete;
+  FileSystemPayload &operator=(FileSystemPayload &&original) = delete;
+
   const ChannelID &get_channel_id() const;
   const FileSystemAction &get_filesystem_action() const;
   const EntryKind &get_entry_kind() const;
@@ -76,6 +80,10 @@ public:
   CommandPayload(CommandPayload &&original);
   ~CommandPayload() {};
 
+  CommandPayload(const CommandPayload &original) = delete;
+  CommandPayload &operator=(const CommandPayload &original) = delete;
+  CommandPayload &operator=(CommandPayload &&original) = delete;
+
   CommandID get_id() const;
   const CommandAction &get_action() const;
   const std::string &get_root() const;
@@ -94,6 +102,10 @@ public:
   AckPayload(const CommandID key, const ChannelID channel_id, bool success, const std::string &&message);
   AckPayload(AckPayload &&original) = default;
   ~AckPayload() {};
+
+  AckPayload(const AckPayload &original) = delete;
+  AckPayload &operator=(const AckPayload &original) = delete;
+  AckPayload &operator=(AckPayload &&original) = delete;
 
   const CommandID &get_key() const;
   const ChannelID &get_channel_id() const;
@@ -121,6 +133,10 @@ public:
   explicit Message(AckPayload &&e);
   Message(Message&& original);
   ~Message();
+
+  Message(const Message&) = delete;
+  Message &operator=(const Message&) = delete;
+  Message &operator=(Message&&) = delete;
 
   const FileSystemPayload* as_filesystem() const;
   const CommandPayload* as_command() const;
