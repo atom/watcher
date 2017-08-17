@@ -11,6 +11,7 @@ using std::endl;
 using std::ostream;
 using std::ofstream;
 using std::string;
+using std::to_string;
 using std::dec;
 using std::setw;
 
@@ -104,7 +105,7 @@ void Logger::disable()
 string plural(long quantity, const string &singular_form, const string &plural_form)
 {
   string result("");
-  result += quantity;
+  result += to_string(quantity);
   result += " ";
 
   if (quantity == 1) {
