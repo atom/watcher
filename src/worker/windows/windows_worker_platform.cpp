@@ -34,13 +34,12 @@ public:
     uv_mutex_destroy(&thread_handle_mutex);
   }
 
-  void wake() override
+  Result<> wake() override
   {
     Lock lock(thread_handle_mutex);
 
     if (!thread_handle) {
-      LOGGER << "No thread handle" << endl;
-      return;
+      return ok_result();
     }
 
     LOGGER << "Queueing APC" << endl;
@@ -51,11 +50,13 @@ public:
     );
 
     if (!success) {
-      LOGGER << "Failed to queue APC" << endl;
+      return error_result("Unable to queue APC");
+    } else {
+      return ok_result();
     }
   }
 
-  void listen() override
+  Result<> listen() override
   {
     {
       Lock lock(thread_handle_mutex);
@@ -73,24 +74,27 @@ public:
 
       if (!success) {
         LOGGER << "Unable to duplicate handle." << endl;
-        // TODO put thread in error state
-        return;
+        report_error("Unable to acquire thread handle");
+        return health_err_result();
       }
     }
 
     while (true) {
       SleepEx(INFINITE, true);
     }
+
+    report_error("listen loop ended unexpectedly");
+    return health_err_result();
   }
 
-  void handle_add_command(const ChannelID channel, const string &root_path)
+  Result<> handle_add_command(const ChannelID channel, const string &root_path)
   {
-    //
+    return ok_result();
   }
 
-  void handle_remove_command(const ChannelID channel)
+  Result<> handle_remove_command(const ChannelID channel)
   {
-    //
+    return ok_result();
   }
 
 private:

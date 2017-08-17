@@ -10,6 +10,7 @@
             "src/lock.cpp",
             "src/message.cpp",
             "src/thread.cpp",
+            "src/status.cpp",
             "src/worker/worker_thread.cpp"
         ],
         "include_dirs": [

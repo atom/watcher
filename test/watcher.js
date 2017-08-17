@@ -26,8 +26,8 @@ describe('entry point', function () {
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
       )
 
-      console.log(`main log:\n${mainLog}`)
-      console.log(`worker log:\n${workerLog}`)
+      console.log(`main log ${mainLogFile}:\n${mainLog}`)
+      console.log(`worker log ${workerLogFile}:\n${workerLog}`)
     }
 
     await Promise.all([

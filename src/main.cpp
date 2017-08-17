@@ -12,6 +12,8 @@
 
 #include "log.h"
 #include "queue.h"
+#include "status.h"
+#include "result.h"
 #include "worker/worker_thread.h"
 
 using v8::Local;
@@ -19,6 +21,7 @@ using v8::Value;
 using v8::Object;
 using v8::String;
 using v8::Number;
+using v8::Uint32;
 using v8::Function;
 using v8::FunctionTemplate;
 using v8::Array;
@@ -49,7 +52,7 @@ public:
     worker_thread.run();
   }
 
-  void send_worker_command(
+  Result<> send_worker_command(
     const CommandAction action,
     const std::string &&root,
     unique_ptr<Nan::Callback> callback,
@@ -66,7 +69,7 @@ public:
     next_command_id++;
 
     LOGGER << "Sending command " << command_message << " to worker thread." << endl;
-    worker_thread.send(move(command_message));
+    return worker_thread.send(move(command_message));
   }
 
   void use_main_log_file(string &&main_log_file)
@@ -74,40 +77,48 @@ public:
     Logger::to_file(main_log_file.c_str());
   }
 
-  void use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
+  Result<> use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
-    send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
+    return send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
   }
 
-  void watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
+  Result<> watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
   {
     ChannelID channel_id = next_channel_id;
     next_channel_id++;
 
     channel_callbacks.emplace(channel_id, move(event_callback));
 
-    send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    return send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
   }
 
-  void unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
+  Result<> unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
   {
     string root;
-    send_worker_command(COMMAND_REMOVE, move(root), move(ack_callback), channel_id);
+    Result<> r = send_worker_command(COMMAND_REMOVE, move(root), move(ack_callback), channel_id);
 
     auto maybe_event_callback = channel_callbacks.find(channel_id);
     if (maybe_event_callback == channel_callbacks.end()) {
       LOGGER << "Channel " << channel_id << " already has no event callback." << endl;
-      return;
+      return ok_result();
     }
     channel_callbacks.erase(maybe_event_callback);
+    return r;
   }
 
   void handle_events()
   {
     Nan::HandleScope scope;
 
-    unique_ptr<vector<Message>> accepted = worker_thread.receive_all();
+    Result< unique_ptr<vector<Message>> > rr = worker_thread.receive_all();
+    if (rr.is_error()) {
+      LOGGER << "Unable to receive messages from the worker thread: " << rr << "." << endl;
+      return;
+    }
+
+    unique_ptr<vector<Message>> &accepted = rr.get_value();
     if (!accepted) {
+      // No events to process.
       return;
     }
 
@@ -129,8 +140,14 @@ public:
 
         ChannelID channel_id = ack_message->get_channel_id();
         if (channel_id != NULL_CHANNEL_ID) {
-          Local<Value> argv[] = {Nan::Null(), Nan::New<Number>(channel_id)};
-          callback->Call(2, argv);
+          if (ack_message->was_successful()) {
+            Local<Value> argv[] = {Nan::Null(), Nan::New<Number>(channel_id)};
+            callback->Call(2, argv);
+          } else {
+            Local<Value> err = Nan::Error(ack_message->get_message().c_str());
+            Local<Value> argv[] = {err, Nan::Null()};
+            callback->Call(2, argv);
+          }
         } else {
           callback->Call(0, nullptr);
         }
@@ -197,6 +214,14 @@ public:
       };
       callback->Call(2, argv);
     }
+  }
+
+  void collect_status(Status &status)
+  {
+    status.pending_callback_count = pending_callbacks.size();
+    status.channel_callback_count = channel_callbacks.size();
+
+    worker_thread.collect_status(status);
   }
 
 private:
@@ -275,7 +300,11 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   if (!worker_log_file.empty()) {
-    instance.use_worker_log_file(move(worker_log_file), move(callback));
+    Result<> r = instance.use_worker_log_file(move(worker_log_file), move(callback));
+    if (r.is_error()) {
+      Nan::ThrowError(r.get_error().c_str());
+      return;
+    }
     async = true;
   }
 
@@ -306,7 +335,10 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
   unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[2].As<Function>()));
 
-  instance.watch(move(root_str), move(ack_callback), move(event_callback));
+  Result<> r = instance.watch(move(root_str), move(ack_callback), move(event_callback));
+  if (r.is_error()) {
+    Nan::ThrowError(r.get_error().c_str());
+  }
 }
 
 void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
@@ -325,22 +357,77 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
 
-  instance.unwatch(channel_id, move(ack_callback));
+  Result<> r = instance.unwatch(channel_id, move(ack_callback));
+  if (r.is_error()) {
+    Nan::ThrowError(r.get_error().c_str());
+  }
+}
+
+void status(const Nan::FunctionCallbackInfo<Value> &info)
+{
+  Status status;
+  instance.collect_status(status);
+
+  Local<Object> status_object = Nan::New<Object>();
+  Nan::Set(
+    status_object,
+    Nan::New<String>("pendingCallbackCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("channelCallbackCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerThreadOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_thread_ok).ToLocalChecked()
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerInSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_in_size))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerInOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_in_ok).ToLocalChecked()
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerOutSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_out_size))
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("workerOutOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_out_ok).ToLocalChecked()
+  );
+  info.GetReturnValue().Set(status_object);
 }
 
 void initialize(Local<Object> exports)
 {
-  exports->Set(
+  Nan::Set(
+    exports,
     Nan::New<String>("configure").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked()
   );
-  exports->Set(
+  Nan::Set(
+    exports,
     Nan::New<String>("watch").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(watch)).ToLocalChecked()
   );
-  exports->Set(
+  Nan::Set(
+    exports,
     Nan::New<String>("unwatch").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(unwatch)).ToLocalChecked()
+  );
+  Nan::Set(
+    exports,
+    Nan::New<String>("status").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(status)).ToLocalChecked()
   );
 }
 
