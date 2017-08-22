@@ -117,23 +117,30 @@ void CALLBACK command_perform_helper(__in ULONG_PTR payload)
 }
 
 Result<> windows_error_result(string prefix)
+template < class V >
+Result<V> windows_error_result(const string &prefix)
 {
-  LPVOID msgBuffer;
-  DWORD lastError = GetLastError();
+  return windows_error_result<V>(prefix, GetLastError());
+}
+
+template < class V >
+Result<V> windows_error_result(const string &prefix, DWORD error_code)
+{
+  LPVOID msg_buffer;
 
   FormatMessage(
     FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
     NULL, // source
-    lastError, // message ID
+    error_code, // message ID
     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // language ID
-    (LPSTR) &msgBuffer, // output buffer
+    (LPSTR) &msg_buffer, // output buffer
     0, // size
     NULL // arguments
   );
 
-  ostringstream msg(prefix);
-  msg << " " << lastError << ": " << msgBuffer;
-  LocalFree(msgBuffer);
+  ostringstream msg;
+  msg << prefix << "\n (" << error_code << ") " << (char*) msg_buffer;
+  LocalFree(msg_buffer);
 
-  return error_result(msg.str());
+  return Result<V>::make_error(msg.str());
 }
