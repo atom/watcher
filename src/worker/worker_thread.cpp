@@ -113,6 +113,10 @@ Result<> WorkerThread::handle_commands()
         break;
     }
 
+    if (!message.empty()) {
+      LOGGER << "Reporting platform error: " << message << "." << endl;
+    }
+
     AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
     Message response(move(ack));
     acks.push_back(move(response));
