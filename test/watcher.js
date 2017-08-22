@@ -58,7 +58,7 @@ describe('entry point', function () {
 
   describe('watching a directory', function () {
     beforeEach(async function () {
-      if (!['darwin'].includes(process.platform)) {
+      if (!['darwin', 'win32'].includes(process.platform)) {
         this.skip()
       }
 
@@ -500,6 +500,10 @@ describe('entry point', function () {
 
   describe('unwatching a directory', function () {
     beforeEach(async function () {
+      if (!['darwin', 'win32'].includes(process.platform)) {
+        this.skip()
+      }
+
       await watcher.configure({mainLogFile, workerLogFile})
     })
 
