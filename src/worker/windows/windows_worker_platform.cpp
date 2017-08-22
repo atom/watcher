@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <uv.h>
 #include <string>
+#include <sstream>
 #include <memory>
 
 #include "../worker_platform.h"
@@ -12,10 +13,13 @@
 #include "../../lock.h"
 
 using std::string;
+using std::ostringstream;
 using std::unique_ptr;
 using std::endl;
 
 static void CALLBACK command_perform_helper(__in ULONG_PTR payload);
+
+static Result<> windows_error_result(string prefix);
 
 class WindowsWorkerPlatform : public WorkerPlatform {
 public:
@@ -26,7 +30,9 @@ public:
     int err;
 
     err = uv_mutex_init(&thread_handle_mutex);
-    // TODO put thread in error state
+    if (err) {
+      report_uv_error(err);
+    }
   };
 
   ~WindowsWorkerPlatform() override
@@ -42,18 +48,16 @@ public:
       return ok_result();
     }
 
-    LOGGER << "Queueing APC" << endl;
     BOOL success = QueueUserAPC(
       command_perform_helper,
       thread_handle,
       reinterpret_cast<ULONG_PTR>(this)
     );
-
     if (!success) {
-      return error_result("Unable to queue APC");
-    } else {
-      return ok_result();
+      return windows_error_result("Unable to queue APC");
     }
+
+    return ok_result();
   }
 
   Result<> listen() override
@@ -71,11 +75,10 @@ public:
         FALSE, // Inheritable by new processes
         DUPLICATE_SAME_ACCESS // options
       );
-
       if (!success) {
-        LOGGER << "Unable to duplicate handle." << endl;
+        Result<> r = windows_error_result("Unable to duplicate thread handle");
         report_error("Unable to acquire thread handle");
-        return health_err_result();
+        return r;
       }
     }
 
@@ -111,4 +114,26 @@ void CALLBACK command_perform_helper(__in ULONG_PTR payload)
 {
   WindowsWorkerPlatform *platform = reinterpret_cast<WindowsWorkerPlatform*>(payload);
   platform->handle_commands();
+}
+
+Result<> windows_error_result(string prefix)
+{
+  LPVOID msgBuffer;
+  DWORD lastError = GetLastError();
+
+  FormatMessage(
+    FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    NULL, // source
+    lastError, // message ID
+    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // language ID
+    (LPSTR) &msgBuffer, // output buffer
+    0, // size
+    NULL // arguments
+  );
+
+  ostringstream msg(prefix);
+  msg << " " << lastError << ": " << msgBuffer;
+  LocalFree(msgBuffer);
+
+  return error_result(msg.str());
 }
