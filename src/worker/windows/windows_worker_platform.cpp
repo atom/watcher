@@ -19,7 +19,6 @@ using std::endl;
 
 static void CALLBACK command_perform_helper(__in ULONG_PTR payload);
 
-static Result<> windows_error_result(string prefix);
 
 class WindowsWorkerPlatform : public WorkerPlatform {
 public:
@@ -116,7 +115,41 @@ void CALLBACK command_perform_helper(__in ULONG_PTR payload)
   platform->handle_commands();
 }
 
-Result<> windows_error_result(string prefix)
+Result<string> to_utf8(const wstring &in)
+{
+  size_t len = WideCharToMultiByte(
+    CP_UTF8, // code page
+    0, // flags
+    in.data(), // source string
+    in.size(), // source string length
+    nullptr, // destination string, null to measure
+    0, // destination string length
+    nullptr, // default char
+    nullptr  // used default char
+  );
+  if (!len) {
+    return windows_error_result<string>("Unable to measure path as UTF-8");
+  }
+
+  char *out = new char[len];
+  size_t copied = WideCharToMultiByte(
+    CP_UTF8, // code page
+    0, // flags
+    in.data(), // source string
+    in.size(), // source string length
+    out, // destination string
+    len, // destination string length
+    nullptr, // default char
+    nullptr // used default char
+  );
+  if (!copied) {
+    delete [] out;
+    return windows_error_result<string>("Unable to convert path to UTF-8");
+  }
+
+  return ok_result(string{out, len});
+}
+
 template < class V >
 Result<V> windows_error_result(const string &prefix)
 {
