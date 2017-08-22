@@ -261,6 +261,140 @@ public:
     return ok_result();
   }
 
+  Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription* sub)
+  {
+    // Ensure that the subscription is valid.
+    ChannelID channel = sub->get_channel();
+    auto it = subscriptions.find(channel);
+    if (it == subscriptions.end() || it->second != sub) {
+      return ok_result();
+    }
+
+    // Handle errors.
+    if (error_code == ERROR_OPERATION_ABORTED) {
+      LOGGER << "Operation aborted." << endl;
+
+      subscriptions.erase(it);
+      delete sub;
+
+      return ok_result();
+    }
+
+    if (error_code == ERROR_INVALID_PARAMETER) {
+      Result<> resize = sub->use_network_size();
+      if (resize.is_error()) return resize;
+
+      return sub->schedule();
+    }
+
+    if (error_code == ERROR_NOTIFY_ENUM_DIR) {
+      LOGGER << "Change buffer overflow. Some events may have been lost." << endl;
+      return sub->schedule();
+    }
+
+    if (error_code != ERROR_SUCCESS) {
+      return windows_error_result<>("Completion callback error", error_code);
+    }
+
+    // Schedule the next completion callback.
+    BYTE *base = sub->get_written(num_bytes);
+    Result<> next = sub->schedule();
+    if (next.is_error()) {
+      report_error(string(next.get_error()));
+    }
+
+    // Process received events.
+    vector<Message> messages;
+    bool old_path_seen = false;
+    string old_path;
+
+    while (true) {
+      PFILE_NOTIFY_INFORMATION info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(base);
+
+      wstring wpath{info->FileName, info->FileNameLength};
+      Result<string> u8r = to_utf8(wpath);
+      if (u8r.is_error()) {
+        LOGGER << "Skipping path: " << u8r << "." << endl;
+      } else {
+        string path = u8r.get_value();
+
+        switch (info->Action) {
+        case FILE_ACTION_ADDED:
+          {
+            FileSystemPayload payload(channel, ACTION_CREATED, KIND_UNKNOWN, move(path), "");
+            Message message(move(payload));
+
+            LOGGER << "Emitting filesystem message " << message << "." << endl;
+            messages.push_back(move(message));
+          }
+          break;
+        case FILE_ACTION_MODIFIED:
+          {
+            FileSystemPayload payload(channel, ACTION_MODIFIED, KIND_UNKNOWN, move(path), "");
+            Message message(move(payload));
+
+            LOGGER << "Emitting filesystem message " << message << "." << endl;
+            messages.push_back(move(message));
+          }
+          break;
+        case FILE_ACTION_REMOVED:
+          {
+            FileSystemPayload payload(channel, ACTION_DELETED, KIND_UNKNOWN, move(path), "");
+            Message message(move(payload));
+
+            LOGGER << "Emitting filesystem message " << message << "." << endl;
+            messages.push_back(move(message));
+          }
+          break;
+        case FILE_ACTION_RENAMED_OLD_NAME:
+          old_path_seen = true;
+          old_path = move(path);
+          break;
+        case FILE_ACTION_RENAMED_NEW_NAME:
+          if (old_path_seen) {
+            // Old name received first
+            {
+              FileSystemPayload payload(channel, ACTION_RENAMED, KIND_UNKNOWN, move(old_path), move(path));
+              Message message(move(payload));
+
+              LOGGER << "Emitting filesystem message " << message << "." << endl;
+              messages.push_back(move(message));
+            }
+
+            old_path_seen = false;
+          } else {
+            // No old name. Treat it as a creation
+            {
+              FileSystemPayload payload(channel, ACTION_CREATED, KIND_UNKNOWN, move(path), "");
+              Message message(move(payload));
+
+              LOGGER << "Emitting filesystem message " << message << "." << endl;
+              messages.push_back(move(message));
+            }
+          }
+          break;
+        default:
+          LOGGER << "Skipping unexpected action " << info->Action << "." << endl;
+          break;
+        }
+      }
+
+      if (info->NextEntryOffset == 0) {
+        break;
+      }
+      base += info->NextEntryOffset;
+    }
+
+    if (!messages.empty()) {
+      Result<> er = emit_all(messages.begin(), messages.end());
+      if (er.is_error()) {
+        LOGGER << "Unable to emit messages: " << er << "." << endl;
+      }
+    }
+
+    return next;
+  }
+
 private:
   uv_mutex_t thread_handle_mutex;
   HANDLE thread_handle;
@@ -277,6 +411,15 @@ void CALLBACK command_perform_helper(__in ULONG_PTR payload)
 {
   WindowsWorkerPlatform *platform = reinterpret_cast<WindowsWorkerPlatform*>(payload);
   platform->handle_commands();
+}
+
+static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped)
+{
+  Subscription *sub = static_cast<Subscription*>(overlapped->hEvent);
+  Result<> r = sub->get_platform()->handle_fs_event(error_code, num_bytes, sub);
+  if (r.is_error()) {
+    LOGGER << "Unable to handle filesystem events: " << r << "." << endl;
+  }
 }
 
 Result<string> to_utf8(const wstring &in)
