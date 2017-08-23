@@ -37,7 +37,7 @@ describe('entry point', function () {
     }
 
     await Promise.all([
-      fs.remove(watchDir),
+      fs.remove(fixtureDir),
       ...subs.map(sub => sub.unwatch())
     ])
   })
