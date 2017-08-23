@@ -18,6 +18,7 @@
 using std::string;
 using std::wstring;
 using std::ostringstream;
+using std::wostringstream;
 using std::unique_ptr;
 using std::shared_ptr;
 using std::default_delete;
@@ -49,7 +50,12 @@ class WindowsWorkerPlatform;
 
 class Subscription {
 public:
-  Subscription(ChannelID channel, HANDLE root, const string &path, WindowsWorkerPlatform *platform) :
+  Subscription(
+    ChannelID channel,
+    HANDLE root,
+    const wstring &path,
+    WindowsWorkerPlatform *platform
+  ) :
     channel{channel},
     platform{platform},
     path{path},
@@ -119,13 +125,13 @@ public:
     return written.get();
   }
 
-  string make_absolute(const string &sub_path)
+  wstring make_absolute(const wstring &sub_path)
   {
-    ostringstream out;
+    wostringstream out;
 
     out << path;
-    if (path.back() != '\\' && sub_path.front() != '\\') {
-      out << '\\';
+    if (path.back() != L'\\' && sub_path.front() != L'\\') {
+      out << L'\\';
     }
     out << sub_path;
 
@@ -136,7 +142,7 @@ private:
   ChannelID channel;
   WindowsWorkerPlatform *platform;
 
-  string path;
+  wstring path;
   HANDLE root;
   OVERLAPPED overlapped;
 
@@ -236,7 +242,7 @@ public:
     }
 
     // Allocate and persist the subscription
-    Subscription *sub = new Subscription(channel, root, root_path, this);
+    Subscription *sub = new Subscription(channel, root, root_path_w, this);
     auto insert_result = subscriptions.insert(make_pair(channel, sub));
     if (!insert_result.second) {
       delete sub;
