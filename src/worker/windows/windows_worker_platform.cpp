@@ -312,72 +312,9 @@ public:
     while (true) {
       PFILE_NOTIFY_INFORMATION info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(base);
 
-      wstring wpath{info->FileName, info->FileNameLength};
-      Result<string> u8r = to_utf8(wpath);
-      if (u8r.is_error()) {
-        LOGGER << "Skipping path: " << u8r << "." << endl;
-      } else {
-        string path = sub->make_absolute(u8r.get_value());
-
-        switch (info->Action) {
-        case FILE_ACTION_ADDED:
-          {
-            FileSystemPayload payload(channel, ACTION_CREATED, KIND_UNKNOWN, move(path), "");
-            Message message(move(payload));
-
-            LOGGER << "Emitting filesystem message " << message << "." << endl;
-            messages.push_back(move(message));
-          }
-          break;
-        case FILE_ACTION_MODIFIED:
-          {
-            FileSystemPayload payload(channel, ACTION_MODIFIED, KIND_UNKNOWN, move(path), "");
-            Message message(move(payload));
-
-            LOGGER << "Emitting filesystem message " << message << "." << endl;
-            messages.push_back(move(message));
-          }
-          break;
-        case FILE_ACTION_REMOVED:
-          {
-            FileSystemPayload payload(channel, ACTION_DELETED, KIND_UNKNOWN, move(path), "");
-            Message message(move(payload));
-
-            LOGGER << "Emitting filesystem message " << message << "." << endl;
-            messages.push_back(move(message));
-          }
-          break;
-        case FILE_ACTION_RENAMED_OLD_NAME:
-          old_path_seen = true;
-          old_path = move(path);
-          break;
-        case FILE_ACTION_RENAMED_NEW_NAME:
-          if (old_path_seen) {
-            // Old name received first
-            {
-              FileSystemPayload payload(channel, ACTION_RENAMED, KIND_UNKNOWN, move(old_path), move(path));
-              Message message(move(payload));
-
-              LOGGER << "Emitting filesystem message " << message << "." << endl;
-              messages.push_back(move(message));
-            }
-
-            old_path_seen = false;
-          } else {
-            // No old name. Treat it as a creation
-            {
-              FileSystemPayload payload(channel, ACTION_CREATED, KIND_UNKNOWN, move(path), "");
-              Message message(move(payload));
-
-              LOGGER << "Emitting filesystem message " << message << "." << endl;
-              messages.push_back(move(message));
-            }
-          }
-          break;
-        default:
-          LOGGER << "Skipping unexpected action " << info->Action << "." << endl;
-          break;
-        }
+      Result<> pr = process_event_payload(info, sub, messages, old_path_seen, old_path);
+      if (pr.is_error()) {
+        LOGGER << "Skipping entry " << pr << "." << endl;
       }
 
       if (info->NextEntryOffset == 0) {
@@ -397,6 +334,107 @@ public:
   }
 
 private:
+  Result<> process_event_payload(
+    PFILE_NOTIFY_INFORMATION info,
+    Subscription *sub,
+    vector<Message> &messages,
+    bool &old_path_seen,
+    string &old_path)
+  {
+    EntryKind kind = KIND_UNKNOWN;
+    ChannelID channel = sub->get_channel();
+    wstring relpathw{info->FileName, info->FileNameLength / sizeof(WCHAR)};
+    wstring pathw = sub->make_absolute(move(relpathw));
+
+    DWORD attrs = GetFileAttributesW(pathw.c_str());
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+      DWORD attr_err = GetLastError();
+      if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND) {
+        return windows_error_result<>("GetFileAttributesW failed", attr_err);
+      }
+      Result<> t = windows_error_result<>("GetFileAttributesW reports");
+      LOGGER << t << endl;
+    } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+      kind = KIND_DIRECTORY;
+    } else {
+      kind = KIND_FILE;
+    }
+    // TODO check against FILE_ATTRIBUTE_REPARSE_POINT to identify symlinks
+
+    Result<string> u8r = to_utf8(pathw);
+    if (u8r.is_error()) return u8r.propagate<>();
+    string &path = u8r.get_value();
+
+    switch (info->Action) {
+    case FILE_ACTION_ADDED:
+      {
+        FileSystemPayload payload(channel, ACTION_CREATED, kind, move(path), "");
+        Message message(move(payload));
+
+        LOGGER << "Emitting filesystem message " << message << "." << endl;
+        messages.push_back(move(message));
+      }
+      break;
+    case FILE_ACTION_MODIFIED:
+      {
+        FileSystemPayload payload(channel, ACTION_MODIFIED, kind, move(path), "");
+        Message message(move(payload));
+
+        LOGGER << "Emitting filesystem message " << message << "." << endl;
+        messages.push_back(move(message));
+      }
+      break;
+    case FILE_ACTION_REMOVED:
+      {
+        FileSystemPayload payload(channel, ACTION_DELETED, kind, move(path), "");
+        Message message(move(payload));
+
+        LOGGER << "Emitting filesystem message " << message << "." << endl;
+        messages.push_back(move(message));
+      }
+      break;
+    case FILE_ACTION_RENAMED_OLD_NAME:
+      old_path_seen = true;
+      old_path = move(path);
+      break;
+    case FILE_ACTION_RENAMED_NEW_NAME:
+      if (old_path_seen) {
+        // Old name received first
+        {
+          FileSystemPayload payload(channel, ACTION_RENAMED, kind, move(old_path), move(path));
+          Message message(move(payload));
+
+          LOGGER << "Emitting filesystem message " << message << "." << endl;
+          messages.push_back(move(message));
+        }
+
+        old_path_seen = false;
+      } else {
+        // No old name. Treat it as a creation
+        {
+          FileSystemPayload payload(channel, ACTION_CREATED, kind, move(path), "");
+          Message message(move(payload));
+
+          LOGGER << "Emitting filesystem message " << message << "." << endl;
+          messages.push_back(move(message));
+        }
+      }
+      break;
+    default:
+      {
+        ostringstream out;
+        out
+          << "Unexpected action " << info->Action
+          << " reported by ReadDirectoryChangesW for "
+          << path;
+        return error_result(out.str());
+      }
+      break;
+    }
+
+    return ok_result();
+  }
+
   uv_mutex_t thread_handle_mutex;
   HANDLE thread_handle;
 
