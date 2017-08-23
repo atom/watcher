@@ -23,7 +23,11 @@ describe('watcher', function () {
   })
 
   afterEach(async function () {
-    if (this.currentTest.state === 'failed') {
+    if (process.platform === 'win32') {
+      await watcher.configure({mainLogFile: null, workerLogFile: null})
+    }
+
+    if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
       )
@@ -33,7 +37,7 @@ describe('watcher', function () {
     }
 
     await Promise.all([
-      fs.remove(watchDir),
+      fs.remove(fixtureDir),
       ...subs.map(sub => sub.unwatch())
     ])
   })
