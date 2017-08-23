@@ -331,7 +331,7 @@ public:
       if (u8r.is_error()) {
         LOGGER << "Skipping path: " << u8r << "." << endl;
       } else {
-        string path = u8r.get_value();
+        string path = sub->make_absolute(u8r.get_value());
 
         switch (info->Action) {
         case FILE_ACTION_ADDED:
