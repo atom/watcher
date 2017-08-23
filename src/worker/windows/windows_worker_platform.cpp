@@ -252,7 +252,7 @@ public:
       return error_result(msg.str());
     }
 
-    LOGGER << "Now watching directory " << root_path << "." << endl;
+    LOGGER << "Added directory root " << root_path << "." << endl;
 
     return sub->schedule();
   }
