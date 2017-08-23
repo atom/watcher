@@ -77,9 +77,19 @@ public:
     Logger::to_file(main_log_file.c_str());
   }
 
+  void disable_main_log()
+  {
+    Logger::disable();
+  }
+
   Result<> use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
     return send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
+  }
+
+  Result<> disable_worker_log(unique_ptr<Nan::Callback> callback)
+  {
+    return send_worker_command(COMMAND_LOG_DISABLE, "", move(callback));
   }
 
   Result<> watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
