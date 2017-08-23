@@ -3,7 +3,7 @@ const watcher = require('../lib')
 const path = require('path')
 const fs = require('fs-extra')
 
-describe('entry point', function () {
+describe('watcher', function () {
   let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
 
   beforeEach(async function () {
