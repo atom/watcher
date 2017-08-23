@@ -47,9 +47,10 @@ class WindowsWorkerPlatform;
 
 class Subscription {
 public:
-  Subscription(ChannelID channel, HANDLE root, WindowsWorkerPlatform *platform) :
+  Subscription(ChannelID channel, HANDLE root, const string &path, WindowsWorkerPlatform *platform) :
     channel{channel},
     platform{platform},
+    path{path},
     root{root},
     buffer_size{DEFAULT_BUFFER_SIZE},
     buffer{new BYTE[buffer_size]},
@@ -116,10 +117,24 @@ public:
     return written.get();
   }
 
+  string make_absolute(const string &sub_path)
+  {
+    ostringstream out;
+
+    out << path;
+    if (path.back() != '\\' && sub_path.front() != '\\') {
+      out << '\\';
+    }
+    out << sub_path;
+
+    return out.str();
+  }
+
 private:
   ChannelID channel;
   WindowsWorkerPlatform *platform;
 
+  string path;
   HANDLE root;
   OVERLAPPED overlapped;
 
@@ -241,7 +256,7 @@ public:
     }
 
     // Allocate and persist the subscription
-    Subscription *sub = new Subscription(channel, root, this);
+    Subscription *sub = new Subscription(channel, root, root_path, this);
     auto insert_result = subscriptions.insert(make_pair(channel, sub));
     if (!insert_result.second) {
       delete sub;
