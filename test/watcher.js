@@ -9,8 +9,10 @@ describe('entry point', function () {
   beforeEach(async function () {
     subs = []
 
-    fixtureDir = path.join(__dirname, 'fixture')
-    watchDir = await fs.mkdtemp(path.join(fixtureDir, 'watched-'))
+    const rootDir = path.join(__dirname, 'fixture')
+    fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
+    watchDir = path.join(fixtureDir, 'root')
+    await fs.mkdirs(watchDir)
 
     mainLogFile = path.join(fixtureDir, 'main.test.log')
     workerLogFile = path.join(fixtureDir, 'worker.test.log')
