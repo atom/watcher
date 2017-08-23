@@ -37,7 +37,8 @@ describe('watcher', function () {
     }
 
     await Promise.all([
-      fs.remove(fixtureDir),
+      fs.remove(fixtureDir, {maxBusyTries: 1})
+        .catch(err => console.warn('Unable to delete fixture directory', err)),
       ...subs.map(sub => sub.unwatch())
     ])
   })
