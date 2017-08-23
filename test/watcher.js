@@ -65,7 +65,7 @@ describe('entry point', function () {
       await watcher.configure({mainLogFile, workerLogFile})
     })
 
-    it('begins receiving events within that directory ^windows ^linux', async function () {
+    it('begins receiving events within that directory ^linux', async function () {
       let error = null
       const events = []
 
@@ -80,7 +80,7 @@ describe('entry point', function () {
       assert.isNull(error)
     })
 
-    it('can watch multiple directories at once and dispatch events appropriately ^windows ^linux', async function () {
+    it('can watch multiple directories at once and dispatch events appropriately ^linux', async function () {
       const errors = []
       const eventsA = []
       const eventsB = []
