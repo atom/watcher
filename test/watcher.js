@@ -22,7 +22,7 @@ describe('entry point', function () {
 
   afterEach(async function () {
     if (process.platform === 'win32') {
-      await watcher.configure({mainLogFile: false, workerLogFile: false})
+      await watcher.configure({mainLogFile: null, workerLogFile: null})
     }
 
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
