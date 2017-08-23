@@ -318,9 +318,20 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!main_log_file.empty()) {
     instance.use_main_log_file(move(main_log_file));
   }
+  if (main_log_file_null) {
+    instance.disable_main_log();
+  }
 
   if (!worker_log_file.empty()) {
     Result<> r = instance.use_worker_log_file(move(worker_log_file), move(callback));
+    if (r.is_error()) {
+      Nan::ThrowError(r.get_error().c_str());
+      return;
+    }
+    async = true;
+  }
+  if (worker_log_file_null) {
+    Result<> r = instance.disable_worker_log(move(callback));
     if (r.is_error()) {
       Nan::ThrowError(r.get_error().c_str());
       return;
