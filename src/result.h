@@ -134,6 +134,13 @@ public:
     return error;
   }
 
+  template < class U = void* >
+  Result<U> propagate(const std::string &prefix = "") const
+  {
+    assert(state == RESULT_ERROR);
+    return Result<U>::make_error(prefix + get_error());
+  }
+
 private:
   Result(V &&value) : state{RESULT_OK}, value{std::move(value)}
   {
