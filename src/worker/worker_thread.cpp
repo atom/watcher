@@ -48,6 +48,7 @@ void WorkerThread::listen()
     LOGGER << "Unable to listen: " << lr << endl;
     report_error(string(lr.get_error()));
   } else {
+    report_error("WorkerPlatform::listen() returned unexpectedly");
     LOGGER << "listen unexpectedly returned without reporting an error." << endl;
   }
 }
