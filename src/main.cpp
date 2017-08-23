@@ -253,9 +253,10 @@ static void handle_events_helper(uv_async_t *handle)
   instance.handle_events();
 }
 
-static bool get_string_option(Local<Object>& options, const char *key_name, string &out)
+static bool get_string_option(Local<Object>& options, const char *key_name, bool &null, string &out)
 {
   Nan::HandleScope scope;
+  null = false;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
 
   Nan::MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
@@ -264,6 +265,11 @@ static bool get_string_option(Local<Object>& options, const char *key_name, stri
   }
   Local<Value> as_value = as_maybe_value.ToLocalChecked();
   if (as_value->IsUndefined()) {
+    return true;
+  }
+
+  if (as_value->IsNull()) {
+    null = true;
     return true;
   }
 
@@ -289,8 +295,12 @@ static bool get_string_option(Local<Object>& options, const char *key_name, stri
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
 {
+  bool main_log_file_null = false;
   string main_log_file;
+
+  bool worker_log_file_null = false;
   string worker_log_file;
+
   bool async = false;
 
   Nan::MaybeLocal<Object> maybe_options = Nan::To<Object>(info[0]);
@@ -300,8 +310,8 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   Local<Object> options = maybe_options.ToLocalChecked();
-  if (!get_string_option(options, "mainLogFile", main_log_file)) return;
-  if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
+  if (!get_string_option(options, "mainLogFile", main_log_file_null, main_log_file)) return;
+  if (!get_string_option(options, "workerLogFile", worker_log_file_null, worker_log_file)) return;
 
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
 
