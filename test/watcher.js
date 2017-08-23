@@ -32,11 +32,6 @@ describe('watcher', function () {
 
   afterEach(async function () {
     console.log('watcher afterEach: start')
-    if (process.platform === 'win32') {
-      await watcher.configure({mainLogFile: null, workerLogFile: null})
-      console.log('logging disabled')
-    }
-
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
@@ -44,6 +39,11 @@ describe('watcher', function () {
 
       console.log(`main log ${mainLogFile}:\n${mainLog}`)
       console.log(`worker log ${workerLogFile}:\n${workerLog}`)
+    }
+
+    if (process.platform === 'win32') {
+      await watcher.configure({mainLogFile: null, workerLogFile: null})
+      console.log('logging disabled')
     }
 
     await Promise.all([
