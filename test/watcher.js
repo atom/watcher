@@ -9,19 +9,25 @@ describe('entry point', function () {
   beforeEach(async function () {
     subs = []
 
-    fixtureDir = path.join(__dirname, 'fixture')
-    watchDir = await fs.mkdtemp(path.join(fixtureDir, 'watched-'))
+    const rootDir = path.join(__dirname, 'fixture')
+    fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
+    watchDir = path.join(fixtureDir, 'root')
+    await fs.mkdirs(watchDir)
 
     mainLogFile = path.join(fixtureDir, 'main.test.log')
     workerLogFile = path.join(fixtureDir, 'worker.test.log')
 
     await Promise.all([
-      [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
+      [mainLogFile, workerLogFile].map(fname => fs.unlink(fname, {encoding: 'utf8'}).catch(() => ''))
     ])
   })
 
   afterEach(async function () {
-    if (this.currentTest.state === 'failed') {
+    if (process.platform === 'win32') {
+      await watcher.configure({mainLogFile: null, workerLogFile: null})
+    }
+
+    if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
       )
@@ -31,7 +37,7 @@ describe('entry point', function () {
     }
 
     await Promise.all([
-      fs.remove(watchDir),
+      fs.remove(fixtureDir),
       ...subs.map(sub => sub.unwatch())
     ])
   })

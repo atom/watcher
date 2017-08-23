@@ -77,9 +77,19 @@ public:
     Logger::to_file(main_log_file.c_str());
   }
 
+  void disable_main_log()
+  {
+    Logger::disable();
+  }
+
   Result<> use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
     return send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
+  }
+
+  Result<> disable_worker_log(unique_ptr<Nan::Callback> callback)
+  {
+    return send_worker_command(COMMAND_LOG_DISABLE, "", move(callback));
   }
 
   Result<> watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
@@ -243,9 +253,10 @@ static void handle_events_helper(uv_async_t *handle)
   instance.handle_events();
 }
 
-static bool get_string_option(Local<Object>& options, const char *key_name, string &out)
+static bool get_string_option(Local<Object>& options, const char *key_name, bool &null, string &out)
 {
   Nan::HandleScope scope;
+  null = false;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
 
   Nan::MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
@@ -254,6 +265,11 @@ static bool get_string_option(Local<Object>& options, const char *key_name, stri
   }
   Local<Value> as_value = as_maybe_value.ToLocalChecked();
   if (as_value->IsUndefined()) {
+    return true;
+  }
+
+  if (as_value->IsNull()) {
+    null = true;
     return true;
   }
 
@@ -279,8 +295,12 @@ static bool get_string_option(Local<Object>& options, const char *key_name, stri
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
 {
+  bool main_log_file_null = false;
   string main_log_file;
+
+  bool worker_log_file_null = false;
   string worker_log_file;
+
   bool async = false;
 
   Nan::MaybeLocal<Object> maybe_options = Nan::To<Object>(info[0]);
@@ -290,17 +310,28 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   Local<Object> options = maybe_options.ToLocalChecked();
-  if (!get_string_option(options, "mainLogFile", main_log_file)) return;
-  if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
+  if (!get_string_option(options, "mainLogFile", main_log_file_null, main_log_file)) return;
+  if (!get_string_option(options, "workerLogFile", worker_log_file_null, worker_log_file)) return;
 
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
 
   if (!main_log_file.empty()) {
     instance.use_main_log_file(move(main_log_file));
   }
+  if (main_log_file_null) {
+    instance.disable_main_log();
+  }
 
   if (!worker_log_file.empty()) {
     Result<> r = instance.use_worker_log_file(move(worker_log_file), move(callback));
+    if (r.is_error()) {
+      Nan::ThrowError(r.get_error().c_str());
+      return;
+    }
+    async = true;
+  }
+  if (worker_log_file_null) {
+    Result<> r = instance.disable_worker_log(move(callback));
     if (r.is_error()) {
       Nan::ThrowError(r.get_error().c_str());
       return;
