@@ -120,7 +120,7 @@ describe('watcher', function () {
       let errors, events
 
       beforeEach(async function () {
-        if (!['darwin'].includes(process.platform)) {
+        if (!['darwin', 'win32'].includes(process.platform)) {
           this.skip()
         }
 
