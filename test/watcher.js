@@ -16,7 +16,7 @@ describe('entry point', function () {
     workerLogFile = path.join(fixtureDir, 'worker.test.log')
 
     await Promise.all([
-      [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
+      [mainLogFile, workerLogFile].map(fname => fs.unlink(fname, {encoding: 'utf8'}).catch(() => ''))
     ])
   })
 
