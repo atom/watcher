@@ -38,6 +38,7 @@
             ["OS=='win'", {
                 "sources": [
                     "src/helper/windows/helper.cpp",
+                    "src/worker/windows/subscription.cpp",
                     "src/worker/windows/windows_worker_platform.cpp"
                 ]
             }],

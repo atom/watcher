@@ -15,6 +15,7 @@
 #include "../../message.h"
 #include "../../log.h"
 #include "../../lock.h"
+#include "subscription.h"
 
 using std::string;
 using std::wstring;
@@ -30,117 +31,9 @@ using std::vector;
 using std::move;
 using std::endl;
 
-const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
-const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
-
 static void CALLBACK command_perform_helper(__in ULONG_PTR payload);
 
 static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped);
-
-class WindowsWorkerPlatform;
-
-class Subscription {
-public:
-  Subscription(
-    ChannelID channel,
-    HANDLE root,
-    const wstring &path,
-    WindowsWorkerPlatform *platform
-  ) :
-    channel{channel},
-    platform{platform},
-    path{path},
-    root{root},
-    buffer_size{DEFAULT_BUFFER_SIZE},
-    buffer{new BYTE[buffer_size]},
-    written{new BYTE[buffer_size]}
-  {
-    ZeroMemory(&overlapped, sizeof(OVERLAPPED));
-    overlapped.hEvent = this;
-  }
-
-  ~Subscription()
-  {
-    CloseHandle(root);
-  }
-
-  Result<> schedule()
-  {
-    int success = ReadDirectoryChangesW(
-      root, // root directory handle
-      buffer.get(), // result buffer
-      buffer_size, // result buffer size
-      TRUE, // recursive
-      FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES
-        | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS
-        | FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SECURITY, // change flags
-      NULL, // bytes returned
-      &overlapped, // overlapped
-      &event_helper // completion routine
-    );
-    if (!success) {
-      return windows_error_result<>("Unable to subscribe to filesystem events");
-    }
-
-    return ok_result();
-  }
-
-  Result<> use_network_size()
-  {
-    if (buffer_size <= NETWORK_BUFFER_SIZE) {
-      ostringstream out("Buffer size of ");
-      out
-        << buffer_size
-        << " is already lower than the network buffer size "
-        << NETWORK_BUFFER_SIZE;
-      return error_result(out.str());
-    }
-
-    buffer_size = NETWORK_BUFFER_SIZE;
-    buffer.reset(new BYTE[buffer_size]);
-    written.reset(new BYTE[buffer_size]);
-
-    return ok_result();
-  }
-
-  ChannelID get_channel() const {
-    return channel;
-  }
-
-  WindowsWorkerPlatform* get_platform() const {
-    return platform;
-  }
-
-  BYTE *get_written(DWORD written_size) {
-    memcpy(written.get(), buffer.get(), written_size);
-    return written.get();
-  }
-
-  wstring make_absolute(const wstring &sub_path)
-  {
-    wostringstream out;
-
-    out << path;
-    if (path.back() != L'\\' && sub_path.front() != L'\\') {
-      out << L'\\';
-    }
-    out << sub_path;
-
-    return out.str();
-  }
-
-private:
-  ChannelID channel;
-  WindowsWorkerPlatform *platform;
-
-  wstring path;
-  HANDLE root;
-  OVERLAPPED overlapped;
-
-  DWORD buffer_size;
-  unique_ptr<BYTE[]> buffer;
-  unique_ptr<BYTE[]> written;
-};
 
 class WindowsWorkerPlatform : public WorkerPlatform {
 public:
@@ -245,7 +138,7 @@ public:
 
     LOGGER << "Added directory root " << root_path << "." << endl;
 
-    return sub->schedule();
+    return sub->schedule(&event_helper);
   }
 
   Result<> handle_remove_command(const ChannelID channel)
@@ -276,12 +169,12 @@ public:
       Result<> resize = sub->use_network_size();
       if (resize.is_error()) return resize;
 
-      return sub->schedule();
+      return sub->schedule(&event_helper);
     }
 
     if (error_code == ERROR_NOTIFY_ENUM_DIR) {
       LOGGER << "Change buffer overflow. Some events may have been lost." << endl;
-      return sub->schedule();
+      return sub->schedule(&event_helper);
     }
 
     if (error_code != ERROR_SUCCESS) {
@@ -290,7 +183,7 @@ public:
 
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
-    Result<> next = sub->schedule();
+    Result<> next = sub->schedule(&event_helper);
     if (next.is_error()) {
       report_error(string(next.get_error()));
     }
