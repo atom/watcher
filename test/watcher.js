@@ -6,6 +6,8 @@ const fs = require('fs-extra')
 describe('watcher', function () {
   let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
 
+  this.timeout(5000)
+
   beforeEach(async function () {
     subs = []
 
