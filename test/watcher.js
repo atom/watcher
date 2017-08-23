@@ -248,7 +248,6 @@ describe('watcher', function () {
 
         await until('the deletion event arrives', eventMatching({
           type: 'deleted',
-          kind: 'file',
           oldPath: deletedPath
         }))
       })
@@ -270,9 +269,9 @@ describe('watcher', function () {
         await fs.writeFile(createdPath, 'and another\n')
 
         await until('all events arrive', orderedEventsMatching(
-          {type: 'deleted', kind: 'file', oldPath: deletedPath},
+          {type: 'deleted', oldPath: deletedPath},
           {type: 'created', kind: 'file', oldPath: recreatedPath},
-          {type: 'deleted', kind: 'file', oldPath: recreatedPath},
+          {type: 'deleted', oldPath: recreatedPath},
           {type: 'created', kind: 'file', oldPath: recreatedPath},
           {type: 'created', kind: 'file', oldPath: createdPath}
         ))
@@ -341,7 +340,7 @@ describe('watcher', function () {
 
         await fs.rmdir(subdir)
         await until('directory deletion event arrives', eventMatching(
-          {type: 'deleted', kind: 'directory', oldPath: subdir}
+          {type: 'deleted', oldPath: subdir}
         ))
       })
 
@@ -356,7 +355,7 @@ describe('watcher', function () {
         await fs.writeFile(reusedPath, 'IMMA FILE NOW, SURPRIIIISE\n')
 
         await until('deletion and creation events arrive', orderedEventsMatching(
-          {type: 'deleted', kind: 'directory', oldPath: reusedPath},
+          {type: 'deleted', oldPath: reusedPath},
           {type: 'created', kind: 'file', oldPath: reusedPath}
         ))
       })
@@ -378,7 +377,7 @@ describe('watcher', function () {
         await fs.rename(oldFilePath, reusedPath)
 
         await until('deletion and rename events arrive', allEventsMatching(
-          {type: 'deleted', kind: 'directory', oldPath: reusedPath},
+          {type: 'deleted', oldPath: reusedPath},
           {type: 'renamed', kind: 'file', oldPath: oldFilePath, newPath: reusedPath}
         ))
       })
@@ -435,7 +434,7 @@ describe('watcher', function () {
         await fs.mkdir(reusedPath)
 
         await until('delete and create events arrive', orderedEventsMatching(
-          {type: 'deleted', kind: 'file', oldPath: reusedPath},
+          {type: 'deleted', oldPath: reusedPath},
           {type: 'created', kind: 'directory', oldPath: reusedPath}
         ))
       })
@@ -457,7 +456,7 @@ describe('watcher', function () {
         await fs.rename(oldDirPath, reusedPath)
 
         await until('delete and rename events arrive', allEventsMatching(
-          {type: 'deleted', kind: 'file', oldPath: reusedPath},
+          {type: 'deleted', oldPath: reusedPath},
           {type: 'renamed', kind: 'directory', oldPath: oldDirPath, newPath: reusedPath}
         ))
       })
