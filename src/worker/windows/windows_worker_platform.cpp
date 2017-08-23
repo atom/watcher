@@ -207,7 +207,7 @@ public:
       );
       if (!success) {
         Result<> r = windows_error_result<>("Unable to duplicate thread handle");
-        report_error("Unable to acquire thread handle");
+        report_error(r);
         return r;
       }
     }
