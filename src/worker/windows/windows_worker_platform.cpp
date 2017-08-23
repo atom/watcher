@@ -443,7 +443,7 @@ Result<string> to_utf8(const wstring &in)
     CP_UTF8, // code page
     0, // flags
     in.data(), // source string
-    in.size(), // source string length
+    in.size() / sizeof(WCHAR), // source string length
     nullptr, // destination string, null to measure
     0, // destination string length
     nullptr, // default char
@@ -458,7 +458,7 @@ Result<string> to_utf8(const wstring &in)
     CP_UTF8, // code page
     0, // flags
     in.data(), // source string
-    in.size(), // source string length
+    in.size() / sizeof(WCHAR), // source string length
     out, // destination string
     len, // destination string length
     nullptr, // default char
