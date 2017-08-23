@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "../../helper/windows/helper.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
 #include "../../message.h"
@@ -35,16 +36,6 @@ const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
 static void CALLBACK command_perform_helper(__in ULONG_PTR payload);
 
 static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped);
-
-static Result<string> to_utf8(const wstring &in);
-
-static Result<wstring> to_wchar(const string &in);
-
-template < class V = void* >
-static Result<V> windows_error_result(const string &prefix);
-
-template < class V = void* >
-static Result<V> windows_error_result(const string &prefix, DWORD error_code);
 
 class WindowsWorkerPlatform;
 
@@ -459,96 +450,4 @@ static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPE
   if (r.is_error()) {
     LOGGER << "Unable to handle filesystem events: " << r << "." << endl;
   }
-}
-
-Result<string> to_utf8(const wstring &in)
-{
-  size_t len = WideCharToMultiByte(
-    CP_UTF8, // code page
-    0, // flags
-    in.data(), // source string
-    in.size(), // source string length
-    nullptr, // destination string, null to measure
-    0, // destination string length
-    nullptr, // default char
-    nullptr  // used default char
-  );
-  if (!len) {
-    return windows_error_result<string>("Unable to measure string as UTF-8");
-  }
-
-  unique_ptr<char[]> payload(new char[len]);
-  size_t copied = WideCharToMultiByte(
-    CP_UTF8, // code page
-    0, // flags
-    in.data(), // source string
-    in.size(), // source string length
-    payload.get(), // destination string
-    len, // destination string length
-    nullptr, // default char
-    nullptr // used default char
-  );
-  if (!copied) {
-    return windows_error_result<string>("Unable to convert string to UTF-8");
-  }
-
-  return ok_result(string(payload.get(), len));
-}
-
-Result<wstring> to_wchar(const string &in)
-{
-  size_t wlen = MultiByteToWideChar(
-    CP_UTF8, // code page
-    0, // flags
-    in.c_str(), // source string data
-    -1, // source string length (null-terminated)
-    0, // output buffer
-    0 // output buffer size
-  );
-  if (wlen == 0) {
-    return windows_error_result<wstring>("Unable to measure string as wide string");
-  }
-
-  unique_ptr<WCHAR[]> payload(new WCHAR[wlen]);
-  size_t conv_success = MultiByteToWideChar(
-    CP_UTF8, // code page
-    0, // flags,
-    in.c_str(), // source string data
-    -1, // source string length (null-terminated)
-    payload.get(), // output buffer
-    wlen // output buffer size (in bytes)
-  );
-  if (!conv_success) {
-    return windows_error_result<wstring>("Unable to convert string to wide string");
-  }
-
-  return ok_result(wstring(payload.get(), wlen - 1));
-}
-
-template < class V >
-Result<V> windows_error_result(const string &prefix)
-{
-  return windows_error_result<V>(prefix, GetLastError());
-}
-
-template < class V >
-Result<V> windows_error_result(const string &prefix, DWORD error_code)
-{
-  LPVOID msg_buffer;
-
-  FormatMessage(
-    FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-    NULL, // source
-    error_code, // message ID
-    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // language ID
-    (LPSTR) &msg_buffer, // output buffer
-    0, // size
-    NULL // arguments
-  );
-
-  ostringstream msg;
-  msg << prefix << "\n (" << error_code << ") " << (char*) msg_buffer;
-  LocalFree(msg_buffer);
-
-  return Result<V>::make_error(msg.str());
 }
