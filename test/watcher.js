@@ -168,7 +168,7 @@ describe('watcher', function () {
           let specIndex = 0
 
           for (const event of events) {
-            if (specMatches(specs[specIndex], event)) {
+            if (specs[specIndex] && specMatches(specs[specIndex], event)) {
               specIndex++
             }
           }
