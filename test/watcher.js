@@ -11,11 +11,14 @@ describe('watcher', function () {
   }
 
   beforeEach(async function () {
+    console.log('watcher beforeEach: start')
     subs = []
 
     const rootDir = path.join(__dirname, 'fixture')
     fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
+    console.log('created fixture dir')
     watchDir = path.join(fixtureDir, 'root')
+    console.log('created watch dir')
     await fs.mkdirs(watchDir)
 
     mainLogFile = path.join(fixtureDir, 'main.test.log')
@@ -24,11 +27,14 @@ describe('watcher', function () {
     await Promise.all([
       [mainLogFile, workerLogFile].map(fname => fs.unlink(fname, {encoding: 'utf8'}).catch(() => ''))
     ])
+    console.log('watcher beforeEach: finish')
   })
 
   afterEach(async function () {
+    console.log('watcher afterEach: start')
     if (process.platform === 'win32') {
       await watcher.configure({mainLogFile: null, workerLogFile: null})
+      console.log('logging disabled')
     }
 
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
@@ -45,6 +51,7 @@ describe('watcher', function () {
         .catch(err => console.warn('Unable to delete fixture directory', err)),
       ...subs.map(sub => sub.unwatch())
     ])
+    console.log('watcher afterEach: finish')
   })
 
   describe('configuration', function () {
@@ -69,11 +76,13 @@ describe('watcher', function () {
 
   describe('watching a directory', function () {
     beforeEach(async function () {
+      console.log('watching a directory beforeEach: start')
       if (!['darwin', 'win32'].includes(process.platform)) {
         this.skip()
       }
 
       await watcher.configure({mainLogFile, workerLogFile})
+      console.log('watching a directory beforeEach: finish')
     })
 
     it('begins receiving events within that directory ^linux', async function () {
@@ -129,6 +138,7 @@ describe('watcher', function () {
       let errors, events
 
       beforeEach(async function () {
+        console.log('events beforeEach: start')
         if (!['darwin', 'win32'].includes(process.platform)) {
           this.skip()
         }
@@ -140,6 +150,7 @@ describe('watcher', function () {
           errors.push(err)
           events.push(...es)
         }))
+        console.log('events beforeEach: finish')
       })
 
       function specMatches (spec, event) {
