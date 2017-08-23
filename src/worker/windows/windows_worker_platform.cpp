@@ -216,36 +216,14 @@ public:
 
   Result<> handle_add_command(const ChannelID channel, const string &root_path)
   {
-    LOGGER << "Watching: " << root_path << endl;
-
-    // Convert the path to a wide-character array
-    size_t wlen = MultiByteToWideChar(
-      CP_UTF8, // code page
-      0, // flags
-      root_path.data(), // source string data
-      -1, // source string length (null-terminated)
-      0, // output buffer
-      0 // output buffer size
-    );
-    if (wlen == 0) {
-      return windows_error_result<>("Unable to measure UTF-16 buffer");
-    }
-    unique_ptr<WCHAR[]> root_path_w{new WCHAR[wlen]};
-    size_t conv_success = MultiByteToWideChar(
-      CP_UTF8, // code page
-      0, // flags,
-      root_path.data(), // source string data
-      -1, // source string length (null-terminated)
-      root_path_w.get(), // output buffer
-      wlen // output buffer size
-    );
-    if (!conv_success) {
-      return windows_error_result<>("Unable to convert root path to UTF-16");
-    }
+    // Convert the path to a wide-character string
+    Result<wstring> convr = to_wchar(root_path);
+    if (convr.is_error()) return convr.propagate<>();
+    wstring &root_path_w = convr.get_value();
 
     // Open a directory handle
     HANDLE root = CreateFileW(
-      root_path_w.get(), // file name
+      root_path_w.c_str(), // null-terminated wchar file name
       FILE_LIST_DIRECTORY, // desired access
       FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, // share mode
       NULL, // security attributes
