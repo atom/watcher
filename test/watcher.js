@@ -135,7 +135,7 @@ describe('watcher', function () {
 
       function specMatches (spec, event) {
         return (spec.type === undefined || event.type === spec.type) &&
-          (event.kind === undefined || event.kind === spec.kind) &&
+          (spec.kind === undefined || event.kind === spec.kind) &&
           (event.oldPath === undefined || event.oldPath === spec.oldPath) &&
           (event.newPath === (spec.newPath || ''))
       }
