@@ -197,7 +197,7 @@ describe('watcher', function () {
         }
       }
 
-      it('when a file is created ^linux', async function () {
+      it.only('when a file is created ^linux', async function () {
         const createdFile = path.join(watchDir, 'file.txt')
         await fs.writeFile(createdFile, 'contents')
 
