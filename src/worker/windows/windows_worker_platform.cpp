@@ -165,7 +165,6 @@ public:
       return ok_result(true);
     }
 
-    std::cerr << "Stopping subscription for channel " << channel << "." << endl;
     Result<> r = it->second->stop(command);
     if (r.is_error()) return r.propagate<bool>();
 
@@ -183,28 +182,24 @@ public:
     if (it == subscriptions.end() || it->second != sub) {
       return ok_result();
     }
-    std::cerr << "Filesystem event received on channel " << channel << "." << endl;
 
     // Subscription termination.
     bool terminate = false;
     if (error_code == ERROR_OPERATION_ABORTED) {
-      std::cerr << "ERROR_OPERATION_ABORTED received on channel " << channel << "." << endl;
+      LOGGER << "ERROR_OPERATION_ABORTED encountered on channel " << channel << "." << endl;
       terminate = true;
     }
     if (sub->is_terminating()) {
-      std::cerr << "Subscription for channel " << channel << " is terminating." << endl;
+      LOGGER << "Filesystem event encountered on terminating channel " << channel << "." << endl;
       terminate = true;
     }
     if (terminate) {
-      LOGGER << "Shutting down watcher for channel " << channel << "." << endl;
-
       AckPayload ack(sub->get_command_id(), channel, true, "");
       Message response(move(ack));
 
       subscriptions.erase(it);
       delete sub;
 
-      std::cerr << "Producing ack for command " << ack.get_key() << "." << endl;
       return emit(move(response));
     }
 

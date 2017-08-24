@@ -34,14 +34,11 @@ Result<> WorkerThread::wake()
 {
   if (!is_healthy()) return health_err_result();
 
-  std::cerr << "WorkerThread::wake() called" << endl;
   return platform->wake();
 }
 
 void WorkerThread::listen()
 {
-  std::cerr << "WorkerThread::listen() called" << endl;
-
   // Handle any commands that were enqueued while the thread was starting.
   Result<> cr = handle_commands();
   if (cr.is_error()) {
@@ -56,8 +53,6 @@ void WorkerThread::listen()
     report_error("WorkerPlatform::listen() returned unexpectedly");
     LOGGER << "listen unexpectedly returned without reporting an error." << endl;
   }
-
-  std::cerr << "WorkerThread::listen() completed" << endl;
 }
 
 Result<> WorkerThread::handle_commands()
@@ -78,15 +73,12 @@ Result<> WorkerThread::handle_commands()
   vector<Message> acks;
   acks.reserve(accepted->size());
 
-  std::cerr << "WorkerThread::handle_commands() handling " << accepted->size() << " command(s)" << endl;
-
   for (auto it = accepted->begin(); it != accepted->end(); ++it) {
     const CommandPayload *command = it->as_command();
     if (!command) {
       LOGGER << "Received unexpected message " << *it << "." << endl;
       continue;
     }
-    std::cerr << "WorkerThread::handle_commands() handling command " << *it << "." << endl;
 
     bool success = true;
     bool ack = true;
