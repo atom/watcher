@@ -2,7 +2,9 @@ image: Visual Studio 2015
 
 environment:
   nodejs_version: "7.4.0"
-  VERBOSE: true
+  VERBOSE: "true"
+  npm_config_loglevel: silly
+  npm_config_debug: "true"
 
 platform:
   - x86
