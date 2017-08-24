@@ -108,13 +108,16 @@ public:
     return health_err_result();
   }
 
-  Result<> handle_add_command(const ChannelID channel, const string &root_path)
+  Result<bool> handle_add_command(
+    const CommandID command,
+    const ChannelID channel,
+    const string &root_path) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
 
     // Convert the path to a wide-character string
     Result<wstring> convr = to_wchar(root_path);
-    if (convr.is_error()) return convr.propagate<>();
+    if (convr.is_error()) return convr.propagate<bool>();
     wstring &root_path_w = convr.get_value();
 
     // Open a directory handle
@@ -128,7 +131,7 @@ public:
       NULL // template file
     );
     if (root == INVALID_HANDLE_VALUE) {
-      return windows_error_result<>("Unable to open directory handle");
+      return windows_error_result<bool>("Unable to open directory handle");
     }
 
     // Allocate and persist the subscription
@@ -139,12 +142,15 @@ public:
 
       ostringstream msg("Channel collision: ");
       msg << channel;
-      return error_result(msg.str());
+      return Result<bool>::make_error(msg.str());
     }
 
     LOGGER << "Added directory root " << root_path << "." << endl;
 
-    return sub->schedule(&event_helper);
+    Result<> schedr = sub->schedule(&event_helper);
+    if (schedr.is_error()) return schedr.propagate<bool>();
+
+    return ok_result(true);
   }
 
   Result<> handle_remove_command(const ChannelID channel)
