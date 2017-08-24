@@ -1,5 +1,5 @@
 const watcher = require('../lib')
-const {DISABLE, STDERR, STDOUT} = watcher
+const {DISABLE} = watcher
 
 const path = require('path')
 const fs = require('fs-extra')
