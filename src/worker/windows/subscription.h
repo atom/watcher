@@ -46,6 +46,11 @@ public:
     return platform;
   }
 
+  bool is_terminating() const
+  {
+    return terminating;
+  }
+
 private:
   CommandID command;
   ChannelID channel;

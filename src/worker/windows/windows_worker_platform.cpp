@@ -185,9 +185,17 @@ public:
     }
     std::cerr << "Filesystem event received on channel " << channel << "." << endl;
 
-    // Handle errors.
+    // Subscription termination.
+    bool terminate = false;
     if (error_code == ERROR_OPERATION_ABORTED) {
       std::cerr << "ERROR_OPERATION_ABORTED received on channel " << channel << "." << endl;
+      terminate = true;
+    }
+    if (sub->is_terminating()) {
+      std::cerr << "Subscription for channel " << channel << " is terminating." << endl;
+      terminate = true;
+    }
+    if (terminate) {
       LOGGER << "Shutting down watcher for channel " << channel << "." << endl;
 
       AckPayload ack(sub->get_command_id(), channel, true, "");
@@ -196,9 +204,11 @@ public:
       subscriptions.erase(it);
       delete sub;
 
+      std::cerr << "Producing ack for command " << ack.get_key() << "." << endl;
       return emit(move(response));
     }
 
+    // Handle errors.
     if (error_code == ERROR_INVALID_PARAMETER) {
       Result<> resize = sub->use_network_size();
       if (resize.is_error()) return resize;
