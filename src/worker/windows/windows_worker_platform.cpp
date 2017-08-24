@@ -188,8 +188,7 @@ public:
     if (error_code == ERROR_OPERATION_ABORTED) {
       LOGGER << "ERROR_OPERATION_ABORTED encountered on channel " << channel << "." << endl;
       terminate = true;
-    }
-    if (sub->is_terminating()) {
+    } else if (sub->is_terminating()) {
       LOGGER << "Filesystem event encountered on terminating channel " << channel << "." << endl;
       terminate = true;
     }
