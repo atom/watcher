@@ -3,8 +3,6 @@ image: Visual Studio 2015
 environment:
   nodejs_version: "7.4.0"
   VERBOSE: "true"
-  npm_config_loglevel: verbose
-  npm_config_debug: "true"
 
 platform:
   - x86
@@ -15,7 +13,7 @@ build: off
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm config set msvs_version 2015
-  - npm install --log-level=verbose
+  - npm install
 
 test_script:
 - npm run ci:appveyor
