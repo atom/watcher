@@ -12,16 +12,11 @@ describe('watcher', function () {
   }
 
   beforeEach(async function () {
-    process.stderr.write(`>>> ${this.currentTest.title}\n`)
-
-    console.log('watcher beforeEach: start')
     subs = []
 
     const rootDir = path.join(__dirname, 'fixture')
     fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
-    console.log('created fixture dir')
     watchDir = path.join(fixtureDir, 'root')
-    console.log('created watch dir')
     await fs.mkdirs(watchDir)
 
     mainLogFile = path.join(fixtureDir, 'main.test.log')
@@ -30,35 +25,23 @@ describe('watcher', function () {
     await Promise.all([
       [mainLogFile, workerLogFile].map(fname => fs.unlink(fname, {encoding: 'utf8'}).catch(() => ''))
     ])
-    console.log('watcher beforeEach: finish')
   })
 
   afterEach(async function () {
-    console.log('watcher afterEach: unsubscribing watchers')
     await Promise.all(subs.map(sub => sub.unwatch()))
-    console.log('watcher afterEach: watchers unsubscribed')
 
     if (process.platform === 'win32') {
-      console.log('watcher afterEach: disabling logging')
       await watcher.configure({mainLogFile: null, workerLogFile: null})
-      console.log('watcher afterEach: logging disabled')
     }
 
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
-      console.log('watcher afterEach: reporting logs')
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
       )
-
-      console.log(`main log ${mainLogFile}:\n${mainLog}`)
-      console.log(`worker log ${workerLogFile}:\n${workerLog}`)
-      console.log('watcher afterEach: logs reported')
     }
 
-    console.log('watcher afterEach: removing fixture directory')
     await fs.remove(fixtureDir, {maxBusyTries: 1})
       .catch(err => console.warn('Unable to delete fixture directory', err))
-    console.log('watcher afterEach: fixture directory removed')
   })
 
   describe('configuration', function () {
@@ -83,13 +66,11 @@ describe('watcher', function () {
 
   describe('watching a directory', function () {
     beforeEach(async function () {
-      console.log('watching a directory beforeEach: start')
       if (!['darwin', 'win32'].includes(process.platform)) {
         this.skip()
       }
 
       await watcher.configure({mainLogFile, workerLogFile})
-      console.log('watching a directory beforeEach: finish')
     })
 
     it('begins receiving events within that directory ^linux', async function () {
@@ -145,7 +126,6 @@ describe('watcher', function () {
       let errors, events
 
       beforeEach(async function () {
-        console.log('events beforeEach: start')
         if (!['darwin', 'win32'].includes(process.platform)) {
           this.skip()
         }
@@ -157,7 +137,6 @@ describe('watcher', function () {
           errors.push(err)
           events.push(...es)
         }))
-        console.log('events beforeEach: finish')
       })
 
       function specMatches (spec, event) {
