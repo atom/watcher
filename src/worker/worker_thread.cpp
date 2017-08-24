@@ -64,7 +64,6 @@ Result<> WorkerThread::handle_commands()
 {
   if (!is_healthy()) return health_err_result();
 
-  std::cerr << "WorkerThread::handle_commands() started" << endl;
   Result< unique_ptr<vector<Message>> > pr = process_all();
   if (pr.is_error()) {
     return error_result(string(pr.get_error()));
@@ -79,7 +78,7 @@ Result<> WorkerThread::handle_commands()
   vector<Message> acks;
   acks.reserve(accepted->size());
 
-  std::cerr << "WorkerThread::handle_commands() handling " << accepted->size() << " commands" << endl;
+  std::cerr << "WorkerThread::handle_commands() handling " << accepted->size() << " command(s)" << endl;
 
   for (auto it = accepted->begin(); it != accepted->end(); ++it) {
     const CommandPayload *command = it->as_command();
@@ -87,6 +86,7 @@ Result<> WorkerThread::handle_commands()
       LOGGER << "Received unexpected message " << *it << "." << endl;
       continue;
     }
+    std::cerr << "WorkerThread::handle_commands() handling command " << *it << "." << endl;
 
     bool success = true;
     bool ack = true;

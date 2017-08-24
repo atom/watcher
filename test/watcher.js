@@ -11,6 +11,8 @@ describe('watcher', function () {
   }
 
   beforeEach(async function () {
+    process.stderr.write(`>>> ${this.currentTest.title}\n`)
+
     console.log('watcher beforeEach: start')
     subs = []
 
@@ -31,27 +33,31 @@ describe('watcher', function () {
   })
 
   afterEach(async function () {
-    console.log('watcher afterEach: start')
-
+    console.log('watcher afterEach: unsubscribing watchers')
     await Promise.all(subs.map(sub => sub.unwatch()))
+    console.log('watcher afterEach: watchers unsubscribed')
 
     if (process.platform === 'win32') {
+      console.log('watcher afterEach: disabling logging')
       await watcher.configure({mainLogFile: null, workerLogFile: null})
+      console.log('watcher afterEach: logging disabled')
     }
 
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
+      console.log('watcher afterEach: reporting logs')
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
       )
 
       console.log(`main log ${mainLogFile}:\n${mainLog}`)
       console.log(`worker log ${workerLogFile}:\n${workerLog}`)
+      console.log('watcher afterEach: logs reported')
     }
 
+    console.log('watcher afterEach: removing fixture directory')
     await fs.remove(fixtureDir, {maxBusyTries: 1})
       .catch(err => console.warn('Unable to delete fixture directory', err))
-
-    console.log('watcher afterEach: finish')
+    console.log('watcher afterEach: fixture directory removed')
   })
 
   describe('configuration', function () {
