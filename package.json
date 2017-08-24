@@ -15,7 +15,7 @@
     "ci:travis": "npm run mocha -- --fgrep '^linux' --invert --reporter list",
     "aw:test": "clear && npm run build:debug && clear && npm run mocha",
     "clean:fixture": "rm -r test/fixture/*.log test/fixture/watched-*",
-    "install": "node-gyp rebuild --loglevel=silly --debug"
+    "install": "node-gyp rebuild --loglevel=silly"
   },
   "keywords": [
     "filewatch",
