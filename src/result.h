@@ -81,35 +81,21 @@ public:
 
   Result(Result<V> &&original) : state{original.state}, pending{false}
   {
-    switch (state) {
-      case RESULT_OK:
-        new (&value) V(std::move(original.value));
-        break;
-      case RESULT_ERROR:
-        new (&error) std::string(std::move(original.error));
-        break;
-      default:
-        LOGGER << "Invalid result state " << state << " in Result::Result(Result&&)." << std::endl;
-        break;
-    }
+    assign(std::move(original));
   }
 
   ~Result()
   {
-    switch (state) {
-      case RESULT_OK:
-        value.~V();
-        break;
-      case RESULT_ERROR:
-        error.~basic_string();
-        break;
-      default:
-        LOGGER << "Invalid result state " << state << " in Result::~Result()." << std::endl;
-        break;
-    }
+    clear();
   }
 
-  Result<V> &operator=(Result<V>&& original) = delete;
+  Result<V> &operator=(Result<V>&& original)
+  {
+    clear();
+    assign(std::move(original));
+    return *this;
+  }
+
   Result<V> &operator=(const Result<V> &original) = delete;
 
   bool is_ok() const
@@ -163,6 +149,38 @@ private:
         break;
       default:
         LOGGER << "Invalid result state " << state << " in Result::Result(Result&)" << std::endl;
+        break;
+    }
+  }
+
+  void assign(Result &&original)
+  {
+    state = original.state;
+
+    switch (state) {
+      case RESULT_OK:
+        new (&value) V(std::move(original.value));
+        break;
+      case RESULT_ERROR:
+        new (&error) std::string(std::move(original.error));
+        break;
+      default:
+        LOGGER << "Invalid result state " << state << " in Result::assign(Result&&)." << std::endl;
+        break;
+    }
+  }
+
+  void clear()
+  {
+    switch (state) {
+      case RESULT_OK:
+        value.~V();
+        break;
+      case RESULT_ERROR:
+        error.~basic_string();
+        break;
+      default:
+        LOGGER << "Invalid result state " << state << " in Result::clear()." << std::endl;
         break;
     }
   }

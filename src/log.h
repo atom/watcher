@@ -10,6 +10,8 @@ public:
 
   static Logger* current();
   static void to_file(const char *filename);
+  static void to_stderr();
+  static void to_stdout();
   static void disable();
 
   virtual Logger* prefix(const char *file, int line) = 0;

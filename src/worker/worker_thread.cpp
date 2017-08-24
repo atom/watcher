@@ -118,6 +118,14 @@ Result<> WorkerThread::handle_commands()
         Logger::to_file(command->get_root().c_str());
         break;
 
+      case COMMAND_LOG_STDERR:
+        Logger::to_stderr();
+        break;
+
+      case COMMAND_LOG_STDOUT:
+        Logger::to_stdout();
+        break;
+
       case COMMAND_LOG_DISABLE:
         LOGGER << "Disabling logger." << endl;
         Logger::disable();
