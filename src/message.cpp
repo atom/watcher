@@ -110,35 +110,23 @@ const string &FileSystemPayload::get_new_path() const
 string FileSystemPayload::describe() const
 {
   ostringstream builder;
-  builder << "[FileSystemPayload channel " << channel_id << " ";
-
-  switch (entry_kind) {
-    case KIND_FILE:
-      builder << "file ";
-      break;
-    case KIND_DIRECTORY:
-      builder << "dir ";
-      break;
-    default:
-      builder << "!!entry_kind=" << entry_kind << " ";
-      break;
-  }
+  builder << "[FileSystemPayload channel " << channel_id << " " << entry_kind;
 
   switch (action) {
     case ACTION_CREATED:
-      builder << "created " << old_path;
+      builder << " created " << old_path;
       break;
     case ACTION_DELETED:
-      builder << "deleted " << old_path;
+      builder << " deleted " << old_path;
       break;
     case ACTION_MODIFIED:
-      builder << "modified " << old_path;
+      builder << " modified " << old_path;
       break;
     case ACTION_RENAMED:
-      builder << "renamed {" << old_path << " => " << new_path << "}";
+      builder << " renamed {" << old_path << " => " << new_path << "}";
       break;
     default:
-      builder << "!!action=" << action << " ";
+      builder << " !!action=" << action << " ";
       break;
   }
 

@@ -20,8 +20,13 @@ public:
   virtual Result<> wake() = 0;
 
   virtual Result<> listen() = 0;
-  virtual Result<> handle_add_command(const ChannelID channel, const std::string &root_path) = 0;
-  virtual Result<> handle_remove_command(const ChannelID channel) = 0;
+  virtual Result<bool> handle_add_command(
+    const CommandID command,
+    const ChannelID channel,
+    const std::string &root_path) = 0;
+  virtual Result<bool> handle_remove_command(
+    const CommandID command,
+    const ChannelID channel) = 0;
 
   Result<> handle_commands()
   {

@@ -4,6 +4,7 @@
 #include <utility>
 #include <string>
 #include <iostream>
+#include <cassert>
 
 #include "log.h"
 
@@ -123,12 +124,21 @@ public:
 
   V &get_value()
   {
+    assert(state == RESULT_OK);
     return value;
   }
 
   const std::string& get_error() const
   {
+    assert(state == RESULT_ERROR);
     return error;
+  }
+
+  template < class U = void* >
+  Result<U> propagate(const std::string &prefix = "") const
+  {
+    assert(state == RESULT_ERROR);
+    return Result<U>::make_error(prefix + get_error());
   }
 
 private:

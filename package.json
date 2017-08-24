@@ -14,7 +14,8 @@
     "ci:circle": "npm run mocha -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
     "ci:travis": "npm run mocha -- --fgrep '^linux' --invert --reporter list",
     "aw:test": "clear && npm run build:debug && clear && npm run mocha",
-    "clean:fixture": "rm -r test/fixture/*.log test/fixture/watched-*"
+    "clean:fixture": "rm -r test/fixture/*.log test/fixture/watched-*",
+    "install": "cross-env NODE_DEBUG=request node-gyp rebuild --loglevel=silly"
   },
   "keywords": [
     "filewatch",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "chai": "4.0.2",
     "chai-as-promised": "7.1.1",
+    "cross-env": "^5.0.5",
     "fs-extra": "^4.0.0",
     "mocha": "3.4.2",
     "mocha-appveyor-reporter": "^0.4.0",

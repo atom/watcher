@@ -375,7 +375,7 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
 void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 {
   if (info.Length() != 2) {
-    Nan::ThrowError("watch() requires two arguments");
+    Nan::ThrowError("unwatch() requires two arguments");
     return;
   }
 

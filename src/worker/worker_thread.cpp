@@ -32,6 +32,8 @@ WorkerThread::~WorkerThread()
 
 Result<> WorkerThread::wake()
 {
+  if (!is_healthy()) return health_err_result();
+
   return platform->wake();
 }
 
@@ -48,12 +50,15 @@ void WorkerThread::listen()
     LOGGER << "Unable to listen: " << lr << endl;
     report_error(string(lr.get_error()));
   } else {
+    report_error("WorkerPlatform::listen() returned unexpectedly");
     LOGGER << "listen unexpectedly returned without reporting an error." << endl;
   }
 }
 
 Result<> WorkerThread::handle_commands()
 {
+  if (!is_healthy()) return health_err_result();
+
   Result< unique_ptr<vector<Message>> > pr = process_all();
   if (pr.is_error()) {
     return error_result(string(pr.get_error()));
@@ -76,25 +81,35 @@ Result<> WorkerThread::handle_commands()
     }
 
     bool success = true;
+    bool ack = true;
     string message = "";
 
     switch (command->get_action()) {
       case COMMAND_ADD:
         {
-          Result<> r = platform->handle_add_command(command->get_channel_id(), command->get_root());
+          Result<bool> r = platform->handle_add_command(
+            command->get_id(),
+            command->get_channel_id(),
+            command->get_root());
           if (r.is_error()) {
             success = false;
             message = r.get_error();
+          } else {
+            ack = r.get_value();
           }
         }
         break;
 
       case COMMAND_REMOVE:
         {
-          Result<> r = platform->handle_remove_command(command->get_channel_id());
+          Result<bool> r = platform->handle_remove_command(
+            command->get_id(),
+            command->get_channel_id());
           if (r.is_error()) {
             success = false;
             message = r.get_error();
+          } else {
+            ack = r.get_value();
           }
         }
         break;
@@ -113,9 +128,15 @@ Result<> WorkerThread::handle_commands()
         break;
     }
 
-    AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
-    Message response(move(ack));
-    acks.push_back(move(response));
+    if (!message.empty()) {
+      LOGGER << "Reporting platform error: " << message << "." << endl;
+    }
+
+    if (ack) {
+      AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
+      Message response(move(ack));
+      acks.push_back(move(response));
+    }
   }
 
   return emit_all(acks.begin(), acks.end());
