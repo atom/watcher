@@ -32,6 +32,8 @@ WorkerThread::~WorkerThread()
 
 Result<> WorkerThread::wake()
 {
+  if (!is_healthy()) return health_err_result();
+
   std::cerr << "WorkerThread::wake() called" << endl;
   return platform->wake();
 }
@@ -60,6 +62,8 @@ void WorkerThread::listen()
 
 Result<> WorkerThread::handle_commands()
 {
+  if (!is_healthy()) return health_err_result();
+
   std::cerr << "WorkerThread::handle_commands() started" << endl;
   Result< unique_ptr<vector<Message>> > pr = process_all();
   if (pr.is_error()) {
