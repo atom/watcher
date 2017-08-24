@@ -20,10 +20,12 @@ Subscription::Subscription(
   const wstring &path,
   WindowsWorkerPlatform *platform
 ) :
+  command{0},
   channel{channel},
   platform{platform},
   path{path},
   root{root},
+  terminating{false},
   buffer_size{DEFAULT_BUFFER_SIZE},
   buffer{new BYTE[buffer_size]},
   written{new BYTE[buffer_size]}
@@ -76,7 +78,8 @@ Result<> Subscription::use_network_size()
   return ok_result();
 }
 
-BYTE *Subscription::get_written(DWORD written_size) {
+BYTE *Subscription::get_written(DWORD written_size)
+{
   memcpy(written.get(), buffer.get(), written_size);
   return written.get();
 }
@@ -92,4 +95,17 @@ wstring Subscription::make_absolute(const wstring &sub_path)
   out << sub_path;
 
   return out.str();
+}
+
+Result<> Subscription::stop(const CommandID cmd)
+{
+  if (terminating) return ok_result();
+
+  bool success = CancelIo(root);
+  if (!success) return windows_error_result<>("Unable to cancel pending I/O");
+
+  terminating = true;
+  command = cmd;
+
+  return ok_result();
 }

@@ -29,21 +29,32 @@ public:
 
   std::wstring make_absolute(const std::wstring &sub_path);
 
-  ChannelID get_channel() const {
+  Result<> stop(const CommandID command);
+
+  CommandID get_command_id() const
+  {
+    return command;
+  }
+
+  ChannelID get_channel() const
+  {
     return channel;
   }
 
-  WindowsWorkerPlatform* get_platform() const {
+  WindowsWorkerPlatform* get_platform() const
+  {
     return platform;
   }
 
 private:
+  CommandID command;
   ChannelID channel;
   WindowsWorkerPlatform *platform;
 
   std::wstring path;
   HANDLE root;
   OVERLAPPED overlapped;
+  bool terminating;
 
   DWORD buffer_size;
   std::unique_ptr<BYTE[]> buffer;
