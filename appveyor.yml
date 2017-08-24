@@ -6,7 +6,6 @@ cache:
 
 environment:
   nodejs_version: "7.4.0"
-  VERBOSE: "true"
 
 platform:
   - x86
