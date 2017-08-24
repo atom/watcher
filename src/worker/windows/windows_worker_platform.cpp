@@ -56,6 +56,8 @@ public:
 
   Result<> wake() override
   {
+    if (!is_healthy()) return health_err_result();
+
     Lock lock(thread_handle_mutex);
 
     if (!thread_handle) {
@@ -76,6 +78,8 @@ public:
 
   Result<> listen() override
   {
+    if (!is_healthy()) return health_err_result();
+
     {
       Lock lock(thread_handle_mutex);
 
@@ -106,6 +110,8 @@ public:
 
   Result<> handle_add_command(const ChannelID channel, const string &root_path)
   {
+    if (!is_healthy()) return health_err_result().propagate<bool>();
+
     // Convert the path to a wide-character string
     Result<wstring> convr = to_wchar(root_path);
     if (convr.is_error()) return convr.propagate<>();
@@ -143,11 +149,13 @@ public:
 
   Result<> handle_remove_command(const ChannelID channel)
   {
-    return ok_result();
+    if (!is_healthy()) return health_err_result().propagate<bool>();
   }
 
   Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription* sub)
   {
+    if (!is_healthy()) return health_err_result();
+
     // Ensure that the subscription is valid.
     ChannelID channel = sub->get_channel();
     auto it = subscriptions.find(channel);
