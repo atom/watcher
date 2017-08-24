@@ -107,9 +107,12 @@ public:
     return ok_result();
   }
 
-  Result<> handle_add_command(const ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(
+    const CommandID command,
+    const ChannelID channel,
+    const string &root_path) override
   {
-    if (!is_healthy()) return health_err_result();
+    if (!is_healthy()) return health_err_result().propagate<bool>();
     LOGGER << "Adding watcher for path " << root_path << " at channel " << channel << "." << endl;
 
     Subscription *subscription = new Subscription(this, channel);
@@ -132,7 +135,7 @@ public:
     if (watch_root == NULL) {
       string msg("Unable to allocate string for root path: ");
       msg += root_path;
-      return error_result(move(msg));
+      return Result<bool>::make_error(move(msg));
     }
 
     CFArrayRef watch_roots = CFArrayCreate(
@@ -146,7 +149,7 @@ public:
       msg += root_path;
       CFRelease(watch_root);
 
-      return error_result(move(msg));
+      return Result<bool>::make_error(move(msg));
     }
 
     FSEventStreamRef event_stream = FSEventStreamCreate(
@@ -170,23 +173,25 @@ public:
       CFRelease(watch_roots);
       CFRelease(watch_root);
       FSEventStreamRelease(event_stream);
-      return error_result(move(msg));
+      return Result<bool>::make_error(move(msg));
     }
 
     CFRelease(watch_roots);
     CFRelease(watch_root);
-    return ok_result();
+    return ok_result(true);
   }
 
-  Result<> handle_remove_command(const ChannelID channel) override
+  Result<bool> handle_remove_command(
+    const CommandID,
+    const ChannelID channel) override
   {
-    if (!is_healthy()) return health_err_result();
+    if (!is_healthy()) return health_err_result().propagate<bool>();
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
 
     auto maybe_subscription = subscriptions.find(channel);
     if (maybe_subscription == subscriptions.end()) {
       LOGGER << "No subscription for channel " << channel << "." << endl;
-      return ok_result();
+      return ok_result(true);
     }
 
     Subscription *subscription = maybe_subscription->second;
@@ -197,7 +202,7 @@ public:
     FSEventStreamRelease(subscription->event_stream);
 
     delete subscription;
-    return ok_result();
+    return ok_result(true);
   }
 
   void handle_fs_event(

@@ -24,14 +24,19 @@ public:
     return ok_result();
   }
 
-  Result<> handle_add_command(const ChannelID channel, const string &root_path)
+  Result<bool> handle_add_command(
+    const CommandID command,
+    const ChannelID channel,
+    const string &root_path) override
   {
-    return ok_result();
+    return ok_result(true);
   }
 
-  Result<> handle_remove_command(const ChannelID channel)
+  Result<bool> handle_remove_command(
+    const CommandID command,
+    const ChannelID channel) override
   {
-    return ok_result();
+    return ok_result(true);
   }
 };
 

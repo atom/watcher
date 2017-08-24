@@ -90,7 +90,10 @@ Result<> WorkerThread::handle_commands()
     switch (command->get_action()) {
       case COMMAND_ADD:
         {
-          Result<> r = platform->handle_add_command(command->get_channel_id(), command->get_root());
+          Result<bool> r = platform->handle_add_command(
+            command->get_id(),
+            command->get_channel_id(),
+            command->get_root());
           if (r.is_error()) {
             success = false;
             message = r.get_error();
@@ -100,7 +103,9 @@ Result<> WorkerThread::handle_commands()
 
       case COMMAND_REMOVE:
         {
-          Result<> r = platform->handle_remove_command(command->get_channel_id());
+          Result<bool> r = platform->handle_remove_command(
+            command->get_id(),
+            command->get_channel_id());
           if (r.is_error()) {
             success = false;
             message = r.get_error();
