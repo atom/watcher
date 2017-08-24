@@ -14,6 +14,8 @@ using std::string;
 using std::to_string;
 using std::dec;
 using std::setw;
+using std::cout;
+using std::cerr;
 
 class NullLogger : public Logger {
 public:
@@ -59,6 +61,46 @@ private:
   ofstream log_stream;
 };
 
+class StderrLogger : public Logger {
+public:
+  StderrLogger()
+  {
+    prefix(__FILE__, __LINE__);
+    cerr << "StderrLogger opened." << endl;
+  }
+
+  virtual Logger* prefix(const char *file, int line) override
+  {
+    cerr << "[" << setw(15) << file << ":" << setw(3) << dec << line << "] ";
+    return this;
+  }
+
+  virtual ostream& stream() override
+  {
+    return cerr;
+  }
+};
+
+class StdoutLogger : public Logger {
+public:
+  StdoutLogger()
+  {
+    prefix(__FILE__, __LINE__);
+    cout << "StdoutLogger opened." << endl;
+  }
+
+  virtual Logger* prefix(const char *file, int line) override
+  {
+    cout << "[" << setw(15) << file << ":" << setw(3) << dec << line << "] ";
+    return this;
+  }
+
+  virtual ostream& stream() override
+  {
+    return cout;
+  }
+};
+
 static uv_key_t current_logger_key;
 static NullLogger the_null_logger;
 static uv_once_t make_key_once = UV_ONCE_INIT;
@@ -95,6 +137,16 @@ static void replace_logger(const Logger *new_logger)
 void Logger::to_file(const char *filename)
 {
   replace_logger(new FileLogger(filename));
+}
+
+void Logger::to_stderr()
+{
+  replace_logger(new StderrLogger());
+}
+
+void Logger::to_stdout()
+{
+  replace_logger(new StdoutLogger());
 }
 
 void Logger::disable()
