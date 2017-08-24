@@ -1,4 +1,5 @@
 const watcher = require('../lib')
+const {DISABLE, STDERR, STDOUT} = watcher
 
 const path = require('path')
 const fs = require('fs-extra')
@@ -31,7 +32,7 @@ describe('watcher', function () {
     await Promise.all(subs.map(sub => sub.unwatch()))
 
     if (process.platform === 'win32') {
-      await watcher.configure({mainLogFile: null, workerLogFile: null})
+      await watcher.configure({mainLog: DISABLE, workerLog: DISABLE})
     }
 
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
@@ -53,14 +54,14 @@ describe('watcher', function () {
     })
 
     it('configures the main thread logger', async function () {
-      await watcher.configure({mainLogFile})
+      await watcher.configure({mainLog: mainLogFile})
 
       const contents = await fs.readFile(mainLogFile)
       assert.match(contents, /FileLogger opened/)
     })
 
     it('configures the worker thread logger ^linux', async function () {
-      await watcher.configure({workerLogFile})
+      await watcher.configure({workerLog: workerLogFile})
 
       const contents = await fs.readFile(workerLogFile)
       assert.match(contents, /FileLogger opened/)
@@ -73,7 +74,7 @@ describe('watcher', function () {
         this.skip()
       }
 
-      await watcher.configure({mainLogFile, workerLogFile})
+      await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile})
     })
 
     it('begins receiving events within that directory ^linux', async function () {
@@ -514,7 +515,7 @@ describe('watcher', function () {
         this.skip()
       }
 
-      await watcher.configure({mainLogFile, workerLogFile})
+      await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile})
     })
 
     it('unwatches a previously watched directory ^linux', async function () {

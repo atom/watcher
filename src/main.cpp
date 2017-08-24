@@ -273,10 +273,9 @@ static void handle_events_helper(uv_async_t *handle)
   instance.handle_events();
 }
 
-static bool get_string_option(Local<Object>& options, const char *key_name, bool &null, string &out)
+static bool get_string_option(Local<Object>& options, const char *key_name, string &out)
 {
   Nan::HandleScope scope;
-  null = false;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
 
   Nan::MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
@@ -285,11 +284,6 @@ static bool get_string_option(Local<Object>& options, const char *key_name, bool
   }
   Local<Value> as_value = as_maybe_value.ToLocalChecked();
   if (as_value->IsUndefined()) {
-    return true;
-  }
-
-  if (as_value->IsNull()) {
-    null = true;
     return true;
   }
 
@@ -313,13 +307,43 @@ static bool get_string_option(Local<Object>& options, const char *key_name, bool
   return true;
 }
 
+static bool get_bool_option(Local<Object>& options, const char *key_name, bool &out)
+{
+  Nan::HandleScope scope;
+  const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
+  out = false;
+
+  Nan::MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
+  if (as_maybe_value.IsEmpty()) {
+    return true;
+  }
+  Local<Value> as_value = as_maybe_value.ToLocalChecked();
+  if (as_value->IsUndefined()) {
+    return true;
+  }
+
+  if (!as_value->IsBoolean()) {
+    ostringstream message;
+    message << "configure() option " << key_name << " must be a Boolean";
+    Nan::ThrowError(message.str().c_str());
+    return false;
+  }
+
+  out = as_value->IsTrue();
+  return true;
+}
+
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
 {
-  bool main_log_file_null = false;
   string main_log_file;
+  bool main_log_disable = false;
+  bool main_log_stderr = false;
+  bool main_log_stdout = false;
 
-  bool worker_log_file_null = false;
   string worker_log_file;
+  bool worker_log_disable = false;
+  bool worker_log_stderr = false;
+  bool worker_log_stdout = false;
 
   bool async = false;
 
@@ -330,32 +354,39 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   Local<Object> options = maybe_options.ToLocalChecked();
-  if (!get_string_option(options, "mainLogFile", main_log_file_null, main_log_file)) return;
-  if (!get_string_option(options, "workerLogFile", worker_log_file_null, worker_log_file)) return;
+  if (!get_string_option(options, "mainLogFile", main_log_file)) return;
+  if (!get_bool_option(options, "mainLogDisable", main_log_disable)) return;
+  if (!get_bool_option(options, "mainLogStderr", main_log_stderr)) return;
+  if (!get_bool_option(options, "mainLogStdout", main_log_stdout)) return;
+  if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
+  if (!get_bool_option(options, "workerLogDisable", worker_log_disable)) return;
+  if (!get_bool_option(options, "workerLogStderr", worker_log_stderr)) return;
+  if (!get_bool_option(options, "workerLogStdout", worker_log_stdout)) return;
 
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
 
-  if (!main_log_file.empty()) {
-    instance.use_main_log_file(move(main_log_file));
-  }
-  if (main_log_file_null) {
+  if (main_log_disable) {
     instance.disable_main_log();
+  } else if (!main_log_file.empty()) {
+    instance.use_main_log_file(move(main_log_file));
+  } else if (main_log_stderr) {
+    instance.use_main_log_stderr();
+  } else if (main_log_stdout) {
+    instance.use_main_log_stdout();
   }
 
-  if (!worker_log_file.empty()) {
-    Result<> r = instance.use_worker_log_file(move(worker_log_file), move(callback));
-    if (r.is_error()) {
-      Nan::ThrowError(r.get_error().c_str());
-      return;
-    }
+  Result<> r = ok_result();
+  if (worker_log_disable) {
+    r = instance.disable_worker_log(move(callback));
     async = true;
-  }
-  if (worker_log_file_null) {
-    Result<> r = instance.disable_worker_log(move(callback));
-    if (r.is_error()) {
-      Nan::ThrowError(r.get_error().c_str());
-      return;
-    }
+  } else if (!worker_log_file.empty()) {
+    r = instance.use_worker_log_file(move(worker_log_file), move(callback));
+    async = true;
+  } else if (worker_log_stderr) {
+    r = instance.use_worker_log_stderr(move(callback));
+    async = true;
+  } else if (worker_log_stdout) {
+    r = instance.use_worker_log_stdout(move(callback));
     async = true;
   }
 
