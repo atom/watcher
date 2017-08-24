@@ -32,6 +32,13 @@ describe('watcher', function () {
 
   afterEach(async function () {
     console.log('watcher afterEach: start')
+
+    await Promise.all(subs.map(sub => sub.unwatch()))
+
+    if (process.platform === 'win32') {
+      await watcher.configure({mainLogFile: null, workerLogFile: null})
+    }
+
     if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
@@ -41,16 +48,9 @@ describe('watcher', function () {
       console.log(`worker log ${workerLogFile}:\n${workerLog}`)
     }
 
-    if (process.platform === 'win32') {
-      await watcher.configure({mainLogFile: null, workerLogFile: null})
-      console.log('logging disabled')
-    }
+    await fs.remove(fixtureDir, {maxBusyTries: 1})
+      .catch(err => console.warn('Unable to delete fixture directory', err))
 
-    await Promise.all([
-      fs.remove(fixtureDir, {maxBusyTries: 1})
-        .catch(err => console.warn('Unable to delete fixture directory', err)),
-      ...subs.map(sub => sub.unwatch())
-    ])
     console.log('watcher afterEach: finish')
   })
 
@@ -197,7 +197,7 @@ describe('watcher', function () {
         }
       }
 
-      it.only('when a file is created ^linux', async function () {
+      it('when a file is created ^linux', async function () {
         const createdFile = path.join(watchDir, 'file.txt')
         await fs.writeFile(createdFile, 'contents')
 
