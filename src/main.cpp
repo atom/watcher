@@ -77,6 +77,16 @@ public:
     Logger::to_file(main_log_file.c_str());
   }
 
+  void use_main_log_stderr()
+  {
+    Logger::to_stderr();
+  }
+
+  void use_main_log_stdout()
+  {
+    Logger::to_stdout();
+  }
+
   void disable_main_log()
   {
     Logger::disable();
@@ -85,6 +95,16 @@ public:
   Result<> use_worker_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
     return send_worker_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
+  }
+
+  Result<> use_worker_log_stderr(unique_ptr<Nan::Callback> callback)
+  {
+    return send_worker_command(COMMAND_LOG_STDERR, "", move(callback));
+  }
+
+  Result<> use_worker_log_stdout(unique_ptr<Nan::Callback> callback)
+  {
+    return send_worker_command(COMMAND_LOG_STDOUT, "", move(callback));
   }
 
   Result<> disable_worker_log(unique_ptr<Nan::Callback> callback)
