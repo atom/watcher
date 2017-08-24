@@ -6,7 +6,7 @@ const fs = require('fs-extra')
 describe('watcher', function () {
   let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
 
-  if (process.env.APPVEYOR_URL) {
+  if (process.env.APPVEYOR === 'True') {
     this.timeout(30000)
   }
 
