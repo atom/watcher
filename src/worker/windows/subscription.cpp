@@ -1,15 +1,18 @@
 #include <windows.h>
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <memory>
 
 #include "subscription.h"
+#include "../../log.h"
 #include "../../result.h"
 #include "../../helper/windows/helper.h"
 
 using std::wstring;
 using std::ostringstream;
 using std::wostringstream;
+using std::endl;
 
 const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
 const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
@@ -41,6 +44,13 @@ Subscription::~Subscription()
 
 Result<> Subscription::schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn)
 {
+  if (terminating) {
+    LOGGER << "Declining to schedule a new change callback for channel " << channel
+      << " because the subscription is terminating." << endl;
+    return ok_result();
+  }
+  LOGGER << "Scheduling the next change callback for channel " << channel << "." << endl;
+
   int success = ReadDirectoryChangesW(
     root, // root directory handle
     buffer.get(), // result buffer
