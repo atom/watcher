@@ -89,6 +89,7 @@ Result<> WorkerThread::handle_commands()
     }
 
     bool success = true;
+    bool ack = true;
     string message = "";
 
     switch (command->get_action()) {
@@ -101,6 +102,8 @@ Result<> WorkerThread::handle_commands()
           if (r.is_error()) {
             success = false;
             message = r.get_error();
+          } else {
+            ack = r.get_value();
           }
         }
         break;
@@ -113,6 +116,8 @@ Result<> WorkerThread::handle_commands()
           if (r.is_error()) {
             success = false;
             message = r.get_error();
+          } else {
+            ack = r.get_value();
           }
         }
         break;
@@ -135,9 +140,11 @@ Result<> WorkerThread::handle_commands()
       LOGGER << "Reporting platform error: " << message << "." << endl;
     }
 
-    AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
-    Message response(move(ack));
-    acks.push_back(move(response));
+    if (ack) {
+      AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
+      Message response(move(ack));
+      acks.push_back(move(response));
+    }
   }
 
   return emit_all(acks.begin(), acks.end());
