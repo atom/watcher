@@ -153,9 +153,23 @@ public:
     return ok_result(true);
   }
 
-  Result<> handle_remove_command(const ChannelID channel)
+  Result<bool> handle_remove_command(
+    const CommandID command,
+    const ChannelID channel) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
+
+    auto it = subscriptions.find(channel);
+    if (it == subscriptions.end()) {
+      LOGGER << "Channel " << channel << " was already removed." << endl;
+      return ok_result(true);
+    }
+
+    Result<> r = it->second->stop(command);
+    if (r.is_error()) return r.propagate<bool>();
+
+    LOGGER << "Subscription for channel " << channel << " stopped." << endl;
+    return ok_result(false);
   }
 
   Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription* sub)
@@ -171,12 +185,15 @@ public:
 
     // Handle errors.
     if (error_code == ERROR_OPERATION_ABORTED) {
-      LOGGER << "Operation aborted." << endl;
+      LOGGER << "Shutting down watcher for channel " << channel << "." << endl;
+
+      AckPayload ack(sub->get_command_id(), channel, true, "");
+      Message response(move(ack));
 
       subscriptions.erase(it);
       delete sub;
 
-      return ok_result();
+      return emit(move(response));
     }
 
     if (error_code == ERROR_INVALID_PARAMETER) {
