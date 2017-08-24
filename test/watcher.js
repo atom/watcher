@@ -8,6 +8,7 @@ describe('watcher', function () {
 
   if (process.env.APPVEYOR === 'True') {
     this.timeout(30000)
+    until.setDefaultTimeout(20000)
   }
 
   beforeEach(async function () {
