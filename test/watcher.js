@@ -38,6 +38,9 @@ describe('watcher', function () {
       const [mainLog, workerLog] = await Promise.all(
         [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
       )
+
+      console.log(`>>> main log ${mainLogFile}:\n${mainLog}\n<<<\n`)
+      console.log(`>>> worker log ${workerLogFile}:\n${workerLog}\n<<<\n`)
     }
 
     await fs.remove(fixtureDir, {maxBusyTries: 1})
