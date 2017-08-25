@@ -37,6 +37,11 @@ Pipe::Pipe(const string &name) :
   }
 
   write_fd = fds[1];
+  err = fcntl(write_fd, F_SETFL, O_NONBLOCK);
+  if (err == -1) {
+    Errable::report_error<>(errno_result<>("Unable to set write fd to non-blocking mode"));
+    return;
+  }
   err = fcntl(write_fd, F_SETFD, FD_CLOEXEC);
   if (err == -1) {
     Errable::report_error<>(errno_result<>("Unable to change write fd to close-on-exec mode"));
@@ -56,7 +61,14 @@ Result<> Pipe::signal()
 
   ssize_t result = write(write_fd, &WAKE, sizeof(char));
   if (result == -1) {
-    return errno_result<>("Unable to write a byte to the pipe");
+    int write_errno = errno;
+
+    if (write_errno == EAGAIN || write_errno == EWOULDBLOCK) {
+      // If the kernel buffer is full, that means there's already a pending signal.
+      return ok_result();
+    }
+
+    return errno_result<>("Unable to write a byte to the pipe", write_errno);
   }
   if (result == 0) {
     return error_result("No bytes written to pipe");
