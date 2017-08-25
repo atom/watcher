@@ -89,8 +89,15 @@ Result<> Pipe::consume()
     result = read(read_fd, &buf, BUFSIZE);
   } while (result > 0);
 
-  if (result < 0 && result != EAGAIN && result != EWOULDBLOCK) {
-    return errno_result<>("Unable to read from pipe");
+  if (result < 0) {
+    int read_errno = errno;
+
+    if (read_errno == EAGAIN || read_errno == EWOULDBLOCK) {
+      // Nothing left to read.
+      return ok_result();
+    }
+
+    return errno_result<>("Unable to read from pipe", read_errno);
   }
 
   return ok_result();
