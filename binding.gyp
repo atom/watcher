@@ -44,6 +44,7 @@
             }],
             ["OS=='linux'", {
                 "sources": [
+                    "src/worker/linux/pipe.cpp",
                     "src/worker/linux/linux_worker_platform.cpp"
                 ]
             }]
