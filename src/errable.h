@@ -26,7 +26,7 @@ public:
   virtual bool is_healthy();
   virtual void report_error(std::string &&message);
 
-  template < class V >
+  template < class V = void* >
   void report_error(const Result<V> &result)
   {
     report_error(std::string(result.get_error()));
