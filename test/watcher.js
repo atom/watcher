@@ -60,7 +60,7 @@ describe('watcher', function () {
       assert.match(contents, /FileLogger opened/)
     })
 
-    it('configures the worker thread logger ^linux', async function () {
+    it('configures the worker thread logger', async function () {
       await watcher.configure({workerLog: workerLogFile})
 
       const contents = await fs.readFile(workerLogFile)
