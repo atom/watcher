@@ -28,7 +28,7 @@ using std::ostream;
 
 static ostream &operator<<(ostream &out, const inotify_event *event)
 {
-  out << " wd=" << event->wd;
+  out << "wd=" << event->wd;
 
   out << " mask=( ";
   if (event->mask & IN_ACCESS) out << "IN_ACCESS ";
@@ -38,6 +38,7 @@ static ostream &operator<<(ostream &out, const inotify_event *event)
   if (event->mask & IN_CREATE) out << "IN_CREATE ";
   if (event->mask & IN_DELETE) out << "IN_DELETE ";
   if (event->mask & IN_DELETE_SELF) out << "IN_DELETE_SELF ";
+  if (event->mask & IN_MODIFY) out << "IN_MODIFY ";
   if (event->mask & IN_MOVE_SELF) out << "IN_MOVE_SELF ";
   if (event->mask & IN_MOVED_FROM) out << "IN_MOVED_FROM ";
   if (event->mask & IN_MOVED_TO) out << "IN_MOVED_TO ";
@@ -45,7 +46,7 @@ static ostream &operator<<(ostream &out, const inotify_event *event)
   if (event->mask & IN_IGNORED) out << "IN_IGNORED ";
   if (event->mask & IN_Q_OVERFLOW) out << "IN_Q_OVERFLOW ";
   if (event->mask & IN_UNMOUNT) out << "IN_UNMOUNT ";
-  out << " ) cookie=" << event->cookie;
+  out << ") cookie=" << event->cookie;
   out << " len=" << event->len;
   if (event->len > 0) {
     out << " name=" << event->name;
@@ -86,7 +87,7 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
     return errno_result("Unable to watch directory");
   }
 
-  LOGGER << "Assigned watch descriptor " << wd << "." << endl;
+  LOGGER << "Assigned watch descriptor " << wd << " at [" << root << "] on channel " << channel_id << "." << endl;
 
   string root_dup(root);
   shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, move(root_dup)));
@@ -95,7 +96,6 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
   by_channel.insert({channel_id, watched_dir});
 
   if (recursive) {
-    LOGGER << "Recursing into directory." << endl;
     DIR *dir = opendir(root.c_str());
     if (dir == NULL) {
       int open_errno = errno;
@@ -108,8 +108,6 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
       while (entry != NULL) {
         string basename(entry->d_name);
 
-        LOGGER << "Processing entry " << basename << "." << endl;
-
         if (basename == "." || basename == "..") {
           entry = readdir(dir);
           continue;
@@ -118,14 +116,12 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
 
 #ifndef _DIRENT_HAVE_D_TYPE
         if (entry->d_type == DT_DIR || entry->d_type == DT_UNKNOWN) {
-          LOGGER << "Recursing into [" << subdir << "]." << endl;
           Result<> add_r = add(channel_id, subdir, true);
           if (add_r.is_error()) {
             LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
           }
         }
 #else
-        LOGGER << "Recursing into [" << subdir << "]." << endl;
         Result<> add_r = add(channel_id, subdir, true);
         if (add_r.is_error()) {
           LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
@@ -153,13 +149,19 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
     wds.insert(it->second->get_descriptor());
   }
 
+  LOGGER << "Stopping " << plural(wds.size(), "inotify watch descriptor") << "." << endl;
+
   by_channel.erase(channel_id);
   for (auto &&wd : wds) {
     by_wd.erase(wd);
+
+    int err = inotify_rm_watch(inotify_fd, wd);
+    if (err == -1) {
+      LOGGER << "Unable to remove watch descriptor " << wd << ": " << errno_result<>("") << "." << endl;
+    }
   }
 
   LOGGER << "Channel " << channel_id << " has been unwatched." << endl;
-
   return ok_result();
 }
 
