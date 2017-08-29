@@ -82,5 +82,5 @@ string WatchedDirectory::get_absolute_path(const inotify_event &event)
     return string(directory);
   }
 
-  return string(event.name);
+  return string(directory + "/" + event.name);
 }
