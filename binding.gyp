@@ -9,6 +9,7 @@
             "src/queue.cpp",
             "src/lock.cpp",
             "src/message.cpp",
+            "src/message_buffer.cpp",
             "src/thread.cpp",
             "src/status.cpp",
             "src/worker/worker_thread.cpp"
