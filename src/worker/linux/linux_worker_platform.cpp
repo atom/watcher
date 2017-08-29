@@ -48,11 +48,11 @@ public:
       }
 
       if (to_poll[0].revents & (POLLIN | POLLERR)) {
-        Result<> hr = handle_commands();
-        if (hr.is_error()) return hr;
-
         Result<> cr = pipe.consume();
         if (cr.is_error()) return cr;
+
+        Result<> hr = handle_commands();
+        if (hr.is_error()) return hr;
       }
 
       if (to_poll[1].revents & (POLLIN | POLLERR)) {
