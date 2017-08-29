@@ -126,10 +126,6 @@ describe('watcher', function () {
       let errors, events
 
       beforeEach(async function () {
-        if (!['darwin', 'win32'].includes(process.platform)) {
-          this.skip()
-        }
-
         errors = []
         events = []
 
