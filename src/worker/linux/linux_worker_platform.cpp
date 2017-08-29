@@ -9,6 +9,7 @@
 #include "../../result.h"
 #include "../../helper/linux/helper.h"
 #include "pipe.h"
+#include "watch_registry.h"
 
 using std::string;
 using std::unique_ptr;
@@ -29,13 +30,16 @@ public:
 
   Result<> listen() override
   {
-    pollfd to_poll[1];
+    pollfd to_poll[2];
     to_poll[0].fd = pipe.get_read_fd();
     to_poll[0].events = POLLIN;
     to_poll[0].revents = 0;
+    to_poll[1].fd = registry.get_read_fd();
+    to_poll[1].events = POLLIN;
+    to_poll[1].revents = 0;
 
     while (true) {
-      int result = poll(to_poll, 1, -1);
+      int result = poll(to_poll, 2, -1);
 
       if (result < 0) {
         return errno_result<>("Unable to poll");
@@ -50,6 +54,16 @@ public:
         Result<> cr = pipe.consume();
         if (cr.is_error()) return cr;
       }
+
+      if (to_poll[1].revents & (POLLIN | POLLERR)) {
+        MessageBuffer messages;
+
+        Result<> cr = registry.consume(messages);
+        if (!messages.empty()) {
+          emit_all(messages.begin(), messages.end());
+        }
+        if (cr.is_error()) return cr;
+      }
     }
 
     return error_result("Polling loop exited unexpectedly");
@@ -60,18 +74,19 @@ public:
     const ChannelID channel,
     const string &root_path) override
   {
-    return ok_result(true);
+    return registry.add(channel, move(root_path), true).propagate(true);
   }
 
   Result<bool> handle_remove_command(
     const CommandID command,
     const ChannelID channel) override
   {
-    return ok_result(true);
+    return registry.remove(channel).propagate(true);
   }
 
 private:
   Pipe pipe;
+  WatchRegistry registry;
 };
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
