@@ -165,11 +165,9 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
   return ok_result();
 }
 
-Result<> WatchRegistry::consume(MessageBuffer &messages)
+Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
 {
   if (!is_healthy()) return health_err_result<>();
-
-  LOGGER << "Consuming inotify events." << endl;
 
   const size_t BUFSIZE = 2048 * sizeof(inotify_event);
   char buf[BUFSIZE] __attribute__ ((aligned(__alignof__(struct inotify_event))));
@@ -178,12 +176,13 @@ Result<> WatchRegistry::consume(MessageBuffer &messages)
   while (true) {
     result = read(inotify_fd, &buf, BUFSIZE);
 
+    if (result <= 0) jar.flush_oldest_batch(messages);
+
     if (result < 0) {
       int read_errno = errno;
 
       if (read_errno == EAGAIN || read_errno == EWOULDBLOCK) {
         // Nothing left to read.
-        LOGGER << "Nothing left to read." << endl;
         return ok_result();
       }
 
@@ -191,7 +190,6 @@ Result<> WatchRegistry::consume(MessageBuffer &messages)
     }
 
     if (result == 0) {
-      LOGGER << "EOF." << endl;
       return ok_result();
     }
 
@@ -218,7 +216,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages)
       for (auto it = its.first; it != its.second; ++it) {
         shared_ptr<WatchedDirectory> watched_directory = it->second;
 
-        Result<> r = watched_directory->accept_event(messages, *event);
+        Result<> r = watched_directory->accept_event(messages, jar, *event);
         if (r.is_error()) {
           LOGGER << "Unable to process event: " << r << "." << endl;
         }

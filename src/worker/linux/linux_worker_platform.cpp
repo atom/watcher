@@ -9,6 +9,7 @@
 #include "../../result.h"
 #include "../../helper/linux/helper.h"
 #include "pipe.h"
+#include "cookie_jar.h"
 #include "watch_registry.h"
 
 using std::string;
@@ -58,7 +59,7 @@ public:
       if (to_poll[1].revents & (POLLIN | POLLERR)) {
         MessageBuffer messages;
 
-        Result<> cr = registry.consume(messages);
+        Result<> cr = registry.consume(messages, jar);
         if (!messages.empty()) {
           emit_all(messages.begin(), messages.end());
         }
@@ -87,6 +88,7 @@ public:
 private:
   Pipe pipe;
   WatchRegistry registry;
+  CookieJar jar;
 };
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)

@@ -6,6 +6,7 @@
 #include "../../result.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "cookie_jar.h"
 #include "watched_directory.h"
 
 using std::string;
@@ -20,7 +21,7 @@ WatchedDirectory::WatchedDirectory(int wd, ChannelID channel_id, string &&direct
   //
 }
 
-Result<> WatchedDirectory::accept_event(MessageBuffer &buffer, const inotify_event &event)
+Result<> WatchedDirectory::accept_event(MessageBuffer &buffer, CookieJar &jar, const inotify_event &event)
 {
   EntryKind kind = event.mask & IN_ISDIR ? KIND_DIRECTORY : KIND_FILE;
   string path = get_absolute_path(event);
@@ -49,25 +50,30 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer, const inotify_eve
   if (event.mask & (IN_MODIFY | IN_ATTRIB)) {
     // modify entry inside directory or attribute change for directory or entry inside directory
     buffer.modified(channel_id, move(path), kind);
+    return ok_result();
   }
 
   if (event.mask & (IN_DELETE_SELF | IN_UNMOUNT)) {
     buffer.deleted(channel_id, move(path), kind);
+    return ok_result();
   }
 
   if (event.mask & IN_MOVE_SELF) {
     // directory itself was renamed
-    // TODO note old name and cookie
+    jar.moved_from(buffer, channel_id, event.cookie, move(path), kind);
+    return ok_result();
   }
 
   if (event.mask & IN_MOVED_FROM) {
     // rename source for directory or entry inside directory
-    // TODO note new name and cookie
+    jar.moved_from(buffer, channel_id, event.cookie, move(path), kind);
+    return ok_result();
   }
 
   if (event.mask & IN_MOVED_TO) {
     // rename destination for directory or entry inside directory
-    // TODO note new name and cookie
+    jar.moved_to(buffer, channel_id, event.cookie, move(path), kind);
+    return ok_result();
   }
 
   // IN_IGNORED

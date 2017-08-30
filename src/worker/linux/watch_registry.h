@@ -10,6 +10,7 @@
 #include "../../errable.h"
 #include "../../result.h"
 #include "../../message_buffer.h"
+#include "cookie_jar.h"
 #include "watched_directory.h"
 
 class WatchRegistry : public Errable {
@@ -21,7 +22,7 @@ public:
 
   Result<> remove(ChannelID channel_id);
 
-  Result<> consume(MessageBuffer &messages);
+  Result<> consume(MessageBuffer &messages, CookieJar &jar);
 
   int get_read_fd() { return inotify_fd; }
 
