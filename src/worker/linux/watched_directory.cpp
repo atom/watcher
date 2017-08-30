@@ -77,6 +77,9 @@ Result<> WatchedDirectory::accept_event(
 
   if (event.mask & IN_MOVED_TO) {
     // rename destination for directory or entry inside directory
+    if (kind == KIND_DIRECTORY) {
+      side.track_subdirectory(path, channel_id);
+    }
     jar.moved_to(buffer, channel_id, event.cookie, move(path), kind);
     return ok_result();
   }
