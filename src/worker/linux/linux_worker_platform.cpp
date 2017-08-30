@@ -10,6 +10,7 @@
 #include "../../helper/linux/helper.h"
 #include "pipe.h"
 #include "cookie_jar.h"
+#include "side_effect.h"
 #include "watch_registry.h"
 
 using std::string;
@@ -58,12 +59,16 @@ public:
 
       if (to_poll[1].revents & (POLLIN | POLLERR)) {
         MessageBuffer messages;
+        SideEffect side;
 
-        Result<> cr = registry.consume(messages, jar);
+        Result<> r = registry.consume(messages, jar, side);
+
         if (!messages.empty()) {
-          emit_all(messages.begin(), messages.end());
+          r.accumulate(emit_all(messages.begin(), messages.end()));
         }
-        if (cr.is_error()) return cr;
+        r.accumulate(side.enact_in(&registry));
+
+        if (r.is_error()) return r;
       }
     }
 

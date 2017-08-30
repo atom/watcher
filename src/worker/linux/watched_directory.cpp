@@ -7,6 +7,7 @@
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "cookie_jar.h"
+#include "side_effect.h"
 #include "watched_directory.h"
 
 using std::string;
@@ -21,7 +22,11 @@ WatchedDirectory::WatchedDirectory(int wd, ChannelID channel_id, string &&direct
   //
 }
 
-Result<> WatchedDirectory::accept_event(MessageBuffer &buffer, CookieJar &jar, const inotify_event &event)
+Result<> WatchedDirectory::accept_event(
+  MessageBuffer &buffer,
+  CookieJar &jar,
+  SideEffect &side,
+  const inotify_event &event)
 {
   EntryKind kind = event.mask & IN_ISDIR ? KIND_DIRECTORY : KIND_FILE;
   string path = get_absolute_path(event);
@@ -31,7 +36,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer, CookieJar &jar, c
 
     if (kind == KIND_DIRECTORY) {
       // subdirectory created
-      // TODO: create subdirectory watcher
+      side.track_subdirectory(path, channel_id);
       buffer.created(channel_id, move(path), kind);
       return ok_result();
     } else {

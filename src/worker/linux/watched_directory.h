@@ -7,13 +7,14 @@
 
 #include "../../result.h"
 #include "../../message_buffer.h"
+#include "side_effect.h"
 #include "cookie_jar.h"
 
 class WatchedDirectory {
 public:
   WatchedDirectory(int wd, ChannelID channel_id, std::string &&directory);
 
-  Result<> accept_event(MessageBuffer &buffer, CookieJar &jar, const inotify_event &event);
+  Result<> accept_event(MessageBuffer &buffer, CookieJar &jar, SideEffect &side, const inotify_event &event);
 
   int get_descriptor() { return wd; }
 

@@ -16,6 +16,8 @@
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "../../helper/linux/helper.h"
+#include "cookie_jar.h"
+#include "side_effect.h"
 #include "watched_directory.h"
 #include "watch_registry.h"
 
@@ -46,6 +48,7 @@ static ostream &operator<<(ostream &out, const inotify_event *event)
   if (event->mask & IN_IGNORED) out << "IN_IGNORED ";
   if (event->mask & IN_Q_OVERFLOW) out << "IN_Q_OVERFLOW ";
   if (event->mask & IN_UNMOUNT) out << "IN_UNMOUNT ";
+  if (event->mask & IN_ISDIR) out << "IN_ISDIR ";
   out << ") cookie=" << event->cookie;
   out << " len=" << event->len;
   if (event->len > 0) {
@@ -83,8 +86,14 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
   LOGGER << "Watching path [" << root << "]." << endl;
   int wd = inotify_add_watch(inotify_fd, root.c_str(), mask);
   if (wd == -1) {
+    int watch_errno = errno;
+
+    if (watch_errno == ENOTDIR) {
+      return ok_result();
+    }
+
     // TODO: signal a revert to polling on ENOSPC
-    return errno_result("Unable to watch directory");
+    return errno_result("Unable to watch directory", watch_errno);
   }
 
   LOGGER << "Assigned watch descriptor " << wd << " at [" << root << "] on channel " << channel_id << "." << endl;
@@ -128,6 +137,7 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
         }
 #endif
 
+        errno = 0;
         entry = readdir(dir);
       }
       if (errno != 0) {
@@ -165,7 +175,7 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
   return ok_result();
 }
 
-Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
+Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEffect &side)
 {
   if (!is_healthy()) return health_err_result<>();
 
@@ -216,7 +226,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
       for (auto it = its.first; it != its.second; ++it) {
         shared_ptr<WatchedDirectory> watched_directory = it->second;
 
-        Result<> r = watched_directory->accept_event(messages, jar, *event);
+        Result<> r = watched_directory->accept_event(messages, jar, side, *event);
         if (r.is_error()) {
           LOGGER << "Unable to process event: " << r << "." << endl;
         }
