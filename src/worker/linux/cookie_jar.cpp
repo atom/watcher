@@ -130,7 +130,6 @@ void CookieJar::moved_to(
 void CookieJar::flush_oldest_batch(MessageBuffer &messages)
 {
   if (batches.empty()) return;
-  if (batches.back().empty()) return;
 
   batches.front().flush(messages);
   batches.pop_front();
