@@ -19,6 +19,7 @@ inline int _strerror_result(char *buffer, char *&out, int r)
 inline int _strerror_result(char *buffer, char *&out, char *r)
 {
   // GNU strerror_r
+  out = r;
   return 0;
 }
 
