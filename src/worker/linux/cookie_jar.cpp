@@ -24,7 +24,7 @@ Cookie::Cookie(ChannelID channel_id, std::string &&from_path, EntryKind kind) :
 Cookie::Cookie(Cookie &&other) :
   channel_id{other.channel_id},
   from_path(move(other.from_path)),
-  kind{kind}
+  kind{other.kind}
 {
   //
 }
