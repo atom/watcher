@@ -137,7 +137,7 @@ public:
     return Result<U>::make_ok(std::move(value));
   }
 
-  Result<V> &accumulate(Result<V> &&sub_result)
+  Result<V> &operator&=(Result<V> &&sub_result)
   {
     if (is_error() != sub_result.is_error() || sub_result.is_ok()) {
       clear();

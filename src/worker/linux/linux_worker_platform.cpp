@@ -64,9 +64,9 @@ public:
         Result<> r = registry.consume(messages, jar, side);
 
         if (!messages.empty()) {
-          r.accumulate(emit_all(messages.begin(), messages.end()));
+          r &= emit_all(messages.begin(), messages.end());
         }
-        r.accumulate(side.enact_in(&registry));
+        r &= side.enact_in(&registry);
 
         if (r.is_error()) return r;
       }

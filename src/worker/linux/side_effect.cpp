@@ -19,7 +19,7 @@ Result<> SideEffect::enact_in(WatchRegistry *registry)
 {
   Result<> r = ok_result();
   for (Subdirectory &subdir : subdirectories) {
-    r.accumulate(registry->add(subdir.channel_id, subdir.path, true));
+    r &= registry->add(subdir.channel_id, subdir.path, true);
   }
   return r;
 }
