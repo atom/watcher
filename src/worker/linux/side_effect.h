@@ -8,14 +8,19 @@
 #include "../../message.h"
 #include "../../result.h"
 
+// Forward declaration for pointer access.
 class WatchRegistry;
 
+// Record additional actions that should be triggered by inotify events received in the course of a single notification
+// cycle.
 class SideEffect {
 public:
   SideEffect() = default;
 
+  // Recursively watch a newly created subdirectory.
   void track_subdirectory(std::string subdir, ChannelID channel_id);
 
+  // Perform all enqueued actions.
   Result<> enact_in(WatchRegistry *registry);
 
 private:
