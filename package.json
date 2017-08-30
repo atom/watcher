@@ -13,7 +13,7 @@
     "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
     "ci:circle": "npm run mocha -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
     "ci:travis": "npm run mocha -- --fgrep '^linux' --invert --reporter list",
-    "aw:test": "clear && npm run build:debug && clear && npm run mocha",
+    "aw:test": "npm run clean:fixture && clear && npm run build:debug && clear && npm run mocha",
     "clean:fixture": "rm -rf test/fixture/*.log test/fixture/watched-*",
     "install": "cross-env NODE_DEBUG=request node-gyp rebuild --loglevel=silly"
   },
