@@ -163,26 +163,64 @@ describe('watcher', function () {
 
       const subdir = path.join(watchDir, 'subdir')
       const file0 = path.join(subdir, 'file-0.txt')
-      await fs.mkdir(subdir)
-      await fs.writeFile(file0, 'file 0')
 
-      await until('both events arrive', () => {
-        return [subdir, file0].every(filePath => events.some(event => event.oldPath === filePath))
+      await fs.mkdir(subdir)
+      await until('the subdirectory creation event arrives', () => {
+        return events.some(event => event.oldPath === subdir)
+      })
+
+      await fs.writeFile(file0, 'file 0')
+      await until('the modification event arrives', () => {
+        return events.some(event => event.oldPath === file0)
+      })
+      assert.isTrue(errors.every(err => err === null))
+    })
+
+    it('watches directories renamed within a watch root', async function () {
+      const errors = []
+      const events = []
+
+      const externalDir = path.join(fixtureDir, 'outside')
+      const externalSubdir = path.join(externalDir, 'directory')
+      const externalFile = path.join(externalSubdir, 'file.txt')
+
+      const internalDir = path.join(watchDir, 'inside')
+      const internalSubdir = path.join(internalDir, 'directory')
+      const internalFile = path.join(internalSubdir, 'file.txt')
+
+      await fs.mkdirs(externalSubdir)
+      await fs.writeFile(externalFile, 'contents')
+
+      subs.push(await watcher.watch(watchDir, (err, es) => {
+        errors.push(err)
+        events.push(...es)
+      }))
+
+      await fs.rename(externalDir, internalDir)
+      await until('creation event arrives', () => {
+        return events.some(event => event.oldPath === internalDir)
+      })
+
+      await fs.writeFile(internalFile, 'changed')
+
+      await until('modification event arrives', () => {
+        return events.some(event => event.oldPath === internalFile)
       })
       assert.isTrue(errors.every(err => err === null))
     })
 
     describe('events', function () {
-      let errors, events
+      let errors, events, sub
 
       beforeEach(async function () {
         errors = []
         events = []
 
-        subs.push(await watcher.watch(watchDir, (err, es) => {
+        sub = await watcher.watch(watchDir, (err, es) => {
           errors.push(err)
           events.push(...es)
-        }))
+        })
+        subs.push(sub)
       })
 
       function specMatches (spec, event) {
@@ -278,6 +316,42 @@ describe('watcher', function () {
           kind: 'file',
           oldPath,
           newPath
+        }))
+      })
+
+      it('when a file is renamed from outside of the watch root in', async function () {
+        const outsideFile = path.join(fixtureDir, 'file.txt')
+        const insideFile = path.join(watchDir, 'file.txt')
+
+        await fs.writeFile(outsideFile, 'contents')
+        await fs.rename(outsideFile, insideFile)
+
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath: insideFile
+        }))
+      })
+
+      it('when a file is renamed from inside of the watch root out', async function () {
+        const outsideFile = path.join(fixtureDir, 'file.txt')
+        const insideFile = path.join(watchDir, 'file.txt')
+        const flagFile = path.join(watchDir, 'flag.txt')
+
+        await fs.writeFile(insideFile, 'contents')
+        await fs.rename(insideFile, outsideFile)
+
+        await until('the original event arrives', eventMatching({
+          kind: 'file',
+          oldPath: insideFile
+        }))
+
+        await fs.writeFile(flagFile, 'flag')
+
+        await until('the deletion event arrives', eventMatching({
+          type: 'deleted',
+          kind: 'file',
+          oldPath: insideFile
         }))
       })
 
