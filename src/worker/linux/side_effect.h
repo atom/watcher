@@ -12,6 +12,8 @@ class WatchRegistry;
 
 class SideEffect {
 public:
+  SideEffect() = default;
+
   void track_subdirectory(std::string subdir, ChannelID channel_id);
 
   Result<> enact_in(WatchRegistry *registry);
