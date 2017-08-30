@@ -137,6 +137,18 @@ public:
     return Result<U>::make_ok(std::move(value));
   }
 
+  Result<V> &accumulate(Result<V> &&sub_result)
+  {
+    if (is_error() != sub_result.is_error() || sub_result.is_ok()) {
+      clear();
+      assign(std::move(sub_result));
+    } else if (is_error()) {
+      error += ", " + sub_result.get_error();
+    }
+
+    return *this;
+  }
+
 private:
   Result(V &&value) : state{RESULT_OK}, value{std::move(value)}
   {

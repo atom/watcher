@@ -46,6 +46,7 @@
             ["OS=='linux'", {
                 "sources": [
                     "src/worker/linux/pipe.cpp",
+                    "src/worker/linux/side_effect.cpp",
                     "src/worker/linux/cookie_jar.cpp",
                     "src/worker/linux/watched_directory.cpp",
                     "src/worker/linux/watch_registry.cpp",
