@@ -333,7 +333,7 @@ describe('watcher', function () {
         }))
       })
 
-      it('when a file is renamed from inside of the watch root out ^win', async function () {
+      it('when a file is renamed from inside of the watch root out ^windows ^mac', async function () {
         const outsideFile = path.join(fixtureDir, 'file.txt')
         const insideFile = path.join(watchDir, 'file.txt')
         const flagFile = path.join(watchDir, 'flag.txt')
