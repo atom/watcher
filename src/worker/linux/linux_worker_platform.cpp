@@ -9,10 +9,14 @@
 #include "../../result.h"
 #include "../../helper/linux/helper.h"
 #include "pipe.h"
+#include "cookie_jar.h"
+#include "side_effect.h"
+#include "watch_registry.h"
 
 using std::string;
 using std::unique_ptr;
 
+// Platform-specific worker implementation for Linux systems.
 class LinuxWorkerPlatform : public WorkerPlatform {
 public:
   LinuxWorkerPlatform(WorkerThread *thread) :
@@ -22,20 +26,25 @@ public:
     //
   };
 
+  // Inform the listen() loop that one or more commands are waiting from the main thread.
   Result<> wake() override
   {
     return pipe.signal();
   }
 
+  // Main event loop. Use poll(2) to wait on I/O from either the Pipe or inotify events.
   Result<> listen() override
   {
-    pollfd to_poll[1];
+    pollfd to_poll[2];
     to_poll[0].fd = pipe.get_read_fd();
     to_poll[0].events = POLLIN;
     to_poll[0].revents = 0;
+    to_poll[1].fd = registry.get_read_fd();
+    to_poll[1].events = POLLIN;
+    to_poll[1].revents = 0;
 
     while (true) {
-      int result = poll(to_poll, 1, -1);
+      int result = poll(to_poll, 2, -1);
 
       if (result < 0) {
         return errno_result<>("Unable to poll");
@@ -44,34 +53,52 @@ public:
       }
 
       if (to_poll[0].revents & (POLLIN | POLLERR)) {
-        Result<> hr = handle_commands();
-        if (hr.is_error()) return hr;
-
         Result<> cr = pipe.consume();
         if (cr.is_error()) return cr;
+
+        Result<> hr = handle_commands();
+        if (hr.is_error()) return hr;
+      }
+
+      if (to_poll[1].revents & (POLLIN | POLLERR)) {
+        MessageBuffer messages;
+        SideEffect side;
+
+        Result<> r = registry.consume(messages, jar, side);
+
+        if (!messages.empty()) {
+          r &= emit_all(messages.begin(), messages.end());
+        }
+        r &= side.enact_in(&registry);
+
+        if (r.is_error()) return r;
       }
     }
 
     return error_result("Polling loop exited unexpectedly");
   }
 
+  // Recursively watch a directory tree.
   Result<bool> handle_add_command(
     const CommandID command,
     const ChannelID channel,
     const string &root_path) override
   {
-    return ok_result(true);
+    return registry.add(channel, move(root_path), true).propagate(true);
   }
 
+  // Unwatch a directory tree.
   Result<bool> handle_remove_command(
     const CommandID command,
     const ChannelID channel) override
   {
-    return ok_result(true);
+    return registry.remove(channel).propagate(true);
   }
 
 private:
   Pipe pipe;
+  WatchRegistry registry;
+  CookieJar jar;
 };
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)

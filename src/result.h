@@ -127,6 +127,28 @@ public:
     return Result<U>::make_error(prefix + get_error());
   }
 
+  template < class U >
+  Result<U> propagate(U &&value, const std::string &prefix = "") const
+  {
+    if (state == RESULT_ERROR) {
+      return propagate<U>(prefix);
+    }
+
+    return Result<U>::make_ok(std::move(value));
+  }
+
+  Result<V> &operator&=(Result<V> &&sub_result)
+  {
+    if (is_error() != sub_result.is_error() || sub_result.is_ok()) {
+      clear();
+      assign(std::move(sub_result));
+    } else if (is_error()) {
+      error += ", " + sub_result.get_error();
+    }
+
+    return *this;
+  }
+
 private:
   Result(V &&value) : state{RESULT_OK}, value{std::move(value)}
   {

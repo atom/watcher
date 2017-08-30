@@ -9,6 +9,7 @@
             "src/queue.cpp",
             "src/lock.cpp",
             "src/message.cpp",
+            "src/message_buffer.cpp",
             "src/thread.cpp",
             "src/status.cpp",
             "src/worker/worker_thread.cpp"
@@ -45,6 +46,10 @@
             ["OS=='linux'", {
                 "sources": [
                     "src/worker/linux/pipe.cpp",
+                    "src/worker/linux/side_effect.cpp",
+                    "src/worker/linux/cookie_jar.cpp",
+                    "src/worker/linux/watched_directory.cpp",
+                    "src/worker/linux/watch_registry.cpp",
                     "src/worker/linux/linux_worker_platform.cpp"
                 ]
             }]
