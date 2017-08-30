@@ -122,6 +122,56 @@ describe('watcher', function () {
       assert.isTrue(eventsB.every(event => event.oldPath !== fileA))
     })
 
+    it('watches subdirectories recursively', async function () {
+      const errors = []
+      const events = []
+
+      const subdir0 = path.join(watchDir, 'subdir0')
+      const subdir1 = path.join(watchDir, 'subdir1')
+      await Promise.all(
+        [subdir0, subdir1].map(subdir => fs.mkdir(subdir))
+      )
+
+      subs.push(await watcher.watch(watchDir, (err, es) => {
+        errors.push(err)
+        events.push(...es)
+      }))
+
+      const rootFile = path.join(watchDir, 'root.txt')
+      await fs.writeFile(rootFile, 'root')
+
+      const file0 = path.join(subdir0, '0.txt')
+      await fs.writeFile(file0, 'file 0')
+
+      const file1 = path.join(subdir1, '1.txt')
+      await fs.writeFile(file1, 'file 1')
+
+      await until('all three events arrive', () => {
+        return [rootFile, file0, file1].every(filePath => events.some(event => event.oldPath === filePath))
+      })
+      assert.isTrue(errors.every(err => err === null))
+    })
+
+    it('watches newly created subdirectories', async function () {
+      const errors = []
+      const events = []
+
+      subs.push(await watcher.watch(watchDir, (err, es) => {
+        errors.push(err)
+        events.push(...es)
+      }))
+
+      const subdir = path.join(watchDir, 'subdir')
+      const file0 = path.join(subdir, 'file-0.txt')
+      await fs.mkdir(subdir)
+      await fs.writeFile(file0, 'file 0')
+
+      await until('both events arrive', () => {
+        return [subdir, file0].every(filePath => events.some(event => event.oldPath === filePath))
+      })
+      assert.isTrue(errors.every(err => err === null))
+    })
+
     describe('events', function () {
       let errors, events
 
