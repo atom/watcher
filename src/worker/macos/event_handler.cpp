@@ -160,13 +160,12 @@ private:
 
     LOGGER << "Entry is no longer present." << endl;
 
-    if (former->is_present()) {
-      if (kinds_are_different(former->get_entry_kind(), current->get_entry_kind())) {
-        // Entry was last seen as a directory, but the latest event has it flagged as a file (or vice versa).
-        // The directory must have been deleted.
-        handler.enqueue_deletion(former->get_path(), former->get_entry_kind());
-      }
-
+    if (former->is_present() && kinds_are_different(former->get_entry_kind(), current->get_entry_kind())) {
+      // Entry was last seen as a directory, but the latest event has it flagged as a file (or vice versa).
+      // The directory must have been deleted.
+      handler.enqueue_deletion(former->get_path(), former->get_entry_kind());
+      handler.enqueue_creation(current->get_path(), current->get_entry_kind());
+    } else {
       // Entry has not been seen before, so we must have missed its creation event.
       handler.enqueue_creation(current->get_path(), current->get_entry_kind());
     }

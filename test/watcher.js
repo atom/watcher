@@ -333,20 +333,30 @@ describe('watcher', function () {
         }))
       })
 
-      it('when a file is renamed from inside of the watch root out ^windows ^mac', async function () {
+      it('when a file is renamed from inside of the watch root out ^windows', async function () {
         const outsideFile = path.join(fixtureDir, 'file.txt')
         const insideFile = path.join(watchDir, 'file.txt')
         const flagFile = path.join(watchDir, 'flag.txt')
 
         await fs.writeFile(insideFile, 'contents')
-        await fs.rename(insideFile, outsideFile)
 
-        await until('the original event arrives', eventMatching({
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
           kind: 'file',
           oldPath: insideFile
         }))
 
-        await fs.writeFile(flagFile, 'flag')
+        await fs.rename(insideFile, outsideFile)
+        await fs.writeFile(flagFile, 'flag 1')
+
+        await until('the flag file event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath: flagFile
+        }))
+
+        // Trigger another batch of events on Linux
+        await fs.writeFile(flagFile, 'flag 2')
 
         await until('the deletion event arrives', eventMatching({
           type: 'deleted',

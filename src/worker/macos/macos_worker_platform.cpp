@@ -234,7 +234,7 @@ public:
     }
 
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
-      << messages.size() << " message(s) produced." << endl;
+      << plural(messages.size(), "message") << " produced." << endl;
 
     cache.prune();
   }
