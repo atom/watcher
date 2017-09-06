@@ -341,7 +341,8 @@ describe('watcher', function () {
         await fs.writeFile(insideFile, 'contents')
         await fs.rename(insideFile, outsideFile)
 
-        await until('the original event arrives', eventMatching({
+        await until('the creation event arrives', eventMatching({
+          type: 'created',
           kind: 'file',
           oldPath: insideFile
         }))
