@@ -339,7 +339,6 @@ describe('watcher', function () {
         const flagFile = path.join(watchDir, 'flag.txt')
 
         await fs.writeFile(insideFile, 'contents')
-        await fs.rename(insideFile, outsideFile)
 
         await until('the creation event arrives', eventMatching({
           type: 'created',
@@ -347,7 +346,17 @@ describe('watcher', function () {
           oldPath: insideFile
         }))
 
-        await fs.writeFile(flagFile, 'flag')
+        await fs.rename(insideFile, outsideFile)
+        await fs.writeFile(flagFile, 'flag 1')
+
+        await until('the flag file event arrives', eventMatching({
+          type: 'created',
+          kind: 'file',
+          oldPath: flagFile
+        }))
+
+        // Trigger another batch of events on Linux
+        await fs.writeFile(flagFile, 'flag 2')
 
         await until('the deletion event arrives', eventMatching({
           type: 'deleted',
