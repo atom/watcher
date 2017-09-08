@@ -380,7 +380,7 @@ describe('events', function () {
 
     await fs.writeFile(reusedPath, 'something\n')
     await until('directory creation event arrives', eventMatching(
-      {action: 'created', kind: 'file', oldPath: reusedPath}
+      {action: 'created', kind: 'file', path: reusedPath}
     ))
 
     await fs.rename(reusedPath, newFilePath)
