@@ -58,11 +58,11 @@ describe('watching a directory', function () {
 
     const fileA = path.join(watchDirA, 'a.txt')
     await fs.writeFile(fileA, 'file a')
-    await until('watcher A picks up its event', () => eventsA.some(event => event.oldPath === fileA))
+    await until('watcher A picks up its event', () => eventsA.some(event => event.path === fileA))
 
     const fileB = path.join(watchDirB, 'b.txt')
     await fs.writeFile(fileB, 'file b')
-    await until('watcher B picks up its event', () => eventsB.some(event => event.oldPath === fileB))
+    await until('watcher B picks up its event', () => eventsB.some(event => event.path === fileB))
 
     // Assert that the streams weren't crossed
     assert.isTrue(errors.every(err => err === null))
@@ -95,7 +95,7 @@ describe('watching a directory', function () {
     await fs.writeFile(file1, 'file 1')
 
     await until('all three events arrive', () => {
-      return [rootFile, file0, file1].every(filePath => events.some(event => event.oldPath === filePath))
+      return [rootFile, file0, file1].every(filePath => events.some(event => event.path === filePath))
     })
     assert.isTrue(errors.every(err => err === null))
   })
@@ -114,12 +114,12 @@ describe('watching a directory', function () {
 
     await fs.mkdir(subdir)
     await until('the subdirectory creation event arrives', () => {
-      return events.some(event => event.oldPath === subdir)
+      return events.some(event => event.path === subdir)
     })
 
     await fs.writeFile(file0, 'file 0')
     await until('the modification event arrives', () => {
-      return events.some(event => event.oldPath === file0)
+      return events.some(event => event.path === file0)
     })
     assert.isTrue(errors.every(err => err === null))
   })
@@ -146,13 +146,13 @@ describe('watching a directory', function () {
 
     await fs.rename(externalDir, internalDir)
     await until('creation event arrives', () => {
-      return events.some(event => event.oldPath === internalDir)
+      return events.some(event => event.path === internalDir)
     })
 
     await fs.writeFile(internalFile, 'changed')
 
     await until('modification event arrives', () => {
-      return events.some(event => event.oldPath === internalFile)
+      return events.some(event => event.path === internalFile)
     })
     assert.isTrue(errors.every(err => err === null))
   })

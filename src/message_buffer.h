@@ -17,7 +17,7 @@ public:
 
   void deleted(ChannelID channel_id, std::string &&path, const EntryKind &kind);
 
-  void renamed(ChannelID channel_id, std::string &&old_path, std::string &&new_path, const EntryKind &kind);
+  void renamed(ChannelID channel_id, std::string &&old_path, std::string &&path, const EntryKind &kind);
 
   MessageBuffer::iter begin() { return messages.begin(); }
 
@@ -48,9 +48,9 @@ public:
     buffer.deleted(channel_id, std::move(path), kind);
   }
 
-  void renamed(std::string &&old_path, std::string &&new_path, const EntryKind &kind)
+  void renamed(std::string &&old_path, std::string &&path, const EntryKind &kind)
   {
-    buffer.renamed(channel_id, std::move(old_path), std::move(new_path), kind);
+    buffer.renamed(channel_id, std::move(old_path), std::move(path), kind);
   }
 
   MessageBuffer::iter begin() { return buffer.begin(); }

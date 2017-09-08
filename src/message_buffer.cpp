@@ -13,7 +13,7 @@ using std::endl;
 
 void MessageBuffer::created(ChannelID channel_id, std::string &&path, const EntryKind &kind)
 {
-  FileSystemPayload payload(channel_id, ACTION_CREATED, kind, move(path), "");
+  FileSystemPayload payload(channel_id, ACTION_CREATED, kind, "", move(path));
   Message message(move(payload));
 
   LOGGER << "Emitting filesystem message " << message << endl;
@@ -23,7 +23,7 @@ void MessageBuffer::created(ChannelID channel_id, std::string &&path, const Entr
 
 void MessageBuffer::modified(ChannelID channel_id, std::string &&path, const EntryKind &kind)
 {
-  FileSystemPayload payload(channel_id, ACTION_MODIFIED, kind, move(path), "");
+  FileSystemPayload payload(channel_id, ACTION_MODIFIED, kind, "", move(path));
   Message message(move(payload));
 
   LOGGER << "Emitting filesystem message " << message << endl;
@@ -33,7 +33,7 @@ void MessageBuffer::modified(ChannelID channel_id, std::string &&path, const Ent
 
 void MessageBuffer::deleted(ChannelID channel_id, std::string &&path, const EntryKind &kind)
 {
-  FileSystemPayload payload(channel_id, ACTION_DELETED, kind, move(path), "");
+  FileSystemPayload payload(channel_id, ACTION_DELETED, kind, "", move(path));
   Message message(move(payload));
 
   LOGGER << "Emitting filesystem message " << message << endl;
@@ -41,9 +41,9 @@ void MessageBuffer::deleted(ChannelID channel_id, std::string &&path, const Entr
   messages.push_back(move(message));
 }
 
-void MessageBuffer::renamed(ChannelID channel_id, std::string &&old_path, std::string &&new_path, const EntryKind &kind)
+void MessageBuffer::renamed(ChannelID channel_id, std::string &&old_path, std::string &&path, const EntryKind &kind)
 {
-  FileSystemPayload payload(channel_id, ACTION_RENAMED, kind, move(old_path), move(new_path));
+  FileSystemPayload payload(channel_id, ACTION_RENAMED, kind, move(old_path), move(path));
   Message message(move(payload));
 
   LOGGER << "Emitting filesystem message " << message << endl;
