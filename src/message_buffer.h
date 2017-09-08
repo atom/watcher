@@ -19,9 +19,13 @@ public:
 
   void renamed(ChannelID channel_id, std::string &&old_path, std::string &&path, const EntryKind &kind);
 
+  void reserve(size_t capacity) { messages.reserve(capacity); }
+
   MessageBuffer::iter begin() { return messages.begin(); }
 
   MessageBuffer::iter end() { return messages.end(); }
+
+  size_t size() { return messages.size(); }
 
   bool empty() { return messages.empty(); }
 
@@ -53,9 +57,13 @@ public:
     buffer.renamed(channel_id, std::move(old_path), std::move(path), kind);
   }
 
+  void reserve(size_t capacity) { buffer.reserve(capacity); }
+
   MessageBuffer::iter begin() { return buffer.begin(); }
 
   MessageBuffer::iter end() { return buffer.end(); }
+
+  size_t size() { return buffer.size(); }
 
   bool empty() { return buffer.empty(); }
 
