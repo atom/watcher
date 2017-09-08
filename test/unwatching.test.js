@@ -34,7 +34,7 @@ describe('unwatching a directory', function () {
     const filePath = path.join(watchDir, 'file.txt')
     await fs.writeFile(filePath, 'original')
 
-    await until('the event arrives', () => events.some(event => event.oldPath === filePath))
+    await until('the event arrives', () => events.some(event => event.path === filePath))
     const eventCount = events.length
     assert.isNull(error)
 
