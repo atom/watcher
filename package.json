@@ -10,12 +10,11 @@
     "mocha": "mocha --require test/global.js --harmony",
     "mocha:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js",
     "test": "npm run lint && npm run mocha",
-    "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5",
+    "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5 --timeout 30000",
     "ci:circle": "npm run mocha -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
     "ci:travis": "npm run mocha -- --fgrep '^linux' --invert --reporter list",
     "aw:test": "npm run clean:fixture && clear && npm run build:debug && clear && npm run mocha",
-    "clean:fixture": "rm -rf test/fixture/*.log test/fixture/watched-*",
-    "install": "cross-env NODE_DEBUG=request node-gyp rebuild --loglevel=silly"
+    "clean:fixture": "rm -rf test/fixture/*.log test/fixture/watched-*"
   },
   "keywords": [
     "filewatch",
@@ -30,7 +29,6 @@
   "devDependencies": {
     "chai": "4.0.2",
     "chai-as-promised": "7.1.1",
-    "cross-env": "^5.0.5",
     "fs-extra": "^4.0.0",
     "mocha": "3.4.2",
     "mocha-appveyor-reporter": "^0.4.0",
