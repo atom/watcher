@@ -7,11 +7,6 @@ const fs = require('fs-extra')
 describe('watcher', function () {
   let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
 
-  if (process.env.APPVEYOR === 'True') {
-    this.timeout(30000)
-    until.setDefaultTimeout(20000)
-  }
-
   beforeEach(async function () {
     subs = []
 
