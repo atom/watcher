@@ -193,11 +193,11 @@ public:
 
         Local<Object> js_event = Nan::New<Object>();
         js_event->Set(
-          Nan::New<String>("actionType").ToLocalChecked(),
+          Nan::New<String>("action").ToLocalChecked(),
           Nan::New<Number>(static_cast<int>(filesystem_message->get_filesystem_action()))
         );
         js_event->Set(
-          Nan::New<String>("entryKind").ToLocalChecked(),
+          Nan::New<String>("kind").ToLocalChecked(),
           Nan::New<Number>(static_cast<int>(filesystem_message->get_entry_kind()))
         );
         js_event->Set(
@@ -205,8 +205,8 @@ public:
           Nan::New<String>(filesystem_message->get_old_path()).ToLocalChecked()
         );
         js_event->Set(
-          Nan::New<String>("newPath").ToLocalChecked(),
-          Nan::New<String>(filesystem_message->get_new_path()).ToLocalChecked()
+          Nan::New<String>("path").ToLocalChecked(),
+          Nan::New<String>(filesystem_message->get_path()).ToLocalChecked()
         );
 
         to_deliver[channel_id].push_back(js_event);
