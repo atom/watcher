@@ -383,7 +383,7 @@ describe('watcher', function () {
         }))
       })
 
-      it('understands coalesced creation and deletion events ^mac', async function () {
+      it('understands coalesced creation and deletion events', async function () {
         const deletedPath = path.join(watchDir, 'deleted.txt')
         const recreatedPath = path.join(watchDir, 'recreated.txt')
         const createdPath = path.join(watchDir, 'created.txt')
