@@ -77,7 +77,7 @@ FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) :
   action{original.action},
   entry_kind{original.entry_kind},
   old_path{move(original.old_path)},
-  new_path{move(original.new_path)}
+  path{move(original.path)}
 {
   //
 }
