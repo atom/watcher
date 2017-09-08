@@ -207,7 +207,7 @@ describe('events', function () {
     await until('all events arrive', orderedEventsMatching(
       {type: 'deleted', oldPath: deletedPath},
       {type: 'created', kind: 'file', oldPath: recreatedPath},
-      {type: 'deleted', kind: 'file', oldPath: recreatedPath},
+      {type: 'deleted', oldPath: recreatedPath},
       {type: 'created', kind: 'file', oldPath: recreatedPath},
       {type: 'created', kind: 'file', oldPath: createdPath}
     ))
