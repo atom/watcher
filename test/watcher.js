@@ -1,5 +1,6 @@
 const watcher = require('../lib')
-const {DISABLE} = watcher
+
+const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 const path = require('path')
 const fs = require('fs-extra')
@@ -8,39 +9,14 @@ describe('watcher', function () {
   let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
 
   beforeEach(async function () {
-    subs = []
-
-    const rootDir = path.join(__dirname, 'fixture')
-    fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
-    watchDir = path.join(fixtureDir, 'root')
-    await fs.mkdirs(watchDir)
-
-    mainLogFile = path.join(fixtureDir, 'main.test.log')
-    workerLogFile = path.join(fixtureDir, 'worker.test.log')
-
-    await Promise.all([
-      [mainLogFile, workerLogFile].map(fname => fs.unlink(fname, {encoding: 'utf8'}).catch(() => ''))
-    ])
+    subs = [];
+    ({fixtureDir, watchDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
   })
 
   afterEach(async function () {
     await Promise.all(subs.map(sub => sub.unwatch()))
-
-    if (process.platform === 'win32') {
-      await watcher.configure({mainLog: DISABLE, workerLog: DISABLE})
-    }
-
-    if (this.currentTest.state === 'failed' || process.env.VERBOSE) {
-      const [mainLog, workerLog] = await Promise.all(
-        [mainLogFile, workerLogFile].map(fname => fs.readFile(fname, {encoding: 'utf8'}).catch(() => ''))
-      )
-
-      console.log(`>>> main log ${mainLogFile}:\n${mainLog}\n<<<\n`)
-      console.log(`>>> worker log ${workerLogFile}:\n${workerLog}\n<<<\n`)
-    }
-
-    await fs.remove(fixtureDir, {maxBusyTries: 1})
-      .catch(err => console.warn('Unable to delete fixture directory', err))
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await cleanupFixtureDir(fixtureDir)
   })
 
   describe('configuration', function () {
