@@ -251,9 +251,7 @@ void EventHandler::flush()
 
 void EventHandler::enqueue_creation(string event_path, const EntryKind &kind)
 {
-  string empty_path;
-
-  FileSystemPayload payload(channel_id, ACTION_CREATED, kind, move(event_path), move(empty_path));
+  FileSystemPayload payload(channel_id, ACTION_CREATED, kind, "", move(event_path));
   Message event_message(move(payload));
 
   LOGGER << "Emitting filesystem message " << event_message << endl;
@@ -263,9 +261,7 @@ void EventHandler::enqueue_creation(string event_path, const EntryKind &kind)
 
 void EventHandler::enqueue_modification(string event_path, const EntryKind &kind)
 {
-  string empty_path;
-
-  FileSystemPayload payload(channel_id, ACTION_MODIFIED, kind, move(event_path), move(empty_path));
+  FileSystemPayload payload(channel_id, ACTION_MODIFIED, kind, "", move(event_path));
   Message event_message(move(payload));
 
   LOGGER << "Emitting filesystem message " << event_message << endl;
@@ -275,9 +271,7 @@ void EventHandler::enqueue_modification(string event_path, const EntryKind &kind
 
 void EventHandler::enqueue_deletion(string event_path, const EntryKind &kind)
 {
-  string empty_path;
-
-  FileSystemPayload payload(channel_id, ACTION_DELETED, kind, move(event_path), move(empty_path));
+  FileSystemPayload payload(channel_id, ACTION_DELETED, kind, "", move(event_path));
   Message event_message(move(payload));
 
   LOGGER << "Emitting filesystem message " << event_message << endl;

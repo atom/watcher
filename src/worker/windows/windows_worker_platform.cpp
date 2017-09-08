@@ -290,7 +290,7 @@ private:
     switch (info->Action) {
     case FILE_ACTION_ADDED:
       {
-        FileSystemPayload payload(channel, ACTION_CREATED, kind, move(path), "");
+        FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
         Message message(move(payload));
 
         LOGGER << "Emitting filesystem message " << message << "." << endl;
@@ -299,7 +299,7 @@ private:
       break;
     case FILE_ACTION_MODIFIED:
       {
-        FileSystemPayload payload(channel, ACTION_MODIFIED, kind, move(path), "");
+        FileSystemPayload payload(channel, ACTION_MODIFIED, kind, "", move(path));
         Message message(move(payload));
 
         LOGGER << "Emitting filesystem message " << message << "." << endl;
@@ -308,7 +308,7 @@ private:
       break;
     case FILE_ACTION_REMOVED:
       {
-        FileSystemPayload payload(channel, ACTION_DELETED, kind, move(path), "");
+        FileSystemPayload payload(channel, ACTION_DELETED, kind, "", move(path));
         Message message(move(payload));
 
         LOGGER << "Emitting filesystem message " << message << "." << endl;
@@ -334,7 +334,7 @@ private:
       } else {
         // No old name. Treat it as a creation
         {
-          FileSystemPayload payload(channel, ACTION_CREATED, kind, move(path), "");
+          FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
           Message message(move(payload));
 
           LOGGER << "Emitting filesystem message " << message << "." << endl;
