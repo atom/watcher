@@ -9,8 +9,7 @@
 
 #include "recent_file_cache.h"
 #include "../../message.h"
-
-class EventHandler;
+#include "../../message_buffer.h"
 
 // Filesystem entry that was flagged as participating in a rename by a received filesystem event.
 class RenameBufferEntry {
@@ -31,8 +30,8 @@ private:
 
 class RenameBuffer {
 public:
-  // Create a new buffer with a reference to the EventHandler it should use to enqueue messages.
-  RenameBuffer(EventHandler *handler) : handler{handler} {};
+  // Create a new buffer with a reference to the ChannelMessageBuffer it should use to enqueue messages.
+  RenameBuffer(ChannelMessageBuffer &message_buffer) : message_buffer{message_buffer} {};
 
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
   // based on the previous and currently observed state of the entry at that path.
@@ -44,7 +43,7 @@ public:
 private:
   void observe_present_entry(std::shared_ptr<PresentEntry> present, bool current);
 
-  EventHandler *handler;
+  ChannelMessageBuffer &message_buffer;
 
   std::unordered_map<ino_t, RenameBufferEntry> observed_by_inode;
 };

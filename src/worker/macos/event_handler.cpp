@@ -28,7 +28,7 @@ using std::endl;
 class EventFunctor {
 public:
   EventFunctor(EventHandler &handler, string &event_path, FSEventStreamEventFlags flags) :
-    handler{handler},
+    message_buffer{handler.message_buffer},
     cache{handler.cache},
     rename_buffer{handler.rename_buffer},
     event_path{event_path},
@@ -113,7 +113,7 @@ private:
   {
     if (flag_created && !(flag_deleted || flag_modified || flag_renamed)) {
       LOGGER << "Unambiguous creation." << endl;
-      handler.enqueue_creation(event_path, current->get_entry_kind());
+      message_buffer.created(move(event_path), current->get_entry_kind());
       return true;
     }
 
@@ -127,13 +127,13 @@ private:
         former_kind = former->get_entry_kind();
       }
 
-      handler.enqueue_deletion(event_path, former_kind);
+      message_buffer.deleted(move(event_path), former_kind);
       return true;
     }
 
     if (flag_modified && !(flag_created || flag_deleted || flag_renamed)) {
       LOGGER << "Unambiguous modification." << endl;
-      handler.enqueue_modification(event_path, current->get_entry_kind());
+      message_buffer.modified(move(event_path), current->get_entry_kind());
       return true;
     }
 
@@ -163,15 +163,15 @@ private:
     if (former->is_present() && kinds_are_different(former->get_entry_kind(), current->get_entry_kind())) {
       // Entry was last seen as a directory, but the latest event has it flagged as a file (or vice versa).
       // The directory must have been deleted.
-      handler.enqueue_deletion(former->get_path(), former->get_entry_kind());
-      handler.enqueue_creation(current->get_path(), current->get_entry_kind());
+      message_buffer.deleted(string(former->get_path()), former->get_entry_kind());
+      message_buffer.created(string(current->get_path()), current->get_entry_kind());
     } else {
       // Entry has not been seen before, so we must have missed its creation event.
-      handler.enqueue_creation(current->get_path(), current->get_entry_kind());
+      message_buffer.created(string(current->get_path()), current->get_entry_kind());
     }
 
     // It isn't there now, so it must have been deleted.
-    handler.enqueue_deletion(current->get_path(), current->get_entry_kind());
+    message_buffer.deleted(string(current->get_path()), current->get_entry_kind());
     return true;
   }
 
@@ -187,31 +187,31 @@ private:
       if (flag_deleted) {
         // Rapid creation and deletion. There may be a lost modification event just before deletion or just after
         // recreation.
-        handler.enqueue_deletion(former->get_path(), former->get_entry_kind());
-        handler.enqueue_creation(current->get_path(), current->get_entry_kind());
+        message_buffer.deleted(string(former->get_path()), former->get_entry_kind());
+        message_buffer.created(string(current->get_path()), current->get_entry_kind());
       } else {
         // Modification of an existing entry.
-        handler.enqueue_modification(current->get_path(), current->get_entry_kind());
+        message_buffer.modified(string(current->get_path()), current->get_entry_kind());
       }
     } else {
       // This *is* the first time an event has been seen at this path.
       if (flag_deleted) {
         // The only way for the deletion flag to be set on an entry we haven't seen before is for the entry to
         // be rapidly created, deleted, and created again.
-        handler.enqueue_creation(former->get_path(), former->get_entry_kind());
-        handler.enqueue_deletion(former->get_path(), former->get_entry_kind());
-        handler.enqueue_creation(current->get_path(), current->get_entry_kind());
+        message_buffer.created(string(former->get_path()), former->get_entry_kind());
+        message_buffer.deleted(string(former->get_path()), former->get_entry_kind());
+        message_buffer.created(string(current->get_path()), current->get_entry_kind());
       } else {
         // Otherwise, it must have been created. This may conceal a separate modification event just after
         // the entry's creation.
-        handler.enqueue_creation(current->get_path(), current->get_entry_kind());
+        message_buffer.created(string(current->get_path()), current->get_entry_kind());
       }
     }
 
     return true;
   }
 
-  EventHandler &handler;
+  ChannelMessageBuffer &message_buffer;
   RecentFileCache &cache;
   RenameBuffer &rename_buffer;
 
@@ -229,11 +229,10 @@ private:
   shared_ptr<StatResult> current;
 };
 
-EventHandler::EventHandler(vector<Message> &messages, RecentFileCache &cache, ChannelID channel_id) :
-  messages{messages},
-  channel_id{channel_id},
+EventHandler::EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache) :
   cache{cache},
-  rename_buffer(this)
+  message_buffer{message_buffer},
+  rename_buffer(message_buffer)
 {
   //
 }
@@ -247,44 +246,4 @@ void EventHandler::handle(string &event_path, FSEventStreamEventFlags flags)
 void EventHandler::flush()
 {
   rename_buffer.flush_unmatched();
-}
-
-void EventHandler::enqueue_creation(string event_path, const EntryKind &kind)
-{
-  FileSystemPayload payload(channel_id, ACTION_CREATED, kind, "", move(event_path));
-  Message event_message(move(payload));
-
-  LOGGER << "Emitting filesystem message " << event_message << endl;
-
-  messages.push_back(move(event_message));
-}
-
-void EventHandler::enqueue_modification(string event_path, const EntryKind &kind)
-{
-  FileSystemPayload payload(channel_id, ACTION_MODIFIED, kind, "", move(event_path));
-  Message event_message(move(payload));
-
-  LOGGER << "Emitting filesystem message " << event_message << endl;
-
-  messages.push_back(move(event_message));
-}
-
-void EventHandler::enqueue_deletion(string event_path, const EntryKind &kind)
-{
-  FileSystemPayload payload(channel_id, ACTION_DELETED, kind, "", move(event_path));
-  Message event_message(move(payload));
-
-  LOGGER << "Emitting filesystem message " << event_message << endl;
-
-  messages.push_back(move(event_message));
-}
-
-void EventHandler::enqueue_rename(string old_path, string new_path, const EntryKind &kind)
-{
-  FileSystemPayload payload(channel_id, ACTION_RENAMED, kind, move(old_path), move(new_path));
-  Message event_message(move(payload));
-
-  LOGGER << "Emitting filesystem message " << event_message << endl;
-
-  messages.push_back(move(event_message));
 }

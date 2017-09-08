@@ -56,9 +56,9 @@ void RenameBuffer::observe_present_entry(shared_ptr<PresentEntry> present, bool 
 
     // The former end is the "from" end and the current end is the "to" end.
     if (!existing.current && current) {
-      handler->enqueue_rename(existing.entry->get_path(), present->get_path(), present->get_entry_kind());
+      message_buffer.renamed(string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
     } else if (existing.current && !current) {
-      handler->enqueue_rename(present->get_path(), existing.entry->get_path(), existing.entry->get_entry_kind());
+      message_buffer.renamed(string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
     } else {
       // Either both entries are still present (re-used inode?) or both are missing (rapidly renamed and deleted?)
       // This could happen if the entry is renamed again between the lstat() calls, possibly.
@@ -87,9 +87,11 @@ void RenameBuffer::flush_unmatched()
     shared_ptr<PresentEntry> entry = existing.entry;
 
     if (existing.current) {
-      handler->enqueue_creation(entry->get_path(), entry->get_entry_kind());
+      message_buffer.created(string(entry->get_path()), entry->get_entry_kind());
     } else {
-      handler->enqueue_deletion(entry->get_path(), entry->get_entry_kind());
+      message_buffer.deleted(string(entry->get_path()), entry->get_entry_kind());
     }
   }
+
+  observed_by_inode.clear();
 }

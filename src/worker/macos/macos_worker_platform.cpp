@@ -18,6 +18,7 @@
 #include "flags.h"
 #include "../../log.h"
 #include "../../message.h"
+#include "../../message_buffer.h"
 #include "../../result.h"
 
 using std::vector;
@@ -214,27 +215,26 @@ public:
     const FSEventStreamEventId *event_ids)
   {
     char **paths = reinterpret_cast<char**>(event_paths);
-    vector<Message> messages;
-    string rename_old_path;
+    ChannelMessageBuffer message_buffer(channel_id);
 
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
-    messages.reserve(num_events);
+    message_buffer.reserve(num_events);
 
-    EventHandler handler(messages, cache, channel_id);
+    EventHandler handler(message_buffer, cache);
     for (size_t i = 0; i < num_events; i++) {
       string event_path(paths[i]);
       handler.handle(event_path, event_flags[i]);
     }
     handler.flush();
 
-    Result<> er = emit_all(messages.begin(), messages.end());
+    Result<> er = emit_all(message_buffer.begin(), message_buffer.end());
     if (er.is_error()) {
       LOGGER << "Unable to emit ack messages: " << er << "." << endl;
       return;
     }
 
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
-      << plural(messages.size(), "message") << " produced." << endl;
+      << plural(message_buffer.size(), "message") << " produced." << endl;
 
     cache.prune();
   }
