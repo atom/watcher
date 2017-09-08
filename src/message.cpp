@@ -61,13 +61,13 @@ FileSystemPayload::FileSystemPayload(
   const FileSystemAction action,
   const EntryKind entry_kind,
   const string &&old_path,
-  const string &&new_path
+  const string &&path
 ) :
   channel_id{channel_id},
   action{action},
   entry_kind{entry_kind},
   old_path{move(old_path)},
-  new_path{move(new_path)}
+  path{move(path)}
 {
   //
 }
@@ -82,54 +82,16 @@ FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) :
   //
 }
 
-const ChannelID &FileSystemPayload::get_channel_id() const
-{
-  return channel_id;
-}
-
-const FileSystemAction &FileSystemPayload::get_filesystem_action() const
-{
-  return action;
-}
-
-const EntryKind &FileSystemPayload::get_entry_kind() const
-{
-  return entry_kind;
-}
-
-const string &FileSystemPayload::get_old_path() const
-{
-  return old_path;
-}
-
-const string &FileSystemPayload::get_new_path() const
-{
-  return new_path;
-}
-
 string FileSystemPayload::describe() const
 {
   ostringstream builder;
   builder << "[FileSystemPayload channel " << channel_id << " " << entry_kind;
-
-  switch (action) {
-    case ACTION_CREATED:
-      builder << " created " << old_path;
-      break;
-    case ACTION_DELETED:
-      builder << " deleted " << old_path;
-      break;
-    case ACTION_MODIFIED:
-      builder << " modified " << old_path;
-      break;
-    case ACTION_RENAMED:
-      builder << " renamed {" << old_path << " => " << new_path << "}";
-      break;
-    default:
-      builder << " !!action=" << action << " ";
-      break;
+  builder << " " << action;
+  if (!old_path.empty()) {
+    builder << " {" << old_path << " => " << path << "}";
+  } else {
+    builder << " " << path;
   }
-
   builder << "]";
   return builder.str();
 }
@@ -155,26 +117,6 @@ CommandPayload::CommandPayload(CommandPayload &&original) :
   channel_id{original.channel_id}
 {
   //
-}
-
-CommandID CommandPayload::get_id() const
-{
-  return id;
-}
-
-const CommandAction& CommandPayload::get_action() const
-{
-  return action;
-}
-
-const string& CommandPayload::get_root() const
-{
-  return root;
-}
-
-const ChannelID &CommandPayload::get_channel_id() const
-{
-  return channel_id;
 }
 
 string CommandPayload::describe() const
@@ -211,26 +153,6 @@ AckPayload::AckPayload(const CommandID key, const ChannelID channel_id, bool suc
   message{move(message)}
 {
   //
-}
-
-const CommandID &AckPayload::get_key() const
-{
-  return key;
-}
-
-const ChannelID &AckPayload::get_channel_id() const
-{
-  return channel_id;
-}
-
-const bool &AckPayload::was_successful() const
-{
-  return success;
-}
-
-const string &AckPayload::get_message() const
-{
-  return message;
 }
 
 string AckPayload::describe() const

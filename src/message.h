@@ -36,7 +36,7 @@ public:
     const FileSystemAction action,
     const EntryKind entry_kind,
     const std::string &&old_path,
-    const std::string &&new_path
+    const std::string &&path
   );
   FileSystemPayload(FileSystemPayload &&original);
   ~FileSystemPayload() {};
@@ -45,11 +45,11 @@ public:
   FileSystemPayload &operator=(const FileSystemPayload &original) = delete;
   FileSystemPayload &operator=(FileSystemPayload &&original) = delete;
 
-  const ChannelID &get_channel_id() const;
-  const FileSystemAction &get_filesystem_action() const;
-  const EntryKind &get_entry_kind() const;
-  const std::string &get_old_path() const;
-  const std::string &get_new_path() const;
+  const ChannelID &get_channel_id() const { return channel_id; }
+  const FileSystemAction &get_filesystem_action() const { return action; }
+  const EntryKind &get_entry_kind() const { return entry_kind; }
+  const std::string &get_old_path() const { return old_path; }
+  const std::string &get_path() const { return path; }
 
   std::string describe() const;
 private:
@@ -57,7 +57,7 @@ private:
   const FileSystemAction action;
   const EntryKind entry_kind;
   const std::string old_path;
-  const std::string new_path;
+  const std::string path;
 };
 
 enum CommandAction {
@@ -86,10 +86,10 @@ public:
   CommandPayload &operator=(const CommandPayload &original) = delete;
   CommandPayload &operator=(CommandPayload &&original) = delete;
 
-  CommandID get_id() const;
-  const CommandAction &get_action() const;
-  const std::string &get_root() const;
-  const ChannelID &get_channel_id() const;
+  CommandID get_id() const { return id; }
+  const CommandAction &get_action() const { return action; }
+  const std::string &get_root() const { return root; }
+  const ChannelID &get_channel_id() const { return channel_id; }
 
   std::string describe() const;
 private:
@@ -109,10 +109,10 @@ public:
   AckPayload &operator=(const AckPayload &original) = delete;
   AckPayload &operator=(AckPayload &&original) = delete;
 
-  const CommandID &get_key() const;
-  const ChannelID &get_channel_id() const;
-  const bool &was_successful() const;
-  const std::string &get_message() const;
+  const CommandID &get_key() const { return key; }
+  const ChannelID &get_channel_id() const { return channel_id; }
+  const bool &was_successful() const { return success; }
+  const std::string &get_message() const { return message; }
 
   std::string describe() const;
 private:
