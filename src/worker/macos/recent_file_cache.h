@@ -74,7 +74,7 @@ public:
 class RecentFileCache {
 public:
   void insert(std::shared_ptr<StatResult> stat_result);
-  std::shared_ptr<StatResult> at_path(const std::string &path);
+  std::shared_ptr<StatResult> at_path(const std::string &path, bool file_hint, bool directory_hint);
 
   void prune();
 private:

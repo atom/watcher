@@ -227,11 +227,15 @@ void RecentFileCache::insert(shared_ptr<StatResult> stat_result)
   }
 }
 
-shared_ptr<StatResult> RecentFileCache::at_path(const string &path)
+shared_ptr<StatResult> RecentFileCache::at_path(const string &path, bool file_hint, bool directory_hint)
 {
   auto maybe = by_path.find(path);
   if (maybe == by_path.end()) {
-    return shared_ptr<StatResult>(new AbsentEntry(path, KIND_UNKNOWN));
+    EntryKind kind = KIND_UNKNOWN;
+    if (file_hint && !directory_hint) kind = KIND_FILE;
+    if (!file_hint && directory_hint) kind = KIND_DIRECTORY;
+
+    return shared_ptr<StatResult>(new AbsentEntry(path, kind));
   } else {
     return maybe->second;
   }

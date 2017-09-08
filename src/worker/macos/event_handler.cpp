@@ -102,7 +102,7 @@ private:
   // Check the recently-seen entry cache for this entry.
   void collect_info()
   {
-    former = cache.at_path(event_path);
+    former = cache.at_path(event_path, flag_file, flag_directory);
     current = StatResult::at(event_path, flag_file, flag_directory);
 
     cache.insert(current);
