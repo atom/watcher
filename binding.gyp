@@ -12,7 +12,8 @@
             "src/message_buffer.cpp",
             "src/thread.cpp",
             "src/status.cpp",
-            "src/worker/worker_thread.cpp"
+            "src/worker/worker_thread.cpp",
+            "src/polling/polling_thread.cpp"
         ],
         "include_dirs": [
             "<!(node -e \"require('nan')\")"
