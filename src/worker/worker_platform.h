@@ -32,7 +32,9 @@ public:
   {
     if (!is_healthy()) return health_err_result();
 
-    return thread->handle_commands();
+    Result<size_t> cr = thread->handle_commands();
+    if (cr.is_error()) return cr.propagate();
+    return ok_result();
   }
 
 protected:
