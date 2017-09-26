@@ -23,7 +23,8 @@ private:
   Result<> wake() override;
 
   void listen();
-  Result<> handle_commands();
+  Result<> handle_add_command(const CommandPayload *command, CommandOutcome &outcome) override;
+  Result<> handle_remove_command(const CommandPayload *payload, CommandOutcome &outcome) override;
 
   std::unique_ptr<WorkerPlatform> platform;
   friend WorkerPlatform;
