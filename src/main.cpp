@@ -20,6 +20,7 @@ using v8::Local;
 using v8::Value;
 using v8::Object;
 using v8::String;
+using v8::Boolean;
 using v8::Number;
 using v8::Uint32;
 using v8::Function;
@@ -485,6 +486,11 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
     status_object,
     Nan::New<String>("workerOutOk").ToLocalChecked(),
     Nan::New<String>(status.worker_out_ok).ToLocalChecked()
+  );
+  Nan::Set(
+    status_object,
+    Nan::New<String>("pollingThreadActive").ToLocalChecked(),
+    Nan::New<Boolean>(status.polling_thread_active)
   );
   info.GetReturnValue().Set(status_object);
 }
