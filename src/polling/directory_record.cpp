@@ -47,7 +47,7 @@ DirectoryRecord::DirectoryRecord(string &&name) :
   //
 }
 
-string DirectoryRecord::path()
+string DirectoryRecord::path() const
 {
   return parent == nullptr ? name : path_join(parent->path(), name);
 }

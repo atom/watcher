@@ -6,6 +6,7 @@
 #include <string>
 #include <stack>
 #include <queue>
+#include <iostream>
 #include <uv.h>
 
 #include "../message.h"
@@ -39,6 +40,23 @@ private:
   } phase;
 
   friend class BoundPollingIterator;
+
+  friend std::ostream &operator<<(std::ostream &out, const PollingIterator &iterator)
+  {
+    out << "PollingIterator{at ";
+    out << iterator.current_path;
+    out << " phase=";
+    switch (iterator.phase) {
+      case SCAN: out << "SCAN"; break;
+      case ENTRIES: out << "ENTRIES"; break;
+      case RESET: out << "RESET"; break;
+      default: out << "!!phase=" << iterator.phase; break;
+    }
+    out << " entries=" << iterator.entries.size();
+    out << " directories=" << iterator.directories.size();
+    out << "}";
+    return out;
+  }
 };
 
 class BoundPollingIterator {
@@ -62,6 +80,11 @@ private:
 
   ChannelMessageBuffer &buffer;
   PollingIterator &iterator;
+
+  friend std::ostream &operator<<(std::ostream &out, const BoundPollingIterator &it)
+  {
+    return out << "Bound{channel=" << it.buffer.get_channel_id() << " " << it.iterator << "}";
+  }
 };
 
 #endif

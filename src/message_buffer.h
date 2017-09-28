@@ -79,6 +79,8 @@ public:
 
   bool empty() { return buffer.empty(); }
 
+  ChannelID get_channel_id() { return channel_id; }
+
 private:
   ChannelID channel_id;
   MessageBuffer &buffer;

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <iostream>
 
 #include "directory_record.h"
 #include "polling_iterator.h"
@@ -24,6 +25,11 @@ private:
   ChannelID channel_id;
 
   PollingIterator iterator;
+
+  friend std::ostream &operator<<(std::ostream &out, const PolledRoot &root)
+  {
+    return out << root.root;
+  }
 };
 
 #endif

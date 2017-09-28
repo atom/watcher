@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <iostream>
 #include <uv.h>
 
 #include "../message.h"
@@ -17,7 +18,7 @@ public:
   DirectoryRecord(DirectoryRecord &&) = delete;
   ~DirectoryRecord() = default;
 
-  std::string path();
+  std::string path() const;
 
   void scan(BoundPollingIterator *iterator);
   void entry(
@@ -43,6 +44,11 @@ private:
   std::map<std::string, std::shared_ptr<DirectoryRecord>> subdirectories;
   std::map<std::string, uv_stat_t> entries;
   bool populated;
+
+  friend std::ostream &operator<<(std::ostream &out, const DirectoryRecord &record)
+  {
+    return out << record.path();
+  }
 };
 
 #endif
