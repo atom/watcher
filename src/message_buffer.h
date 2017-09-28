@@ -42,7 +42,7 @@ private:
 
 class ChannelMessageBuffer {
 public:
-  ChannelMessageBuffer(ChannelID channel_id, MessageBuffer &buffer);
+  ChannelMessageBuffer(MessageBuffer &buffer, ChannelID channel_id);
   ChannelMessageBuffer(const ChannelMessageBuffer &) = delete;
   ChannelMessageBuffer(ChannelMessageBuffer &&) = delete;
 

@@ -216,7 +216,7 @@ public:
   {
     char **paths = reinterpret_cast<char**>(event_paths);
     MessageBuffer buffer;
-    ChannelMessageBuffer message_buffer(channel_id, buffer);
+    ChannelMessageBuffer message_buffer(buffer, channel_id);
 
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
     message_buffer.reserve(num_events);

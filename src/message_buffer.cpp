@@ -51,7 +51,7 @@ void MessageBuffer::renamed(ChannelID channel_id, std::string &&old_path, std::s
   messages.push_back(move(message));
 }
 
-ChannelMessageBuffer::ChannelMessageBuffer(ChannelID channel_id, MessageBuffer &buffer) :
+ChannelMessageBuffer::ChannelMessageBuffer(MessageBuffer &buffer, ChannelID channel_id) :
   channel_id{channel_id},
   buffer{buffer}
 {

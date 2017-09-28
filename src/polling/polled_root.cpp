@@ -19,7 +19,7 @@ PolledRoot::PolledRoot(string &&root_path, ChannelID channel_id) :
 
 size_t PolledRoot::advance(MessageBuffer &buffer, size_t throttle_allocation)
 {
-  ChannelMessageBuffer channel_buffer(channel_id, buffer);
+  ChannelMessageBuffer channel_buffer(buffer, channel_id);
   BoundPollingIterator bound_iterator(iterator, channel_buffer);
 
   return bound_iterator.advance(throttle_allocation);
