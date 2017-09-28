@@ -13,6 +13,7 @@
 using std::string;
 using std::shared_ptr;
 using std::set;
+using std::endl;
 
 PollingIterator::PollingIterator(shared_ptr<DirectoryRecord> root) :
   root(root),

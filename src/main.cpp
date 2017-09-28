@@ -15,6 +15,7 @@
 #include "status.h"
 #include "result.h"
 #include "worker/worker_thread.h"
+#include "polling/polling_thread.h"
 
 using v8::Local;
 using v8::Value;
@@ -40,7 +41,9 @@ static void handle_events_helper(uv_async_t *handle);
 
 class Main {
 public:
-  Main() : worker_thread{&event_handler}
+  Main() :
+    worker_thread(&event_handler),
+    polling_thread(&event_handler)
   {
     int err;
 
@@ -55,11 +58,10 @@ public:
 
   Result<> send_worker_command(
     const CommandAction action,
-    const std::string &&root,
+    const string &&root,
     unique_ptr<Nan::Callback> callback,
     ChannelID channel_id = NULL_CHANNEL_ID
-  )
-  {
+  ) {
     CommandID command_id = next_command_id;
 
     CommandPayload command_payload(next_command_id, action, move(root), channel_id);
@@ -69,8 +71,27 @@ public:
 
     next_command_id++;
 
-    LOGGER << "Sending command " << command_message << " to worker thread." << endl;
+    LOGGER << "Sending command " << command_message << " to the worker thread." << endl;
     return worker_thread.send(move(command_message));
+  }
+
+  Result<> send_polling_command(
+    const CommandAction action,
+    const string &&root,
+    unique_ptr<Nan::Callback> callback,
+    ChannelID channel_id = NULL_CHANNEL_ID
+  ) {
+    CommandID command_id = next_command_id;
+
+    CommandPayload command_payload(next_command_id, action, move(root), channel_id);
+    Message command_message(move(command_payload));
+
+    pending_callbacks.emplace(command_id, move(callback));
+
+    next_command_id++;
+
+    LOGGER << "Sending command " << command_message << " to the polling thread." << endl;
+    return polling_thread.send(move(command_message));
   }
 
   void use_main_log_file(string &&main_log_file)
@@ -259,6 +280,7 @@ private:
   uv_async_t event_handler;
 
   WorkerThread worker_thread;
+  PollingThread polling_thread;
 
   CommandID next_command_id;
   ChannelID next_channel_id;
