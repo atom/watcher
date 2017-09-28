@@ -55,7 +55,7 @@ string DirectoryRecord::path()
 void DirectoryRecord::scan(BoundPollingIterator *it)
 {
   FSReq scan_req;
-  set<string> scanned_entries;
+  set<Entry> scanned_entries;
 
   string dir = path();
   int scan_err = uv_fs_scandir(nullptr, &scan_req.req, dir.c_str(), 0, nullptr);
@@ -74,13 +74,25 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
     if (dirent.type == UV_DIRENT_DIR) entry_kind = KIND_DIRECTORY;
 
     it->push_entry(string(entry_name), entry_kind);
-    scanned_entries.emplace(move(entry_name));
+    if (populated) scanned_entries.emplace(move(entry_name), entry_kind);
 
     next_err = uv_fs_scandir_next(&scan_req.req, &dirent);
   }
 
   if (next_err != UV_EOF) {
     LOGGER << "Unable to list entries in directory " << dir << ": " << uv_strerror(next_err) << "." << endl;
+  } else {
+    // Report entries that were present the last time we scanned this directory, but aren't included in this
+    // scan.
+    for (auto &previous : entries) {
+      const string &previous_entry_name = previous.first;
+      EntryKind previous_entry_kind = kind_from_stat(previous.second);
+      Entry previous_entry(previous_entry_name, previous_entry_kind);
+
+      if (scanned_entries.count(previous_entry) == 0) {
+        entry_deleted(it, previous_entry_name, previous_entry_kind);
+      }
+    }
   }
 }
 
