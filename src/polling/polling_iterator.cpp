@@ -87,6 +87,7 @@ void BoundPollingIterator::advance_entry()
     return;
   }
 
+  iterator.current->mark_populated();
   iterator.entries.clear();
   iterator.current_entry = iterator.entries.end();
 
