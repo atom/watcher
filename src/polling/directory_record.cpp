@@ -80,11 +80,9 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   }
 }
 
-void DirectoryRecord::entry(BoundPollingIterator *it, const string &entry_name)
+void DirectoryRecord::entry(BoundPollingIterator *it, const string &entry_name, const string &entry_path)
 {
   FSReq lstat_req;
-  // TODO cache path()
-  string entry_path = path_join(path(), entry_name);
   EntryKind previous_kind = KIND_UNKNOWN;
   EntryKind current_kind = KIND_UNKNOWN;
 

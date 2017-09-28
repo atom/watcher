@@ -24,6 +24,7 @@ private:
   std::shared_ptr<DirectoryRecord> root;
   std::shared_ptr<DirectoryRecord> current;
 
+  std::string current_path;
   std::vector<std::string> entries;
   std::vector<std::string>::iterator current_entry;
 

@@ -4,8 +4,9 @@
 #include <queue>
 #include <set>
 
-#include "directory_record.h"
+#include "../helper/common.h"
 #include "../message_buffer.h"
+#include "directory_record.h"
 #include "polling_iterator.h"
 
 using std::string;
@@ -15,6 +16,7 @@ using std::set;
 PollingIterator::PollingIterator(shared_ptr<DirectoryRecord> root) :
   root(root),
   current(root),
+  current_path(root->path()),
   phase{PollingIterator::SCAN}
 {
   //
@@ -55,6 +57,7 @@ size_t BoundPollingIterator::advance(size_t throttle_allocation)
 
   if (iterator.phase == PollingIterator::RESET) {
     iterator.current = iterator.root;
+    iterator.current_path = iterator.current->path();
     iterator.phase = PollingIterator::SCAN;
   }
 
@@ -72,7 +75,8 @@ void BoundPollingIterator::advance_scan()
 void BoundPollingIterator::advance_entry()
 {
   if (iterator.current_entry != iterator.entries.end()) {
-    iterator.current->entry(this, *(iterator.current_entry));
+    string &entry_name = *(iterator.current_entry);
+    iterator.current->entry(this, entry_name, path_join(iterator.current_path, entry_name));
     iterator.current_entry++;
   }
 
@@ -91,6 +95,7 @@ void BoundPollingIterator::advance_entry()
 
   // Advance to the next directory in the queue
   iterator.current = iterator.directories.front();
+  iterator.current_path = iterator.current->path();
   iterator.directories.pop();
   iterator.phase = PollingIterator::SCAN;
 }
