@@ -6,6 +6,7 @@
 
 #include "../helper/common.h"
 #include "../message_buffer.h"
+#include "../log.h"
 #include "directory_record.h"
 #include "polling_iterator.h"
 
@@ -46,10 +47,13 @@ size_t BoundPollingIterator::advance(size_t throttle_allocation)
 
   while (count < total) {
     if (iterator.phase == PollingIterator::SCAN) {
+      LOGGER << *this << " performing SCAN." << endl;
       advance_scan();
     } else if (iterator.phase == PollingIterator::ENTRIES) {
+      LOGGER << *this << " performing ENTRIES." << endl;
       advance_entry();
     } else if (iterator.phase == PollingIterator::RESET) {
+      LOGGER << *this << " detected a RESET." << endl;
       break;
     }
     count++;
@@ -59,6 +63,8 @@ size_t BoundPollingIterator::advance(size_t throttle_allocation)
     iterator.current = iterator.root;
     iterator.current_path = iterator.current->path();
     iterator.phase = PollingIterator::SCAN;
+
+    LOGGER << *this << " has been reset back to its root." << endl;
   }
 
   return count;
