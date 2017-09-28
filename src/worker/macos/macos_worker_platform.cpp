@@ -215,7 +215,8 @@ public:
     const FSEventStreamEventId *event_ids)
   {
     char **paths = reinterpret_cast<char**>(event_paths);
-    ChannelMessageBuffer message_buffer(channel_id);
+    MessageBuffer buffer;
+    ChannelMessageBuffer message_buffer(channel_id, buffer);
 
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
     message_buffer.reserve(num_events);

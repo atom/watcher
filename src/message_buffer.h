@@ -9,6 +9,13 @@
 
 class MessageBuffer {
 public:
+  MessageBuffer() = default;
+  MessageBuffer(const MessageBuffer &) = delete;
+  MessageBuffer(MessageBuffer &&) = delete;
+
+  MessageBuffer &operator=(const MessageBuffer &) = delete;
+  MessageBuffer &operator=(MessageBuffer &&) = delete;
+
   typedef std::vector<Message>::iterator iter;
 
   void created(ChannelID channel_id, std::string &&path, const EntryKind &kind);
@@ -35,7 +42,12 @@ private:
 
 class ChannelMessageBuffer {
 public:
-  ChannelMessageBuffer(ChannelID channel_id) : channel_id{channel_id} {};
+  ChannelMessageBuffer(ChannelID channel_id, MessageBuffer &buffer);
+  ChannelMessageBuffer(const ChannelMessageBuffer &) = delete;
+  ChannelMessageBuffer(ChannelMessageBuffer &&) = delete;
+
+  ChannelMessageBuffer &operator=(const ChannelMessageBuffer &) = delete;
+  ChannelMessageBuffer &operator=(ChannelMessageBuffer &&) = delete;
 
   void created(std::string &&path, const EntryKind &kind)
   {
@@ -69,7 +81,7 @@ public:
 
 private:
   ChannelID channel_id;
-  MessageBuffer buffer;
+  MessageBuffer &buffer;
 };
 
 #endif
