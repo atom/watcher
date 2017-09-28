@@ -113,12 +113,17 @@ void DirectoryRecord::entry(
     uv_stat_t &current_stat = lstat_req.req.statbuf;
 
     // TODO consider modifications to mode or ownership bits?
-    if (
+    if (kinds_are_different(previous_kind, current_kind)) {
+      entry_deleted(it, entry_path, previous_kind);
+      entry_created(it, entry_path, current_kind);
+    } else if (
       previous_stat.st_flags != current_stat.st_flags ||
       previous_stat.st_ino != current_stat.st_ino ||
       ts_less_than(previous_stat.st_mtim, current_stat.st_mtim) ||
       ts_less_than(previous_stat.st_ctim, current_stat.st_ctim)
-    ) entry_modified(it, entry_path, current_kind);
+    ) {
+      entry_modified(it, entry_path, current_kind);
+    }
 
   } else if (existed_before && !exists_now) {
     // Deletion
@@ -128,6 +133,12 @@ void DirectoryRecord::entry(
   } else if (!existed_before && exists_now) {
     // Creation
 
+    if (kinds_are_different(scan_kind, current_kind)) {
+      // Entry was created as a file, deleted, then recreated as a directory between scan() and entry()
+      // (or vice versa)
+      entry_created(it, entry_path, scan_kind);
+      entry_deleted(it, entry_path, scan_kind);
+    }
     entry_created(it, entry_path, current_kind);
 
   } else if (!existed_before && !exists_now) {
