@@ -28,7 +28,7 @@ private:
 
   friend std::ostream &operator<<(std::ostream &out, const PolledRoot &root)
   {
-    return out << root.root;
+    return out << "PolledRoot{root=" << root.root->path() << " channel=" << root.channel_id << "}";
   }
 };
 

@@ -47,7 +47,11 @@ private:
 
   friend std::ostream &operator<<(std::ostream &out, const DirectoryRecord &record)
   {
-    return out << record.path();
+    out << "DirectoryRecord{" << record.name
+      << " entries=" << record.entries.size()
+      << " subdirectories=" << record.subdirectories.size();
+    if (record.populated) out << " populated";
+    return out << "}";
   }
 };
 
