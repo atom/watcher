@@ -2,6 +2,7 @@
 #define MESSAGE_H
 
 #include <string>
+#include <utility>
 #include <iostream>
 #include <memory>
 #include <cstdint>
@@ -24,6 +25,8 @@ enum EntryKind {
 std::ostream &operator<<(std::ostream &out, EntryKind kind);
 
 bool kinds_are_different(EntryKind a, EntryKind b);
+
+typedef std::pair<std::string, EntryKind> Entry;
 
 typedef uint_fast32_t ChannelID;
 

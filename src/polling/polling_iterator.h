@@ -26,10 +26,9 @@ private:
   std::shared_ptr<DirectoryRecord> root;
   std::shared_ptr<DirectoryRecord> current;
 
-  typedef std::pair<std::string, EntryKind> entry;
   std::string current_path;
-  std::vector<entry> entries;
-  std::vector<entry>::iterator current_entry;
+  std::vector<Entry> entries;
+  std::vector<Entry>::iterator current_entry;
 
   std::queue<std::shared_ptr<DirectoryRecord>> directories;
 
