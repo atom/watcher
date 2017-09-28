@@ -2,11 +2,13 @@
 #define POLLING_ITERATOR
 
 #include <memory>
+#include <utility>
 #include <string>
 #include <stack>
 #include <queue>
 #include <uv.h>
 
+#include "../message.h"
 #include "../message_buffer.h"
 
 class DirectoryRecord;
@@ -24,9 +26,10 @@ private:
   std::shared_ptr<DirectoryRecord> root;
   std::shared_ptr<DirectoryRecord> current;
 
+  typedef std::pair<std::string, EntryKind> entry;
   std::string current_path;
-  std::vector<std::string> entries;
-  std::vector<std::string>::iterator current_entry;
+  std::vector<entry> entries;
+  std::vector<entry>::iterator current_entry;
 
   std::queue<std::shared_ptr<DirectoryRecord>> directories;
 
@@ -49,7 +52,7 @@ public:
   BoundPollingIterator &operator=(const BoundPollingIterator &) = delete;
   BoundPollingIterator &operator=(BoundPollingIterator &&) = delete;
 
-  void push_entry(const std::string &entry) { iterator.entries.push_back(entry); }
+  void push_entry(const std::string &&entry, EntryKind kind) { iterator.entries.emplace_back(std::move(entry), kind); }
   void push_directory(std::shared_ptr<DirectoryRecord> subdirectory) { iterator.directories.push(subdirectory); }
   ChannelMessageBuffer &get_buffer() { return buffer; }
 

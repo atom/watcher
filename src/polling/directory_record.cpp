@@ -69,7 +69,11 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   while (next_err == 0) {
     string entry_name(dirent.name);
 
-    it->push_entry(entry_name);
+    EntryKind entry_kind = KIND_UNKNOWN;
+    if (dirent.type == UV_DIRENT_FILE) entry_kind = KIND_FILE;
+    if (dirent.type == UV_DIRENT_DIR) entry_kind = KIND_DIRECTORY;
+
+    it->push_entry(string(entry_name), entry_kind);
     scanned_entries.emplace(move(entry_name));
 
     next_err = uv_fs_scandir_next(&scan_req.req, &dirent);
@@ -80,11 +84,15 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   }
 }
 
-void DirectoryRecord::entry(BoundPollingIterator *it, const string &entry_name, const string &entry_path)
-{
+void DirectoryRecord::entry(
+  BoundPollingIterator *it,
+  const string &entry_name,
+  const string &entry_path,
+  EntryKind scan_kind
+) {
   FSReq lstat_req;
-  EntryKind previous_kind = KIND_UNKNOWN;
-  EntryKind current_kind = KIND_UNKNOWN;
+  EntryKind previous_kind = scan_kind;
+  EntryKind current_kind = scan_kind;
 
   int lstat_err = uv_fs_lstat(nullptr, &lstat_req.req, entry_path.c_str(), nullptr);
   if (lstat_err != 0 && lstat_err != UV_ENOENT && lstat_err != UV_EACCES) {

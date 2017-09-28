@@ -20,7 +20,12 @@ public:
   std::string path();
 
   void scan(BoundPollingIterator *iterator);
-  void entry(BoundPollingIterator *iterator, const std::string &entry_name, const std::string &entry_path);
+  void entry(
+    BoundPollingIterator *iterator,
+    const std::string &entry_name,
+    const std::string &entry_path,
+    EntryKind scan_kind
+  );
   void mark_populated() { populated = true; }
 
   DirectoryRecord &operator=(const DirectoryRecord &) = delete;

@@ -75,8 +75,10 @@ void BoundPollingIterator::advance_scan()
 void BoundPollingIterator::advance_entry()
 {
   if (iterator.current_entry != iterator.entries.end()) {
-    string &entry_name = *(iterator.current_entry);
-    iterator.current->entry(this, entry_name, path_join(iterator.current_path, entry_name));
+    string &entry_name = iterator.current_entry->first;
+    EntryKind kind = iterator.current_entry->second;
+
+    iterator.current->entry(this, entry_name, path_join(iterator.current_path, entry_name), kind);
     iterator.current_entry++;
   }
 
