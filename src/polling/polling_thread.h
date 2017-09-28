@@ -3,11 +3,13 @@
 
 #include <cstdint>
 #include <chrono>
+#include <map>
 #include <uv.h>
 
 #include "../thread.h"
 #include "../status.h"
 #include "../result.h"
+#include "polled_root.h"
 
 const std::chrono::milliseconds DEFAULT_POLL_INTERVAL = std::chrono::milliseconds(500);
 const uint_fast64_t DEFAULT_POLL_THROTTLE = 1000;
@@ -23,11 +25,14 @@ private:
   bool should_trigger_run(Message &message) override;
 
   void poll();
+  Result<> cycle();
   Result<> handle_add_command(const CommandPayload *command, CommandOutcome &outcome) override;
   Result<> handle_remove_command(const CommandPayload *payload, CommandOutcome &outcome) override;
 
   std::chrono::milliseconds poll_interval;
   uint_fast64_t poll_throttle;
+
+  std::map<ChannelID, PolledRoot> roots;
 };
 
 #endif

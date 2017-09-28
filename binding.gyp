@@ -13,6 +13,9 @@
             "src/thread.cpp",
             "src/status.cpp",
             "src/worker/worker_thread.cpp",
+            "src/polling/directory_record.cpp",
+            "src/polling/polled_root.cpp",
+            "src/polling/polling_iterator.cpp",
             "src/polling/polling_thread.cpp"
         ],
         "include_dirs": [
