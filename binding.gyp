@@ -21,6 +21,7 @@
         "conditions": [
             ["OS=='mac'", {
                 "sources": [
+                    "src/helper/common_posix.cpp",
                     "src/worker/macos/macos_worker_platform.cpp",
                     "src/worker/macos/recent_file_cache.cpp",
                     "src/worker/macos/event_handler.cpp",
@@ -39,6 +40,7 @@
             }],
             ["OS=='win'", {
                 "sources": [
+                    "src/helper/common_win.cpp",
                     "src/helper/windows/helper.cpp",
                     "src/worker/windows/subscription.cpp",
                     "src/worker/windows/windows_worker_platform.cpp"
@@ -46,6 +48,7 @@
             }],
             ["OS=='linux'", {
                 "sources": [
+                    "src/helper/common_posix.cpp",
                     "src/worker/linux/pipe.cpp",
                     "src/worker/linux/side_effect.cpp",
                     "src/worker/linux/cookie_jar.cpp",
