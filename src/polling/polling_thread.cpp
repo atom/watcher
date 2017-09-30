@@ -56,7 +56,7 @@ void PollingThread::poll()
     Result<size_t> cr = handle_commands();
     if (cr.is_error()) {
       LOGGER << "Unable to process incoming commands: " << cr << endl;
-    } else if (cr.get_value() == 0 && is_stopping()) {
+    } else if (is_stopping()) {
       LOGGER << "Polling thread stopping." << endl;
       break;
     }
@@ -119,6 +119,8 @@ Result<> PollingThread::handle_add_command(const CommandPayload *payload, Comman
     std::forward_as_tuple(string(payload->get_root()), payload->get_channel_id())
   );
 
+  outcome.should_stop = false;
+
   return ok_result();
 }
 
@@ -133,7 +135,7 @@ Result<> PollingThread::handle_remove_command(const CommandPayload *payload, Com
 
   if (roots.empty()) {
     LOGGER << "Final root removed." << endl;
-    mark_stopping();
+    outcome.should_stop = true;
   }
 
   return ok_result();
