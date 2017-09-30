@@ -14,6 +14,7 @@
 #include "queue.h"
 #include "status.h"
 #include "result.h"
+#include "nan/all_callback.h"
 #include "worker/worker_thread.h"
 #include "polling/polling_thread.h"
 
@@ -134,14 +135,42 @@ public:
     return send_worker_command(COMMAND_LOG_DISABLE, "", move(callback));
   }
 
-  Result<> watch(string &&root, unique_ptr<Nan::Callback> ack_callback, unique_ptr<Nan::Callback> event_callback)
+  Result<> use_polling_log_file(string &&worker_log_file, unique_ptr<Nan::Callback> callback)
   {
+    return send_polling_command(COMMAND_LOG_FILE, move(worker_log_file), move(callback));
+  }
+
+  Result<> use_polling_log_stderr(unique_ptr<Nan::Callback> callback)
+  {
+    return send_polling_command(COMMAND_LOG_STDERR, "", move(callback));
+  }
+
+  Result<> use_polling_log_stdout(unique_ptr<Nan::Callback> callback)
+  {
+    return send_polling_command(COMMAND_LOG_STDOUT, "", move(callback));
+  }
+
+  Result<> disable_polling_log(unique_ptr<Nan::Callback> callback)
+  {
+    return send_polling_command(COMMAND_LOG_DISABLE, "", move(callback));
+  }
+
+  Result<> watch(
+    string &&root,
+    bool poll,
+    unique_ptr<Nan::Callback> ack_callback,
+    unique_ptr<Nan::Callback> event_callback
+  ) {
     ChannelID channel_id = next_channel_id;
     next_channel_id++;
 
     channel_callbacks.emplace(channel_id, move(event_callback));
 
-    return send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    if (poll) {
+      return send_polling_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    } else {
+      return send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    }
   }
 
   Result<> unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
@@ -274,6 +303,7 @@ public:
     status.channel_callback_count = channel_callbacks.size();
 
     worker_thread.collect_status(status);
+    polling_thread.collect_status(status);
   }
 
 private:
@@ -368,7 +398,10 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   bool worker_log_stderr = false;
   bool worker_log_stdout = false;
 
-  bool async = false;
+  string polling_log_file;
+  bool polling_log_disable = false;
+  bool polling_log_stderr = false;
+  bool polling_log_stdout = false;
 
   Nan::MaybeLocal<Object> maybe_options = Nan::To<Object>(info[0]);
   if (maybe_options.IsEmpty()) {
@@ -381,12 +414,19 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!get_bool_option(options, "mainLogDisable", main_log_disable)) return;
   if (!get_bool_option(options, "mainLogStderr", main_log_stderr)) return;
   if (!get_bool_option(options, "mainLogStdout", main_log_stdout)) return;
+
   if (!get_string_option(options, "workerLogFile", worker_log_file)) return;
   if (!get_bool_option(options, "workerLogDisable", worker_log_disable)) return;
   if (!get_bool_option(options, "workerLogStderr", worker_log_stderr)) return;
   if (!get_bool_option(options, "workerLogStdout", worker_log_stdout)) return;
 
+  if (!get_string_option(options, "pollingLogFile", polling_log_file)) return;
+  if (!get_bool_option(options, "pollingLogDisable", polling_log_disable)) return;
+  if (!get_bool_option(options, "pollingLogStderr", polling_log_stderr)) return;
+  if (!get_bool_option(options, "pollingLogStdout", polling_log_stdout)) return;
+
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
+  AllCallback all(move(callback));
 
   if (main_log_disable) {
     instance.disable_main_log();
@@ -398,24 +438,29 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
     instance.use_main_log_stdout();
   }
 
-  Result<> r = ok_result();
+  Result<> wr = ok_result();
   if (worker_log_disable) {
-    r = instance.disable_worker_log(move(callback));
-    async = true;
+    wr = instance.disable_worker_log(all.create_callback());
   } else if (!worker_log_file.empty()) {
-    r = instance.use_worker_log_file(move(worker_log_file), move(callback));
-    async = true;
+    wr = instance.use_worker_log_file(move(worker_log_file), all.create_callback());
   } else if (worker_log_stderr) {
-    r = instance.use_worker_log_stderr(move(callback));
-    async = true;
+    wr = instance.use_worker_log_stderr(all.create_callback());
   } else if (worker_log_stdout) {
-    r = instance.use_worker_log_stdout(move(callback));
-    async = true;
+    wr = instance.use_worker_log_stdout(all.create_callback());
   }
 
-  if (!async) {
-    callback->Call(0, 0);
+  Result<> pr = ok_result();
+  if (polling_log_disable) {
+    pr = instance.disable_polling_log(all.create_callback());
+  } else if (!polling_log_file.empty()) {
+    pr = instance.use_polling_log_file(move(polling_log_file), all.create_callback());
+  } else if (polling_log_stderr) {
+    pr = instance.use_polling_log_stderr(all.create_callback());
+  } else if (polling_log_stdout) {
+    pr = instance.use_polling_log_stdout(all.create_callback());
   }
+
+  all.fire_if_empty();
 }
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
@@ -440,7 +485,7 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
   unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[2].As<Function>()));
 
-  Result<> r = instance.watch(move(root_str), move(ack_callback), move(event_callback));
+  Result<> r = instance.watch(move(root_str), false, move(ack_callback), move(event_callback));
   if (r.is_error()) {
     Nan::ThrowError(r.get_error().c_str());
   }
