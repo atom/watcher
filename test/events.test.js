@@ -16,7 +16,7 @@ describe('events', function () {
 
     await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile})
 
-    sub = await watcher.watch(watchDir, (err, es) => {
+    sub = await watcher.watch(watchDir, {}, (err, es) => {
       errors.push(err)
       events.push(...es)
     })

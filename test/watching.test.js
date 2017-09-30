@@ -25,7 +25,7 @@ describe('watching a directory', function () {
     let error = null
     const events = []
 
-    subs.push(await watcher.watch(watchDir, (err, es) => {
+    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
       error = err
       events.push(...es)
     }))
@@ -47,11 +47,11 @@ describe('watching a directory', function () {
       [watchDirA, watchDirB].map(subdir => fs.mkdir(subdir))
     )
 
-    subs.push(await watcher.watch(watchDirA, (err, es) => {
+    subs.push(await watcher.watch(watchDirA, {}, (err, es) => {
       errors.push(err)
       eventsA.push(...es)
     }))
-    subs.push(await watcher.watch(watchDirB, (err, es) => {
+    subs.push(await watcher.watch(watchDirB, {}, (err, es) => {
       errors.push(err)
       eventsB.push(...es)
     }))
@@ -80,7 +80,7 @@ describe('watching a directory', function () {
       [subdir0, subdir1].map(subdir => fs.mkdir(subdir))
     )
 
-    subs.push(await watcher.watch(watchDir, (err, es) => {
+    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
       errors.push(err)
       events.push(...es)
     }))
@@ -104,7 +104,7 @@ describe('watching a directory', function () {
     const errors = []
     const events = []
 
-    subs.push(await watcher.watch(watchDir, (err, es) => {
+    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
       errors.push(err)
       events.push(...es)
     }))
@@ -139,7 +139,7 @@ describe('watching a directory', function () {
     await fs.mkdirs(externalSubdir)
     await fs.writeFile(externalFile, 'contents')
 
-    subs.push(await watcher.watch(watchDir, (err, es) => {
+    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
       errors.push(err)
       events.push(...es)
     }))

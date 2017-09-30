@@ -25,7 +25,7 @@ describe('unwatching a directory', function () {
     let error = null
     const events = []
 
-    const sub = await watcher.watch(watchDir, (err, es) => {
+    const sub = await watcher.watch(watchDir, {}, (err, es) => {
       error = err
       events.push(...es)
     })
@@ -51,7 +51,7 @@ describe('unwatching a directory', function () {
 
   it('is a no-op if the directory is not being watched', async function () {
     let error = null
-    const sub = await watcher.watch(watchDir, err => (error = err))
+    const sub = await watcher.watch(watchDir, {}, err => (error = err))
     subs.push(sub)
     assert.isNull(error)
 
