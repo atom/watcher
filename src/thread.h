@@ -43,9 +43,19 @@ public:
     Result<> qr = in.enqueue_all(begin, end);
     if (qr.is_error()) return qr;
 
-    if (is_running() || is_stopping()) {
-      Result<> wr = wake();
-      if (wr.is_error()) return wr;
+    if (is_running()) {
+      return wake();
+    }
+
+    if (is_stopping()) {
+      uv_thread_join(&uv_handle);
+
+      if (dead_letter_office) {
+        std::unique_ptr<std::vector<Message>> dead_letters = std::move(dead_letter_office);
+        dead_letter_office.reset(nullptr);
+
+        return send_all(dead_letters->begin(), dead_letters->end());
+      }
     }
 
     if (is_stopped()) {
@@ -58,8 +68,7 @@ public:
       }
 
       if (trigger) {
-        Result<> rr = run();
-        if (rr.is_error()) return rr;
+        return run();
       }
     }
 
@@ -73,6 +82,7 @@ public:
   struct CommandOutcome {
     bool ack;
     bool success;
+    bool should_stop;
   };
 
   virtual Result<> handle_add_command(const CommandPayload *payload, CommandOutcome &outcome);
@@ -143,6 +153,8 @@ private:
   std::function<void()> work_fn;
 
   std::atomic<State> state;
+
+  std::unique_ptr<std::vector<Message>> dead_letter_office;
 };
 
 #endif

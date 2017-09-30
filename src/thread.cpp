@@ -54,16 +54,25 @@ Result<> Thread::send(Message &&message)
   Result<> qr = in.enqueue(move(message));
   if (qr.is_error()) return qr;
 
-  if (is_running() || is_stopping()) {
-    Result<> wr = wake();
-    if (wr.is_error()) return wr;
+  if (is_running()) {
+    return wake();
+  }
+
+  if (is_stopping()) {
+    uv_thread_join(&uv_handle);
+
+    if (dead_letter_office) {
+      unique_ptr<vector<Message>> dead_letters = move(dead_letter_office);
+      dead_letter_office.reset(nullptr);
+
+      return send_all(dead_letters->begin(), dead_letters->end());
+    }
   }
 
   if (is_stopped()) {
     bool trigger = should_trigger_run(message);
     if (trigger) {
-      Result<> rr = run();
-      if (rr.is_error()) return rr;
+      return run();
     }
   }
 
@@ -106,6 +115,7 @@ Result<size_t> Thread::handle_commands()
 
   vector<Message> acks;
   acks.reserve(accepted->size());
+  bool should_stop = false;
 
   for (Message &message : *accepted) {
     const CommandPayload *command = message.as_command();
@@ -117,6 +127,7 @@ Result<size_t> Thread::handle_commands()
     CommandOutcome outcome = {
       true, // ack
       true, // success
+      should_stop // should_stop
     };
     string m = "";
 
@@ -136,9 +147,24 @@ Result<size_t> Thread::handle_commands()
       Message response(move(ack));
       acks.push_back(move(response));
     }
+
+    should_stop = outcome.should_stop;
   }
 
-  return emit_all(acks.begin(), acks.end()).propagate<size_t>(accepted->size());
+  Result<> er = emit_all(acks.begin(), acks.end());
+  if (er.is_error()) return er.propagate<size_t>(accepted->size());
+
+  if (should_stop) {
+    mark_stopping();
+
+    // Move any messages enqueued since we picked up this batch of commands into the dead letter office.
+    Result< unique_ptr<vector<Message>> > dr = in.accept_all();
+    if (dr.is_error()) dr.propagate<size_t>();
+
+    dead_letter_office = move(dr.get_value());
+  }
+
+  return ok_result(static_cast<size_t>(accepted->size()));
 }
 
 Result<> Thread::handle_add_command(const CommandPayload *payload, CommandOutcome &outcome)
