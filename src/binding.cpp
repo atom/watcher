@@ -99,8 +99,8 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
 {
-  if (info.Length() != 3) {
-    return Nan::ThrowError("watch() requires three arguments");
+  if (info.Length() != 4) {
+    return Nan::ThrowError("watch() requires four arguments");
   }
 
   Nan::MaybeLocal<String> maybe_root = Nan::To<String>(info[0]);
@@ -116,10 +116,20 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   }
   string root_str(*root_utf8, root_utf8.length());
 
-  unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
-  unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[2].As<Function>()));
+  Nan::MaybeLocal<Object> maybe_options = Nan::To<Object>(info[1]);
+  if (maybe_options.IsEmpty()) {
+    Nan::ThrowError("watch() requires an option object");
+    return;
+  }
+  Local<Object> options = maybe_options.ToLocalChecked();
 
-  Result<> r = Hub::get().watch(move(root_str), false, move(ack_callback), move(event_callback));
+  bool poll = false;
+  if (!get_bool_option(options, "poll", poll)) return;
+
+  unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[2].As<Function>()));
+  unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[3].As<Function>()));
+
+  Result<> r = Hub::get().watch(move(root_str), poll, move(ack_callback), move(event_callback));
   if (r.is_error()) {
     Nan::ThrowError(r.get_error().c_str());
   }
