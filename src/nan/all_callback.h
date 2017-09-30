@@ -14,7 +14,7 @@ public:
   explicit AllCallback(std::unique_ptr<Nan::Callback> done);
   AllCallback(const AllCallback &) = delete;
   AllCallback(AllCallback &&) = delete;
-  ~AllCallback();
+  ~AllCallback() = default;
 
   AllCallback &operator=(const AllCallback &) = delete;
   AllCallback &operator=(AllCallback &&) = delete;
