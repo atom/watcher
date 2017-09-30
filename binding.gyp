@@ -3,7 +3,8 @@
         "target_name": "watcher",
 
         "sources": [
-            "src/main.cpp",
+            "src/binding.cpp",
+            "src/hub.cpp",
             "src/log.cpp",
             "src/errable.cpp",
             "src/queue.cpp",
