@@ -18,7 +18,8 @@
             "src/polling/polling_iterator.cpp",
             "src/polling/polling_thread.cpp",
             "src/nan/all_callback.cpp",
-            "src/nan/functional_callback.cpp"
+            "src/nan/functional_callback.cpp",
+            "src/nan/options.cpp"
         ],
         "include_dirs": [
             "<!(node -e \"require('nan')\")"
