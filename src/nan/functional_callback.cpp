@@ -24,10 +24,12 @@ void _fn_callback_helper(const FunctionCallbackInfo<Value> &info)
   Local<ArrayBuffer> cb_array = info.Data().As<ArrayBuffer>();
   Contents cb_contents = cb_array->GetContents();
 
-  void *fn_addr = cb_contents.Data();
+  intptr_t *payload = static_cast<intptr_t*>(cb_contents.Data());
   assert(cb_contents.ByteLength() == sizeof(FnCallback*));
 
-  FnCallback *fn = static_cast<FnCallback*>(fn_addr);
+  FnCallback *fn = reinterpret_cast<FnCallback*>(*payload);
+
+  delete payload;
   (*fn)(info);
 }
 
@@ -35,7 +37,13 @@ unique_ptr<Callback> fn_callback(FnCallback &fn)
 {
   Nan::HandleScope scope;
 
-  Local<ArrayBuffer> fn_addr = ArrayBuffer::New(Isolate::GetCurrent(), static_cast<void*>(&fn), sizeof(void*));
+  intptr_t *payload = new intptr_t(reinterpret_cast<intptr_t>(&fn));
+
+  Local<ArrayBuffer> fn_addr = ArrayBuffer::New(
+    Isolate::GetCurrent(),
+    static_cast<void*>(payload),
+    sizeof(FnCallback*)
+  );
   Local<Function> wrapper = Nan::New<Function>(_fn_callback_helper, fn_addr);
   return unique_ptr<Callback>(new Callback(wrapper));
 }
