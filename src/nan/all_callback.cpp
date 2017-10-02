@@ -1,4 +1,5 @@
 #include <vector>
+#include <forward_list>
 #include <utility>
 #include <memory>
 #include <nan.h>
@@ -17,14 +18,28 @@ using v8::Array;
 using std::bind;
 using std::move;
 using std::vector;
+using std::forward_list;
 using std::unique_ptr;
 using std::placeholders::_1;
 
-AllCallback::AllCallback(unique_ptr<Callback> done) :
+forward_list<AllCallback> AllCallback::retained;
+
+AllCallback &AllCallback::create(unique_ptr<Callback> done)
+{
+  auto previous_begin = retained.begin();
+  retained.emplace_front(move(done), internal());
+  if (previous_begin != retained.end()) {
+    previous_begin->before_it = retained.begin();
+  }
+  return retained.front();
+}
+
+AllCallback::AllCallback(unique_ptr<Callback> done, const internal &key) :
   done(move(done)),
   remaining{0},
   error(Nan::Undefined()),
-  results(Nan::New<Array>(0))
+  results(Nan::New<Array>(0)),
+  before_it{retained.before_begin()}
 {
   //
 }
@@ -47,6 +62,8 @@ void AllCallback::fire_if_empty()
 
   Local<Value> argv[] = {l_error, l_results};
   done->Call(2, argv);
+
+  retained.erase_after(before_it);
 }
 
 void AllCallback::callback_complete(size_t callback_index, const FunctionCallbackInfo<Value> &info)

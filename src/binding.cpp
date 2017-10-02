@@ -60,7 +60,7 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!get_bool_option(options, "pollingLogStdout", polling_log_stdout)) return;
 
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
-  AllCallback all(move(callback));
+  AllCallback &all = AllCallback::create(move(callback));
 
   if (main_log_disable) {
     Hub::get().disable_main_log();
