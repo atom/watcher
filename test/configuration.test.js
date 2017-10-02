@@ -5,14 +5,14 @@ const watcher = require('../lib')
 const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 describe('configuration', function () {
-  let fixtureDir, mainLogFile, workerLogFile
+  let fixtureDir, mainLogFile, workerLogFile, pollingLogFile
 
   beforeEach(async function () {
-    ({fixtureDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
+    ({fixtureDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
   })
 
   afterEach(async function () {
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
     await cleanupFixtureDir(fixtureDir)
   })
 

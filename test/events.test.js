@@ -6,15 +6,15 @@ const watcher = require('../lib')
 const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 describe('events', function () {
-  let fixtureDir, watchDir, mainLogFile, workerLogFile
+  let fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
   let errors, events, sub
 
   beforeEach(async function () {
-    ({fixtureDir, watchDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
+    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
     errors = []
     events = []
 
-    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile})
+    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile, pollingLog: pollingLogFile})
 
     sub = await watcher.watch(watchDir, {}, (err, es) => {
       errors.push(err)
@@ -24,7 +24,7 @@ describe('events', function () {
 
   afterEach(async function () {
     await sub.unwatch()
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
     await cleanupFixtureDir(fixtureDir)
   })
 

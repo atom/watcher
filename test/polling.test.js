@@ -3,20 +3,21 @@ const watcher = require('../lib')
 const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 describe('polling', function () {
-  let watchDir, fixtureDir, mainLogFile, workerLogFile, sub
+  let watchDir, fixtureDir, mainLogFile, workerLogFile, pollingLogFile, sub
 
   beforeEach(async function () {
-    ({watchDir, fixtureDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
+    ({watchDir, fixtureDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
 
     await watcher.configure({
       mainLog: mainLogFile,
-      workerLog: workerLogFile
+      workerLog: workerLogFile,
+      pollingLog: pollingLogFile
     })
   })
 
   afterEach(async function () {
     if (sub) await sub.unwatch()
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
     await cleanupFixtureDir(fixtureDir)
   })
 

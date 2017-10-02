@@ -6,18 +6,18 @@ const watcher = require('../lib')
 const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 describe('unwatching a directory', function () {
-  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
+  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
 
   beforeEach(async function () {
-    ({fixtureDir, watchDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
+    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
     subs = []
 
-    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile})
+    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile, pollingLog: pollingLogFile})
   })
 
   afterEach(async function () {
     await Promise.all(subs.map(sub => sub.unwatch()))
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
     await cleanupFixtureDir(fixtureDir)
   })
 
