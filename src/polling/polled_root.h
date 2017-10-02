@@ -14,7 +14,7 @@ public:
   PolledRoot(std::string &&root_path, ChannelID channel_id);
   PolledRoot(const PolledRoot &) = delete;
   PolledRoot(PolledRoot &&) = delete;
-  ~PolledRoot();
+  ~PolledRoot() = default;
 
   PolledRoot &operator=(const PolledRoot &) = delete;
   PolledRoot &operator=(PolledRoot &&) = delete;
