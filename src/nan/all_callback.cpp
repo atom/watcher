@@ -35,6 +35,7 @@ AllCallback &AllCallback::create(unique_ptr<Callback> &&done)
 
 AllCallback::AllCallback(unique_ptr<Callback> &&done, const internal &key) :
   done(move(done)),
+  fired{false},
   total{0},
   remaining{0},
   error(Nan::Undefined()),
@@ -58,6 +59,8 @@ unique_ptr<Callback> AllCallback::create_callback()
 void AllCallback::fire_if_empty()
 {
   if (remaining > 0) return;
+  if (fired) return;
+  fired = true;
 
   HandleScope scope;
   Local<Value> l_error = Nan::New(error);

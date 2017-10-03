@@ -33,6 +33,7 @@ private:
   void callback_complete(size_t callback_index, const Nan::FunctionCallbackInfo<v8::Value> &info);
 
   std::unique_ptr<Nan::Callback> done;
+  bool fired;
   size_t total;
   size_t remaining;
 
