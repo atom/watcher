@@ -45,6 +45,8 @@ public:
     return Result<V>::make_error(std::move(m));
   }
 
+  const std::string &get_source() const { return source; }
+
 private:
   bool healthy;
   std::string source;
