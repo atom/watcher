@@ -24,19 +24,6 @@ public:
   Hub &operator=(const Hub &) = delete;
   Hub &operator=(Hub &&) = delete;
 
-  Result<> send_worker_command(
-    const CommandAction action,
-    const std::string &&root,
-    std::unique_ptr<Nan::Callback> callback,
-    ChannelID channel_id = NULL_CHANNEL_ID
-  );
-
-  Result<> send_polling_command(
-    const CommandAction action,
-    const std::string &&root,
-    std::unique_ptr<Nan::Callback> callback,
-    ChannelID channel_id = NULL_CHANNEL_ID
-  );
 
   void use_main_log_file(std::string &&main_log_file)
   {
@@ -51,42 +38,42 @@ public:
 
   Result<> use_worker_log_file(std::string &&worker_log_file, std::unique_ptr<Nan::Callback> callback)
   {
-    return send_worker_command(COMMAND_LOG_FILE, std::move(worker_log_file), std::move(callback));
+    return send_command(worker_thread, COMMAND_LOG_FILE, std::move(callback), std::move(worker_log_file));
   }
 
   Result<> use_worker_log_stderr(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_worker_command(COMMAND_LOG_STDERR, "", std::move(callback));
+    return send_command(worker_thread, COMMAND_LOG_STDERR, std::move(callback));
   }
 
   Result<> use_worker_log_stdout(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_worker_command(COMMAND_LOG_STDOUT, "", std::move(callback));
+    return send_command(worker_thread, COMMAND_LOG_STDOUT, std::move(callback));
   }
 
   Result<> disable_worker_log(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_worker_command(COMMAND_LOG_DISABLE, "", std::move(callback));
+    return send_command(worker_thread, COMMAND_LOG_DISABLE, std::move(callback));
   }
 
   Result<> use_polling_log_file(std::string &&worker_log_file, std::unique_ptr<Nan::Callback> callback)
   {
-    return send_polling_command(COMMAND_LOG_FILE, std::move(worker_log_file), std::move(callback));
+    return send_command(polling_thread, COMMAND_LOG_FILE, std::move(callback), std::move(worker_log_file));
   }
 
   Result<> use_polling_log_stderr(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_polling_command(COMMAND_LOG_STDERR, "", std::move(callback));
+    return send_command(polling_thread, COMMAND_LOG_STDERR, std::move(callback));
   }
 
   Result<> use_polling_log_stdout(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_polling_command(COMMAND_LOG_STDOUT, "", std::move(callback));
+    return send_command(polling_thread, COMMAND_LOG_STDOUT, std::move(callback));
   }
 
   Result<> disable_polling_log(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_polling_command(COMMAND_LOG_DISABLE, "", std::move(callback));
+    return send_command(polling_thread, COMMAND_LOG_DISABLE, std::move(callback));
   }
 
   Result<> watch(
@@ -105,6 +92,13 @@ public:
 private:
   Hub();
 
+  Result<> send_command(
+    Thread &thread,
+    const CommandAction action,
+    std::unique_ptr<Nan::Callback> callback,
+    const std::string &&root = "",
+    ChannelID channel_id = NULL_CHANNEL_ID
+  );
   static Hub the_hub;
 
   uv_async_t event_handler;

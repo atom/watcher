@@ -12,6 +12,7 @@
 #include "log.h"
 #include "worker/worker_thread.h"
 #include "polling/polling_thread.h"
+#include "nan/all_callback.h"
 #include "hub.h"
 
 using v8::Local;
@@ -20,6 +21,7 @@ using v8::Object;
 using v8::String;
 using v8::Number;
 using v8::Array;
+using Nan::Callback;
 using std::string;
 using std::unique_ptr;
 using std::shared_ptr;
@@ -50,49 +52,11 @@ Hub::Hub() :
   worker_thread.run();
 }
 
-Result<> Hub::send_worker_command(
-  const CommandAction action,
-  const string &&root,
-  unique_ptr<Nan::Callback> callback,
-  ChannelID channel_id
-) {
-  CommandID command_id = next_command_id;
-
-  CommandPayload command_payload(next_command_id, action, move(root), channel_id);
-  Message command_message(move(command_payload));
-
-  pending_callbacks.emplace(command_id, move(callback));
-
-  next_command_id++;
-
-  LOGGER << "Sending command " << command_message << " to the worker thread." << endl;
-  return worker_thread.send(move(command_message));
-}
-
-Result<> Hub::send_polling_command(
-  const CommandAction action,
-  const string &&root,
-  unique_ptr<Nan::Callback> callback,
-  ChannelID channel_id
-) {
-  CommandID command_id = next_command_id;
-
-  CommandPayload command_payload(next_command_id, action, move(root), channel_id);
-  Message command_message(move(command_payload));
-
-  pending_callbacks.emplace(command_id, move(callback));
-
-  next_command_id++;
-
-  LOGGER << "Sending command " << command_message << " to the polling thread." << endl;
-  return polling_thread.send(move(command_message));
-}
-
 Result<> Hub::watch(
   string &&root,
   bool poll,
-  unique_ptr<Nan::Callback> ack_callback,
-  unique_ptr<Nan::Callback> event_callback
+  unique_ptr<Callback> ack_callback,
+  unique_ptr<Callback> event_callback
 ) {
   ChannelID channel_id = next_channel_id;
   next_channel_id++;
@@ -100,16 +64,20 @@ Result<> Hub::watch(
   channel_callbacks.emplace(channel_id, move(event_callback));
 
   if (poll) {
-    return send_polling_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    return send_command(polling_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
   } else {
-    return send_worker_command(COMMAND_ADD, move(root), move(ack_callback), channel_id);
+    return send_command(worker_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
   }
 }
 
-Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callback)
+Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> ack_callback)
 {
   string root;
-  Result<> r = send_worker_command(COMMAND_REMOVE, move(root), move(ack_callback), channel_id);
+  AllCallback &all = AllCallback::create(move(ack_callback));
+
+  Result<> r = ok_result();
+  r &= send_command(worker_thread, COMMAND_REMOVE, all.create_callback(), "", channel_id);
+  r &= send_command(polling_thread, COMMAND_REMOVE, all.create_callback(), "", channel_id);
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {
@@ -121,6 +89,25 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Nan::Callback> ack_callba
 }
 
 void Hub::handle_events()
+Result<> Hub::send_command(
+  Thread &thread,
+  const CommandAction action,
+  unique_ptr<Callback> callback,
+  const string &&root,
+  ChannelID channel_id
+) {
+  CommandID command_id = next_command_id;
+  Message command(CommandPayload(action, command_id, move(root), channel_id));
+  pending_callbacks.emplace(command_id, move(callback));
+  next_command_id++;
+
+  LOGGER << "Sending command " << command << " to the worker thread." << endl;
+  Result<bool> sr = worker_thread.send(move(command));
+  if (sr.is_error()) return sr.propagate<>();
+  if (sr.get_value()) handle_events();
+  return ok_result();
+}
+
 {
   Nan::HandleScope scope;
 
