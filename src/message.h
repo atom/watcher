@@ -71,7 +71,8 @@ enum CommandAction {
   COMMAND_LOG_FILE,
   COMMAND_LOG_STDERR,
   COMMAND_LOG_STDOUT,
-  COMMAND_LOG_DISABLE
+  COMMAND_LOG_DISABLE,
+  COMMAND_DRAIN
 };
 
 typedef uint_fast32_t CommandID;

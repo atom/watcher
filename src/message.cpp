@@ -97,8 +97,8 @@ string FileSystemPayload::describe() const
 }
 
 CommandPayload::CommandPayload(
-  const CommandID id,
   const CommandAction action,
+  const CommandID id,
   const std::string &&root,
   const ChannelID channel_id
 ) :
@@ -136,6 +136,9 @@ string CommandPayload::describe() const
       break;
     case COMMAND_LOG_DISABLE:
       builder << "disable logging";
+      break;
+    case COMMAND_DRAIN:
+      builder << "drain";
       break;
     default:
       builder << "!!action=" << action;
