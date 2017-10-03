@@ -30,7 +30,7 @@ typedef std::pair<std::string, EntryKind> Entry;
 
 typedef uint_fast32_t ChannelID;
 
-static const ChannelID NULL_CHANNEL_ID = 0;
+const ChannelID NULL_CHANNEL_ID = 0;
 
 class FileSystemPayload {
 public:
