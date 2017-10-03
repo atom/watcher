@@ -52,9 +52,9 @@ public:
     return send_command(worker_thread, COMMAND_LOG_DISABLE, std::move(callback));
   }
 
-  Result<> use_polling_log_file(std::string &&worker_log_file, std::unique_ptr<Nan::Callback> callback)
+  Result<> use_polling_log_file(std::string &&polling_log_file, std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(polling_thread, COMMAND_LOG_FILE, std::move(callback), std::move(worker_log_file));
+    return send_command(polling_thread, COMMAND_LOG_FILE, std::move(callback), std::move(polling_log_file));
   }
 
   Result<> use_polling_log_stderr(std::unique_ptr<Nan::Callback> callback)
