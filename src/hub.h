@@ -24,11 +24,7 @@ public:
   Hub &operator=(const Hub &) = delete;
   Hub &operator=(Hub &&) = delete;
 
-
-  void use_main_log_file(std::string &&main_log_file)
-  {
-    Logger::to_file(main_log_file.c_str());
-  }
+  void use_main_log_file(std::string &&main_log_file) { Logger::to_file(main_log_file.c_str()); }
 
   void use_main_log_stderr() { Logger::to_stderr(); }
 
@@ -99,6 +95,9 @@ private:
     const std::string &&root = "",
     ChannelID channel_id = NULL_CHANNEL_ID
   );
+
+  void handle_events_from(Thread &thread);
+
   static Hub the_hub;
 
   uv_async_t event_handler;

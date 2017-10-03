@@ -89,6 +89,20 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> ack_callback)
 }
 
 void Hub::handle_events()
+{
+  handle_events_from(worker_thread);
+  handle_events_from(polling_thread);
+}
+
+void Hub::collect_status(Status &status)
+{
+  status.pending_callback_count = pending_callbacks.size();
+  status.channel_callback_count = channel_callbacks.size();
+
+  worker_thread.collect_status(status);
+  polling_thread.collect_status(status);
+}
+
 Result<> Hub::send_command(
   Thread &thread,
   const CommandAction action,
@@ -108,12 +122,14 @@ Result<> Hub::send_command(
   return ok_result();
 }
 
+void Hub::handle_events_from(Thread &thread)
 {
   Nan::HandleScope scope;
+  bool repeat = true;
 
-  Result< unique_ptr<vector<Message>> > rr = worker_thread.receive_all();
+  Result< unique_ptr<vector<Message>> > rr = thread.receive_all();
   if (rr.is_error()) {
-    LOGGER << "Unable to receive messages from the worker thread: " << rr << "." << endl;
+    LOGGER << "Unable to receive messages from thread: " << rr << "." << endl;
     return;
   }
 
@@ -125,27 +141,27 @@ Result<> Hub::send_command(
 
   unordered_map<ChannelID, vector<Local<Object>>> to_deliver;
 
-  for (auto it = accepted->begin(); it != accepted->end(); ++it) {
-    const AckPayload *ack_message = it->as_ack();
-    if (ack_message) {
-      LOGGER << "Received ack message " << *it << "." << endl;
+  for (Message &message : *accepted) {
+    const AckPayload *ack = message.as_ack();
+    if (ack) {
+      LOGGER << "Received ack message " << message << "." << endl;
 
-      auto maybe_callback = pending_callbacks.find(ack_message->get_key());
+      auto maybe_callback = pending_callbacks.find(ack->get_key());
       if (maybe_callback == pending_callbacks.end()) {
-        LOGGER << "Ignoring unexpected ack " << *it << "." << endl;
+        LOGGER << "Ignoring unexpected ack " << message << "." << endl;
         continue;
       }
 
-      unique_ptr<Nan::Callback> callback = move(maybe_callback->second);
+      unique_ptr<Callback> callback = move(maybe_callback->second);
       pending_callbacks.erase(maybe_callback);
 
-      ChannelID channel_id = ack_message->get_channel_id();
+      ChannelID channel_id = ack->get_channel_id();
       if (channel_id != NULL_CHANNEL_ID) {
-        if (ack_message->was_successful()) {
+        if (ack->was_successful()) {
           Local<Value> argv[] = {Nan::Null(), Nan::New<Number>(channel_id)};
           callback->Call(2, argv);
         } else {
-          Local<Value> err = Nan::Error(ack_message->get_message().c_str());
+          Local<Value> err = Nan::Error(ack->get_message().c_str());
           Local<Value> argv[] = {err, Nan::Null()};
           callback->Call(2, argv);
         }
@@ -156,47 +172,65 @@ Result<> Hub::send_command(
       continue;
     }
 
-    const FileSystemPayload *filesystem_message = it->as_filesystem();
-    if (filesystem_message) {
-      LOGGER << "Received filesystem event message " << *it << "." << endl;
+    const FileSystemPayload *fs = message.as_filesystem();
+    if (fs) {
+      LOGGER << "Received filesystem event message " << message << "." << endl;
 
-      ChannelID channel_id = filesystem_message->get_channel_id();
+      ChannelID channel_id = fs->get_channel_id();
 
       Local<Object> js_event = Nan::New<Object>();
       js_event->Set(
         Nan::New<String>("action").ToLocalChecked(),
-        Nan::New<Number>(static_cast<int>(filesystem_message->get_filesystem_action()))
+        Nan::New<Number>(static_cast<int>(fs->get_filesystem_action()))
       );
       js_event->Set(
         Nan::New<String>("kind").ToLocalChecked(),
-        Nan::New<Number>(static_cast<int>(filesystem_message->get_entry_kind()))
+        Nan::New<Number>(static_cast<int>(fs->get_entry_kind()))
       );
       js_event->Set(
         Nan::New<String>("oldPath").ToLocalChecked(),
-        Nan::New<String>(filesystem_message->get_old_path()).ToLocalChecked()
+        Nan::New<String>(fs->get_old_path()).ToLocalChecked()
       );
       js_event->Set(
         Nan::New<String>("path").ToLocalChecked(),
-        Nan::New<String>(filesystem_message->get_path()).ToLocalChecked()
+        Nan::New<String>(fs->get_path()).ToLocalChecked()
       );
 
       to_deliver[channel_id].push_back(js_event);
       continue;
     }
 
-    LOGGER << "Received unexpected message " << *it << "." << endl;
+    const CommandPayload *command = message.as_command();
+    if (command) {
+      LOGGER << "Received command message " << message << "." << endl;
+
+      if (command->get_action() == COMMAND_DRAIN) {
+        Result<bool> dr = thread.drain();
+        if (dr.is_error()) {
+          LOGGER << "Unable to drain dead letter office: " << dr << "." << endl;
+        } else if (dr.get_value()) {
+          repeat = true;
+        }
+      } else {
+        LOGGER << "Ignoring unexpected command." << endl;
+      }
+
+      continue;
+    }
+
+    LOGGER << "Received unexpected message " << message << "." << endl;
   }
 
-  for (auto it = to_deliver.begin(); it != to_deliver.end(); ++it) {
-    ChannelID channel_id = it->first;
-    vector<Local<Object>> js_events = it->second;
+  for (auto &pair : to_deliver) {
+    ChannelID channel_id = pair.first;
+    vector<Local<Object>> js_events = pair.second;
 
     auto maybe_callback = channel_callbacks.find(channel_id);
     if (maybe_callback == channel_callbacks.end()) {
       LOGGER << "Ignoring unexpected filesystem event channel " << channel_id << "." << endl;
       continue;
     }
-    shared_ptr<Nan::Callback> callback = maybe_callback->second;
+    shared_ptr<Callback> callback = maybe_callback->second;
 
     LOGGER << "Dispatching " << js_events.size()
       << " event(s) on channel " << channel_id << " to node callbacks." << endl;
@@ -215,13 +249,6 @@ Result<> Hub::send_command(
     };
     callback->Call(2, argv);
   }
-}
 
-void Hub::collect_status(Status &status)
-{
-  status.pending_callback_count = pending_callbacks.size();
-  status.channel_callback_count = channel_callbacks.size();
-
-  worker_thread.collect_status(status);
-  polling_thread.collect_status(status);
+  if (repeat) handle_events_from(thread);
 }
