@@ -7,6 +7,8 @@
 #include <memory>
 #include <cstdint>
 
+#include "result.h"
+
 enum FileSystemAction {
   ACTION_CREATED = 0,
   ACTION_DELETED = 1,
@@ -133,6 +135,10 @@ enum MessageKind {
 
 class Message {
 public:
+  static Message ack(const Message &original, bool success, const std::string &&message = "");
+
+  static Message ack(const Message &original, const Result<> &result);
+
   explicit Message(FileSystemPayload &&e);
   explicit Message(CommandPayload &&e);
   explicit Message(AckPayload &&e);

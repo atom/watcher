@@ -177,6 +177,25 @@ const AckPayload* Message::as_ack() const
   return kind == KIND_ACK ? &ack_payload : nullptr;
 }
 
+Message Message::ack(const Message &original, bool success, const string &&message)
+{
+  const CommandPayload *payload = original.as_command();
+  assert(payload != nullptr);
+
+  return Message(
+    AckPayload(payload->get_id(), payload->get_channel_id(), success, move(message))
+  );
+}
+
+Message Message::ack(const Message &original, const Result<> &result)
+{
+  if (result.is_ok()) {
+    return ack(original, true, "");
+  } else {
+    return ack(original, false, move(result.get_error()));
+  }
+}
+
 Message::Message(FileSystemPayload &&p) : kind{KIND_FILESYSTEM}, filesystem_payload{move(p)}
 {
   //
