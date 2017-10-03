@@ -86,7 +86,9 @@ Result<bool> Thread::send(Message &&message)
       return out.enqueue(Message::ack(message, false, m.str())).propagate(true);
     }
 
+    LOGGER << "Processing offline command: " << *command << "." << endl;
     Result<OfflineCommandOutcome> r0 = handle_offline_command(command);
+    LOGGER << "Result: " << r0 << "." << endl;
     if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
       return out.enqueue(
         Message::ack(message, r0.propagate_as_void())
@@ -304,4 +306,10 @@ Result<Thread::CommandOutcome> Thread::handle_unknown_command(const CommandPaylo
 {
   LOGGER << "Received command with unexpected action " << *payload << "." << endl;
   return ok_result(ACK);
+}
+
+std::ostream &operator<<(std::ostream &out, const Thread &th)
+{
+  out << "Thread[" << th.get_source() << "]";
+  return out;
 }

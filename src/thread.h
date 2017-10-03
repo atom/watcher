@@ -7,6 +7,7 @@
 #include <utility>
 #include <functional>
 #include <vector>
+#include <iostream>
 #include <sstream>
 #include <uv.h>
 
@@ -206,5 +207,7 @@ Result<> Thread::emit_all(InputIt begin, InputIt end)
 
   return ok_result();
 }
+
+std::ostream &operator<<(std::ostream &out, const Thread &th);
 
 #endif
