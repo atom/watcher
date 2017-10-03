@@ -77,12 +77,14 @@ enum CommandAction {
 
 typedef uint_fast32_t CommandID;
 
+const CommandID NULL_COMMAND_ID = 0;
+
 class CommandPayload {
 public:
   CommandPayload(
-    const CommandID id,
     const CommandAction action,
-    const std::string &&root,
+    const CommandID id = NULL_COMMAND_ID,
+    const std::string &&root = "",
     const ChannelID channel_id = NULL_CHANNEL_ID
   );
   CommandPayload(CommandPayload &&original);
