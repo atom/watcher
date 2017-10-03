@@ -2,7 +2,6 @@
 #define ALL_CALLBACK_H
 
 #include <functional>
-#include <vector>
 #include <forward_list>
 #include <memory>
 #include <nan.h>
@@ -15,10 +14,10 @@ private:
   struct internal {};
 
 public:
-  static AllCallback &create(std::unique_ptr<Nan::Callback> done);
+  static AllCallback &create(std::unique_ptr<Nan::Callback> &&done);
 
-  explicit AllCallback(std::unique_ptr<Nan::Callback> done, const internal &key);
   ~AllCallback() = default;
+  explicit AllCallback(std::unique_ptr<Nan::Callback> &&done, const internal &key);
 
   std::unique_ptr<Nan::Callback> create_callback();
 
@@ -34,9 +33,10 @@ private:
   void callback_complete(size_t callback_index, const Nan::FunctionCallbackInfo<v8::Value> &info);
 
   std::unique_ptr<Nan::Callback> done;
+  size_t total;
   size_t remaining;
 
-  std::vector<FnCallback> functions;
+  std::forward_list<FnCallback> functions;
 
   Nan::Persistent<v8::Value> error;
   Nan::Persistent<v8::Array> results;

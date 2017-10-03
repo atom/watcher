@@ -17,14 +17,13 @@ using v8::Value;
 using v8::Array;
 using std::bind;
 using std::move;
-using std::vector;
 using std::forward_list;
 using std::unique_ptr;
 using std::placeholders::_1;
 
 forward_list<AllCallback> AllCallback::retained;
 
-AllCallback &AllCallback::create(unique_ptr<Callback> done)
+AllCallback &AllCallback::create(unique_ptr<Callback> &&done)
 {
   auto previous_begin = retained.begin();
   retained.emplace_front(move(done), internal());
@@ -34,8 +33,9 @@ AllCallback &AllCallback::create(unique_ptr<Callback> done)
   return retained.front();
 }
 
-AllCallback::AllCallback(unique_ptr<Callback> done, const internal &key) :
+AllCallback::AllCallback(unique_ptr<Callback> &&done, const internal &key) :
   done(move(done)),
+  total{0},
   remaining{0},
   error(Nan::Undefined()),
   results(Nan::New<Array>(0)),
@@ -46,10 +46,13 @@ AllCallback::AllCallback(unique_ptr<Callback> done, const internal &key) :
 
 unique_ptr<Callback> AllCallback::create_callback()
 {
-  size_t index = functions.size();
-  functions.emplace_back(bind(&AllCallback::callback_complete, this, index, _1));
+  size_t index = total;
+  functions.emplace_front(bind(&AllCallback::callback_complete, this, index, _1));
+
+  total++;
   remaining++;
-  return fn_callback(functions[index]);
+
+  return fn_callback(functions.front());
 }
 
 void AllCallback::fire_if_empty()
