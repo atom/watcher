@@ -117,7 +117,7 @@ Result<> Hub::send_command(
 
   LOGGER << "Sending command " << command << " to the worker thread." << endl;
   Result<bool> sr = worker_thread.send(move(command));
-  if (sr.is_error()) return sr.propagate<>();
+  if (sr.is_error()) return sr.propagate();
   if (sr.get_value()) handle_events();
   return ok_result();
 }

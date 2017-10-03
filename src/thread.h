@@ -156,7 +156,7 @@ Result<bool> Thread::send_all(InputIt begin, InputIt end)
 
       Result<OfflineCommandOutcome> r0 = handle_offline_command(command);
       if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
-        acks.emplace_back(Message::ack(*it, r0.propagate()));
+        acks.emplace_back(Message::ack(*it, r0.propagate_as_void()));
       } else if (r0.get_value() == TRIGGER_RUN) {
         Result<> r1 = in.enqueue(std::move(*it));
         if (r1.is_error()) return r1.propagate<bool>();

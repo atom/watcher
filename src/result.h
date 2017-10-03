@@ -137,6 +137,15 @@ public:
     return Result<U>::make_ok(std::move(value));
   }
 
+  Result<> propagate_as_void() const
+  {
+    if (state == RESULT_ERROR) {
+      return propagate();
+    }
+
+    return Result<>::make_ok(nullptr);
+  }
+
   Result<V> &operator&=(Result<V> &&sub_result)
   {
     if (is_error() != sub_result.is_error() || sub_result.is_ok()) {
