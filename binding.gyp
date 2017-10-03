@@ -11,6 +11,7 @@
             "src/lock.cpp",
             "src/message.cpp",
             "src/message_buffer.cpp",
+            "src/thread_starter.cpp",
             "src/thread.cpp",
             "src/status.cpp",
             "src/worker/worker_thread.cpp",
