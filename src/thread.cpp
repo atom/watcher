@@ -297,7 +297,7 @@ Result<Thread::CommandOutcome> Thread::handle_log_stdout_command(const CommandPa
 
 Result<Thread::CommandOutcome> Thread::handle_log_disable_command(const CommandPayload *payload)
 {
-  Logger::to_stderr();
+  Logger::disable();
   starter->set_logging(payload);
   return ok_result(ACK);
 }
