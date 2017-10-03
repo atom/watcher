@@ -43,7 +43,7 @@ Hub::Hub() :
 {
   int err;
 
-  next_command_id = 0;
+  next_command_id = NULL_COMMAND_ID + 1;
   next_channel_id = NULL_CHANNEL_ID + 1;
 
   err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
