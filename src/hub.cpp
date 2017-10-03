@@ -70,7 +70,7 @@ Result<> Hub::watch(
   }
 }
 
-Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> ack_callback)
+Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
 {
   string root;
   AllCallback &all = AllCallback::create(move(ack_callback));
@@ -82,7 +82,7 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> ack_callback)
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {
     LOGGER << "Channel " << channel_id << " already has no event callback." << endl;
-    return ok_result();
+    return r;
   }
   channel_callbacks.erase(maybe_event_callback);
   return r;

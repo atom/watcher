@@ -79,7 +79,7 @@ public:
     std::unique_ptr<Nan::Callback> event_callback
   );
 
-  Result<> unwatch(ChannelID channel_id, std::unique_ptr<Nan::Callback> ack_callback);
+  Result<> unwatch(ChannelID channel_id, std::unique_ptr<Nan::Callback> &&ack_callback);
 
   void handle_events();
 
