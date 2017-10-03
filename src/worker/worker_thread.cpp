@@ -19,7 +19,7 @@ using std::move;
 using std::string;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
-  Thread(this, &WorkerThread::listen, "worker thread", main_callback),
+  Thread("worker thread", main_callback),
   platform{WorkerPlatform::for_worker(this)}
 {
   //
@@ -37,47 +37,25 @@ Result<> WorkerThread::wake()
   return platform->wake();
 }
 
-void WorkerThread::listen()
+Result<> WorkerThread::body()
 {
-  mark_running();
-
-  // Handle any commands that were enqueued while the thread was starting.
-  Result<size_t> cr = handle_commands();
-  if (cr.is_error()) {
-    LOGGER << "Unable to handle initially enqueued commands: " << cr << endl;
-  }
-
-  Result<> lr = platform->listen();
-  if (lr.is_error()) {
-    LOGGER << "Unable to listen: " << lr << endl;
-    report_error(string(lr.get_error()));
-  } else {
-    LOGGER << "Worker thread stopping." << endl;
-  }
-
-  mark_stopped();
+  return platform->listen();
 }
 
-Result<> WorkerThread::handle_add_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> WorkerThread::handle_add_command(const CommandPayload *payload)
 {
   Result<bool> r = platform->handle_add_command(payload->get_id(), payload->get_channel_id(), payload->get_root());
-  if (r.is_error()) {
-    return r.propagate();
-  }
+  if (r.is_error()) return r.propagate<CommandOutcome>();
 
-  outcome.ack = r.get_value();
-  return ok_result();
+  return ok_result(r.get_value() ? ACK : NOTHING);
 }
 
-Result<> WorkerThread::handle_remove_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> WorkerThread::handle_remove_command(const CommandPayload *payload)
 {
   Result<bool> r = platform->handle_remove_command(payload->get_id(), payload->get_channel_id());
-  if (r.is_error()) {
-    return r.propagate();
-  }
+  if (r.is_error()) return r.propagate<CommandOutcome>();
 
-  outcome.ack = r.get_value();
-  return ok_result();
+  return ok_result(r.get_value() ? ACK : NOTHING);
 }
 
 void WorkerThread::collect_status(Status &status)

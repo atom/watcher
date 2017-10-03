@@ -18,7 +18,7 @@ using std::string;
 using std::endl;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
-  Thread(this, &PollingThread::poll, "polling thread", main_callback),
+  Thread("polling thread", main_callback),
   poll_interval{DEFAULT_POLL_INTERVAL},
   poll_throttle{DEFAULT_POLL_THROTTLE}
 {
@@ -39,18 +39,8 @@ void PollingThread::collect_status(Status &status)
   status.polling_out_ok = get_out_queue_error();
 }
 
-bool PollingThread::should_trigger_run(Message &message)
+Result<> PollingThread::body()
 {
-  const CommandPayload *payload = message.as_command();
-  if (!payload) return false;
-
-  return payload->get_action() == COMMAND_ADD;
-}
-
-void PollingThread::poll()
-{
-  mark_running();
-
   while (true) {
     LOGGER << "Handling commands." << endl;
     Result<size_t> cr = handle_commands();
@@ -58,7 +48,7 @@ void PollingThread::poll()
       LOGGER << "Unable to process incoming commands: " << cr << endl;
     } else if (is_stopping()) {
       LOGGER << "Polling thread stopping." << endl;
-      break;
+      return ok_result();
     }
 
     LOGGER << "Polling root directories." << endl;
@@ -70,8 +60,6 @@ void PollingThread::poll()
       LOGGER << "Waking up." << endl;
     }
   }
-
-  mark_stopped();
 }
 
 Result<> PollingThread::cycle()
@@ -106,7 +94,19 @@ Result<> PollingThread::cycle()
   return emit_all(buffer.begin(), buffer.end());
 }
 
-Result<> PollingThread::handle_add_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(const CommandPayload *payload)
+{
+  Result<OfflineCommandOutcome> r = Thread::handle_offline_command(payload);
+  if (r.is_error()) return r;
+
+  if (payload->get_action() == COMMAND_ADD) {
+    return ok_result(TRIGGER_RUN);
+  }
+
+  return ok_result(OFFLINE_ACK);
+}
+
+Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPayload *payload)
 {
   LOGGER << "Adding poll root at path "
     << payload->get_root()
@@ -119,12 +119,10 @@ Result<> PollingThread::handle_add_command(const CommandPayload *payload, Comman
     std::forward_as_tuple(string(payload->get_root()), payload->get_channel_id())
   );
 
-  outcome.should_stop = false;
-
-  return ok_result();
+  return ok_result(ACK);
 }
 
-Result<> PollingThread::handle_remove_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const CommandPayload *payload)
 {
   LOGGER << "Removing poll root at channel "
     << payload->get_channel_id()
@@ -135,8 +133,8 @@ Result<> PollingThread::handle_remove_command(const CommandPayload *payload, Com
 
   if (roots.empty()) {
     LOGGER << "Final root removed." << endl;
-    outcome.should_stop = true;
+    return ok_result(TRIGGER_STOP);
   }
 
-  return ok_result();
+  return ok_result(ACK);
 }

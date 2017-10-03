@@ -22,12 +22,15 @@ public:
   void collect_status(Status &status) override;
 
 private:
-  bool should_trigger_run(Message &message) override;
+  Result<> body() override;
 
-  void poll();
   Result<> cycle();
-  Result<> handle_add_command(const CommandPayload *command, CommandOutcome &outcome) override;
-  Result<> handle_remove_command(const CommandPayload *payload, CommandOutcome &outcome) override;
+
+  Result<OfflineCommandOutcome> handle_offline_command(const CommandPayload *command) override;
+
+  Result<CommandOutcome> handle_add_command(const CommandPayload *command) override;
+
+  Result<CommandOutcome> handle_remove_command(const CommandPayload *payload) override;
 
   std::chrono::milliseconds poll_interval;
   uint_fast64_t poll_throttle;

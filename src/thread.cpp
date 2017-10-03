@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 #include <utility>
+#include <sstream>
 #include <uv.h>
 
 #include "thread.h"
@@ -14,7 +15,9 @@ using std::string;
 using std::function;
 using std::unique_ptr;
 using std::vector;
+using std::bind;
 using std::move;
+using std::ostringstream;
 using std::endl;
 
 void thread_callback_helper(void *arg)
@@ -23,14 +26,25 @@ void thread_callback_helper(void *arg)
   (*bound_fn)();
 }
 
-using CommandHandler = Result<> (Thread::*)(const CommandPayload*, Thread::CommandOutcome&);
-const CommandHandler command_handlers[] = {
+const Thread::CommandHandler Thread::command_handlers[] = {
   [COMMAND_ADD]=&Thread::handle_add_command,
   [COMMAND_REMOVE]=&Thread::handle_remove_command,
   [COMMAND_LOG_FILE]=&Thread::handle_log_file_command,
   [COMMAND_LOG_STDERR]=&Thread::handle_log_stderr_command,
   [COMMAND_LOG_STDOUT]=&Thread::handle_log_stdout_command,
   [COMMAND_LOG_DISABLE]=&Thread::handle_log_disable_command
+};
+
+Thread::Thread(std::string name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
+  SyncErrable(name),
+  state{State::STOPPED},
+  starter{move(starter)},
+  in(name + " input queue"),
+  out(name + " output queue"),
+  main_callback{main_callback},
+  work_fn{bind(&Thread::start, this)}
+{
+  //
 };
 
 Result<> Thread::run()
@@ -47,20 +61,68 @@ Result<> Thread::run()
   }
 }
 
-Result<> Thread::send(Message &&message)
+Result<bool> Thread::send(Message &&message)
 {
-  if (!is_healthy()) return health_err_result();
-
-  Result<> qr = in.enqueue(move(message));
-  if (qr.is_error()) return qr;
-
-  if (is_running()) {
-    return wake();
-  }
+  if (!is_healthy()) return health_err_result().propagate<bool>();
 
   if (is_stopping()) {
     uv_thread_join(&uv_handle);
 
+    if (dead_letter_office) {
+      unique_ptr<vector<Message>> dead_letters = move(dead_letter_office);
+      dead_letter_office.reset(nullptr);
+      dead_letters->emplace_back(move(message));
+
+      return send_all(dead_letters->begin(), dead_letters->end());
+    }
+  }
+
+  if (is_stopped()) {
+    const CommandPayload *command = message.as_command();
+    if (command == nullptr) {
+      ostringstream m;
+      m << "Non-command message " << message << " sent to a stopped thread";
+
+      return out.enqueue(Message::ack(message, false, m.str())).propagate(true);
+    }
+
+    Result<OfflineCommandOutcome> r0 = handle_offline_command(command);
+    if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
+      return out.enqueue(
+        Message::ack(message, r0.propagate())
+      ).propagate(true);
+    } else if (r0.get_value() == TRIGGER_RUN) {
+      Result<> r1 = in.enqueue(move(message));
+      if (r1.is_error()) return r1.propagate<bool>();
+
+      return run().propagate(false);
+    }
+  }
+
+  Result<> r2 = in.enqueue(move(message));
+  if (r2.is_error()) return r2.propagate<bool>();
+
+  if (is_running()) {
+    return wake().propagate(false);
+  }
+
+  return ok_result(false);
+}
+
+Result< unique_ptr<vector<Message>> > Thread::receive_all()
+{
+  if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
+
+  return out.accept_all();
+}
+
+Result<bool> Thread::drain()
+{
+  if (is_stopping()) {
+    uv_thread_join(&uv_handle);
+  }
+
+  if (is_stopped()) {
     if (dead_letter_office) {
       unique_ptr<vector<Message>> dead_letters = move(dead_letter_office);
       dead_letter_office.reset(nullptr);
@@ -69,21 +131,36 @@ Result<> Thread::send(Message &&message)
     }
   }
 
-  if (is_stopped()) {
-    bool trigger = should_trigger_run(message);
-    if (trigger) {
-      return run();
+  return ok_result(false);
+}
+
+void Thread::start()
+{
+  mark_running();
+
+  // Artificially enqueue any messages that establish the thread's starting state.
+  vector<Message> starter_messages = starter->get_messages();
+  if (!starter_messages.empty()) {
+    Result<> sr = in.enqueue_all(starter_messages.begin(), starter_messages.end());
+    if (sr.is_error()) {
+      LOGGER << "Unable to enqueue starter messages: " << sr << "." << endl;
     }
   }
 
-  return ok_result();
-}
+  // Handle any commands that were enqueued while the thread was starting.
+  Result<size_t> cr = handle_commands();
+  if (cr.is_error()) {
+    LOGGER << "Unable to handle initially enqueued commands: " << cr << "." << endl;
+  }
 
-Result< unique_ptr<vector<Message>> > Thread::receive_all()
-{
-  if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
+  Result<> r = body();
+  if (r.is_error()) {
+    LOGGER << "Thread stopping because of an error: " << r << "." << endl;
+  } else {
+    LOGGER << "Thread stopping normally." << endl;
+  }
 
-  return out.accept_all();
+  mark_stopped();
 }
 
 Result<> Thread::emit(Message &&message)
@@ -99,6 +176,19 @@ Result<> Thread::emit(Message &&message)
   }
 
   return ok_result();
+}
+
+Result<Thread::OfflineCommandOutcome> Thread::handle_offline_command(const CommandPayload *payload)
+{
+  CommandAction action = payload->get_action();
+  if (
+    action == COMMAND_LOG_FILE || action == COMMAND_LOG_STDOUT || action == COMMAND_LOG_STDERR ||
+    action == COMMAND_LOG_DISABLE
+  ) {
+    starter->set_logging(payload);
+  }
+
+  return ok_result(OFFLINE_ACK);
 }
 
 Result<size_t> Thread::handle_commands()
@@ -124,35 +214,33 @@ Result<size_t> Thread::handle_commands()
       continue;
     }
 
-    CommandOutcome outcome = {
-      true, // ack
-      true, // success
-      should_stop // should_stop
-    };
-    string m = "";
-
     CommandHandler handler = command_handlers[command->get_action()];
     if (handler == nullptr) {
       handler = &Thread::handle_unknown_command;
     }
-    Result<> hr = (this->*handler)(command, outcome);
+    Result<CommandOutcome> hr = (this->*handler)(command);
+
     if (hr.is_error()) {
       LOGGER << "Reporting command handler error: " << hr << "." << endl;
-      outcome.success = false;
-      m = move(hr.get_error());
-    }
+    } else {
+      CommandOutcome &outcome = hr.get_value();
 
-    if (outcome.ack) {
-      AckPayload ack(command->get_id(), command->get_channel_id(), outcome.success, move(m));
-      Message response(move(ack));
-      acks.push_back(move(response));
-    }
+      if (outcome == CommandOutcome::TRIGGER_STOP) {
+        should_stop = true;
+      }
 
-    should_stop = outcome.should_stop;
+      if (outcome == CommandOutcome::PREVENT_STOP) {
+        should_stop = false;
+      }
+
+      if (outcome != CommandOutcome::NOTHING && command->get_id() != NULL_COMMAND_ID) {
+        acks.emplace_back(Message::ack(message, hr.propagate<>()));
+      }
+    }
   }
 
   Result<> er = emit_all(acks.begin(), acks.end());
-  if (er.is_error()) return er.propagate<size_t>(accepted->size());
+  if (er.is_error()) return er.propagate<size_t>();
 
   if (should_stop) {
     mark_stopping();
@@ -162,47 +250,58 @@ Result<size_t> Thread::handle_commands()
     if (dr.is_error()) dr.propagate<size_t>();
 
     dead_letter_office = move(dr.get_value());
+
+    // Notify the Hub if this thread has messages that need to be drained.
+    if (dead_letter_office) {
+      LOGGER << plural(dead_letter_office->size(), "message") << " are now waiting in the dead letter office." << endl;
+
+      emit(Message(CommandPayload(COMMAND_DRAIN)));
+    }
   }
 
   return ok_result(static_cast<size_t>(accepted->size()));
 }
 
-Result<> Thread::handle_add_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_add_command(const CommandPayload *payload)
 {
-  return handle_unknown_command(payload, outcome);
+  return handle_unknown_command(payload);
 }
 
-Result<> Thread::handle_remove_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_remove_command(const CommandPayload *payload)
 {
-  return handle_unknown_command(payload, outcome);
+  return handle_unknown_command(payload);
 }
 
-Result<> Thread::handle_log_file_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_log_file_command(const CommandPayload *payload)
 {
   Logger::to_file(payload->get_root().c_str());
-  return ok_result();
+  starter->set_logging(payload);
+  return ok_result(ACK);
 }
 
-Result<> Thread::handle_log_stderr_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_log_stderr_command(const CommandPayload *payload)
 {
   Logger::to_stderr();
-  return ok_result();
+  starter->set_logging(payload);
+  return ok_result(ACK);
 }
 
-Result<> Thread::handle_log_stdout_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_log_stdout_command(const CommandPayload *payload)
 {
   Logger::to_stdout();
-  return ok_result();
+  starter->set_logging(payload);
+  return ok_result(ACK);
 }
 
-Result<> Thread::handle_log_disable_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_log_disable_command(const CommandPayload *payload)
 {
   Logger::to_stderr();
-  return ok_result();
+  starter->set_logging(payload);
+  return ok_result(ACK);
 }
 
-Result<> Thread::handle_unknown_command(const CommandPayload *payload, CommandOutcome &outcome)
+Result<Thread::CommandOutcome> Thread::handle_unknown_command(const CommandPayload *payload)
 {
   LOGGER << "Received command with unexpected action " << *payload << "." << endl;
-  return ok_result();
+  return ok_result(ACK);
 }
