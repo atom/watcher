@@ -33,4 +33,11 @@ describe('configuration', function () {
     const contents = await fs.readFile(workerLogFile)
     assert.match(contents, /FileLogger opened/)
   })
+
+  it('configures the polling thread logger', async function () {
+    await watcher.configure({pollingLog: pollingLogFile})
+
+    const contents = await fs.readFile(pollingLogFile)
+    assert.match(contents, /FileLogger opened/)
+  })
 })
