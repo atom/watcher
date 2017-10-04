@@ -23,16 +23,15 @@ describe('polling', function () {
 
   describe('thread state', function () {
     it('does not run the polling thread while no paths are being polled', function () {
-      const status = watcher.status()
-      assert.isFalse(status.pollingThreadActive)
+      assert.equal(watcher.status().pollingThreadState, 'stopped')
     })
 
     it('runs the polling thread when polling a directory for changes', async function () {
       sub = await watcher.watch(watchDir, {poll: true}, () => {})
-      assert.isTrue(watcher.status().pollingThreadActive)
+      assert.equal(watcher.status().pollingThreadState, 'running')
 
       await sub.unwatch()
-      assert.isFalse(watcher.status().pollingThreadActive)
+      assert.equal(watcher.status().pollingThreadState, 'stopped')
     })
   })
 })
