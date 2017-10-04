@@ -173,30 +173,33 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
       ))
     })
 
-    it('understands coalesced creation and deletion events', async function () {
-      const deletedPath = path.join(watchDir, 'deleted.txt')
-      const recreatedPath = path.join(watchDir, 'recreated.txt')
-      const createdPath = path.join(watchDir, 'created.txt')
+    // The polling thread will never be able to distinguish rapid events
+    if (!poll) {
+      it('understands coalesced creation and deletion events', async function () {
+        const deletedPath = path.join(watchDir, 'deleted.txt')
+        const recreatedPath = path.join(watchDir, 'recreated.txt')
+        const createdPath = path.join(watchDir, 'created.txt')
 
-      await fs.writeFile(deletedPath, 'initial contents\n')
-      await until('file creation event arrives', eventMatching(
-        {action: 'created', kind: 'file', path: deletedPath}
-      ))
+        await fs.writeFile(deletedPath, 'initial contents\n')
+        await until('file creation event arrives', eventMatching(
+          {action: 'created', kind: 'file', path: deletedPath}
+        ))
 
-      await fs.unlink(deletedPath)
-      await fs.writeFile(recreatedPath, 'initial contents\n')
-      await fs.unlink(recreatedPath)
-      await fs.writeFile(recreatedPath, 'newly created\n')
-      await fs.writeFile(createdPath, 'and another\n')
+        await fs.unlink(deletedPath)
+        await fs.writeFile(recreatedPath, 'initial contents\n')
+        await fs.unlink(recreatedPath)
+        await fs.writeFile(recreatedPath, 'newly created\n')
+        await fs.writeFile(createdPath, 'and another\n')
 
-      await until('all events arrive', orderedEventsMatching(
-        {action: 'deleted', path: deletedPath},
-        {action: 'created', kind: 'file', path: recreatedPath},
-        {action: 'deleted', path: recreatedPath},
-        {action: 'created', kind: 'file', path: recreatedPath},
-        {action: 'created', kind: 'file', path: createdPath}
-      ))
-    })
+        await until('all events arrive', orderedEventsMatching(
+          {action: 'deleted', path: deletedPath},
+          {action: 'created', kind: 'file', path: recreatedPath},
+          {action: 'deleted', path: recreatedPath},
+          {action: 'created', kind: 'file', path: recreatedPath},
+          {action: 'created', kind: 'file', path: createdPath}
+        ))
+      })
+    }
 
     it('correlates rapid file rename events', async function () {
       const oldPath0 = path.join(watchDir, 'old-file-0.txt')
@@ -318,7 +321,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
       if (poll) {
         await until('deletion and creation events arrive', allEventsMatching(
           {action: 'deleted', kind: 'directory', path: reusedPath},
-          {action: 'deleted', kind: 'file', path: reusedPath},
+          {action: 'deleted', kind: 'file', path: oldFilePath},
           {action: 'created', kind: 'file', path: reusedPath}
         ))
       } else {
@@ -477,7 +480,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
       await fs.rename(oldDirPath, reusedPath)
 
       if (poll) {
-        await until('rename events arrive', orderedEventsMatching(
+        await until('creation and deletion events arrive', allEventsMatching(
           {action: 'deleted', kind: 'file', path: reusedPath},
           {action: 'created', kind: 'file', path: newFilePath},
           {action: 'deleted', kind: 'directory', path: oldDirPath},
