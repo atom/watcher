@@ -70,7 +70,7 @@ Result<> PollingThread::cycle()
   auto it = roots.begin();
   size_t roots_left = roots.size();
   LOGGER << "Polling " << plural(roots_left, "root")
-    << " with " << plural(poll_throttle, " throttle slot")
+    << " with " << plural(poll_throttle, "throttle slot")
     << "." << endl;
 
   while (it != roots.end()) {
@@ -78,14 +78,11 @@ Result<> PollingThread::cycle()
     size_t allotment = remaining / roots_left;
 
     LOGGER << "Polling " << root
-      << " with an allotment of " << plural(allotment, " throttle slot")
-      << "." << endl;
+      << " with an allotment of " << plural(allotment, "throttle slot") << "." << endl;
 
     size_t progress = root.advance(buffer, allotment);
     remaining -= progress;
-    LOGGER << root << " consumed "
-      << progress << " " << plural(progress, " throttle slot")
-      << "." << endl;
+    LOGGER << root << " consumed " << plural(progress, "throttle slot") << "." << endl;
 
     roots_left--;
     ++it;
