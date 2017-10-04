@@ -126,13 +126,20 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   } else {
     // Report entries that were present the last time we scanned this directory, but aren't included in this
     // scan.
-    for (auto &previous : entries) {
-      const string &previous_entry_name = previous.first;
-      EntryKind previous_entry_kind = kind_from_stat(previous.second);
+    auto previous = entries.begin();
+    while (previous != entries.end()) {
+      const string &previous_entry_name = previous->first;
+      const string previous_entry_path(path_join(dir, previous_entry_name));
+      EntryKind previous_entry_kind = kind_from_stat(previous->second);
       Entry previous_entry(previous_entry_name, previous_entry_kind);
 
       if (scanned_entries.count(previous_entry) == 0) {
-        entry_deleted(it, previous_entry_name, previous_entry_kind);
+        entry_deleted(it, previous_entry_path, previous_entry_kind);
+        auto former = previous;
+        ++previous;
+        entries.erase(former);
+      } else {
+        ++previous;
       }
     }
   }
