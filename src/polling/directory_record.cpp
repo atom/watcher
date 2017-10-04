@@ -63,10 +63,9 @@ ostream &operator<<(ostream &out, const FSReq &r)
   return out << r.req.statbuf;
 }
 
-inline bool ts_less_than(const uv_timespec_t &left, const uv_timespec_t &right)
+inline bool ts_not_equal(const uv_timespec_t &left, const uv_timespec_t &right)
 {
-  return left.tv_sec < right.tv_sec ||
-    (left.tv_sec == right.tv_sec && left.tv_nsec < right.tv_nsec);
+  return left.tv_sec != right.tv_sec || left.tv_nsec != right.tv_nsec;
 }
 
 inline EntryKind kind_from_stat(const uv_stat_t &st)
@@ -188,8 +187,8 @@ void DirectoryRecord::entry(
     } else if (
       previous_stat.st_mode != current_stat.st_mode ||
       previous_stat.st_size != current_stat.st_size ||
-      ts_less_than(previous_stat.st_mtim, current_stat.st_mtim) ||
-      ts_less_than(previous_stat.st_ctim, current_stat.st_ctim)
+      ts_not_equal(previous_stat.st_mtim, current_stat.st_mtim) ||
+      ts_not_equal(previous_stat.st_ctim, current_stat.st_ctim)
     ) {
       entry_modified(it, entry_path, current_kind);
     }
