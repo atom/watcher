@@ -42,18 +42,17 @@ ostream &operator<<(ostream &out, const uv_stat_t &stat)
   out
     << "[ino=" << stat.st_ino
     << " size=" << stat.st_size
-    << " mode=" << hex << stat.st_mode
-    << " flags=" << stat.st_flags << dec << " (";
-  if (stat.st_flags & S_IFIFO) out << " FIFO";
-  if (stat.st_flags & S_IFCHR) out << " CHR";
-  if (stat.st_flags & S_IFDIR) out << " DIR";
-  if (stat.st_flags & S_IFBLK) out << " BLK";
-  if (stat.st_flags & S_IFREG) out << " REG";
-  if (stat.st_flags & S_IFLNK) out << " LNK";
-  if (stat.st_flags & S_IFSOCK) out << " SOCK";
-  if (stat.st_flags & S_IFWHT) out << " WHT";
+    << " mode=" << hex << stat.st_mode << dec << " (";
+  if (stat.st_mode & S_IFIFO) out << " FIFO";
+  if (stat.st_mode & S_IFCHR) out << " CHR";
+  if (stat.st_mode & S_IFDIR) out << " DIR";
+  if (stat.st_mode & S_IFBLK) out << " BLK";
+  if (stat.st_mode & S_IFREG) out << " REG";
+  if ((stat.st_mode & S_IFLNK) == S_IFLNK) out << " LNK";
+  if ((stat.st_mode & S_IFSOCK) == S_IFSOCK) out << " SOCK";
+  if ((stat.st_mode & S_IFWHT) == S_IFWHT) out << " WHT";
   out
-    << ") atim=" << stat.st_atim
+    << " ) atim=" << stat.st_atim
     << " mtim=" << stat.st_mtim
     << " birthtim=" << stat.st_birthtim
     << "]";
@@ -77,8 +76,8 @@ inline bool ts_less_than(const uv_timespec_t &left, const uv_timespec_t &right)
 
 inline EntryKind kind_from_stat(const uv_stat_t &st)
 {
-  if (st.st_flags & S_IFDIR) return KIND_DIRECTORY;
-  if (st.st_flags & S_IFREG) return KIND_FILE;
+  if (st.st_mode & S_IFDIR) return KIND_DIRECTORY;
+  if (st.st_mode & S_IFREG) return KIND_FILE;
   return KIND_UNKNOWN;
 }
 
@@ -102,7 +101,7 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
 
   string dir = path();
   int scan_err = uv_fs_scandir(nullptr, &scan_req.req, dir.c_str(), 0, nullptr);
-  if (scan_err != 0) {
+  if (scan_err < 0) {
     LOGGER << "Unable to scan directory " << dir << ": " << uv_strerror(scan_err) << "." << endl;
     return;
   }
@@ -182,7 +181,7 @@ void DirectoryRecord::entry(
       entry_deleted(it, entry_path, previous_kind);
       entry_created(it, entry_path, current_kind);
     } else if (
-      previous_stat.st_flags != current_stat.st_flags ||
+      previous_stat.st_mode != current_stat.st_mode ||
       previous_stat.st_ino != current_stat.st_ino ||
       ts_less_than(previous_stat.st_mtim, current_stat.st_mtim) ||
       ts_less_than(previous_stat.st_ctim, current_stat.st_ctim)
