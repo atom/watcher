@@ -182,6 +182,14 @@ void DirectoryRecord::entry(
   }
 }
 
+DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, const string &name) :
+  parent{parent},
+  name(move(name)),
+  populated{false}
+{
+  //
+}
+
 void DirectoryRecord::entry_deleted(BoundPollingIterator *it, const string &entry_path, EntryKind kind)
 {
   if (!populated) return;
