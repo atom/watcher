@@ -18,6 +18,7 @@ using std::vector;
 using std::bind;
 using std::move;
 using std::ostringstream;
+using std::ostream;
 using std::endl;
 
 void thread_callback_helper(void *arg)
@@ -308,7 +309,17 @@ Result<Thread::CommandOutcome> Thread::handle_unknown_command(const CommandPaylo
   return ok_result(ACK);
 }
 
-std::ostream &operator<<(std::ostream &out, const Thread &th)
+string Thread::state_name() {
+  switch (state.load()) {
+    case STOPPED: return "stopped";
+    case STARTING: return "starting";
+    case RUNNING: return "running";
+    case STOPPING: return "stopping";
+    default: return "!!";
+  }
+}
+
+ostream &operator<<(ostream &out, const Thread &th)
 {
   out << "Thread[" << th.get_source() << "]";
   return out;

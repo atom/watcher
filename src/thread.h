@@ -94,6 +94,8 @@ protected:
   bool is_stopped() { return state.load() == State::STOPPED; }
   bool is_stopping() { return state.load() == State::STOPPING; }
 
+  std::string state_name();
+
   std::string get_in_queue_error() { return in.get_error(); }
   size_t get_in_queue_size() { return in.size(); }
   std::string get_out_queue_error() { return out.get_error(); }

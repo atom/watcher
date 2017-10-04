@@ -13,6 +13,7 @@ public:
   size_t channel_callback_count;
 
   // Worker thread
+  std::string worker_thread_state;
   std::string worker_thread_ok;
   size_t worker_in_size;
   std::string worker_in_ok;
@@ -20,7 +21,7 @@ public:
   std::string worker_out_ok;
 
   // Polling thread
-  bool polling_thread_active;
+  std::string polling_thread_state;
   std::string polling_thread_ok;
   size_t polling_in_size;
   std::string polling_in_ok;

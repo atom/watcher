@@ -60,6 +60,7 @@ Result<Thread::CommandOutcome> WorkerThread::handle_remove_command(const Command
 
 void WorkerThread::collect_status(Status &status)
 {
+  status.worker_thread_state = state_name();
   status.worker_thread_ok = get_error();
   status.worker_in_size = get_in_queue_size();
   status.worker_in_ok = get_in_queue_error();
