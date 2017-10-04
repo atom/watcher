@@ -100,12 +100,12 @@ CommandPayload::CommandPayload(
   const CommandAction action,
   const CommandID id,
   const std::string &&root,
-  const ChannelID channel_id
+  const uint_fast32_t arg
 ) :
   id{id},
   action{action},
   root{move(root)},
-  channel_id{channel_id}
+  arg{arg}
 {
   //
 }
@@ -114,7 +114,7 @@ CommandPayload::CommandPayload(CommandPayload &&original) :
   id{original.id},
   action{original.action},
   root{move(original.root)},
-  channel_id{original.channel_id}
+  arg{original.arg}
 {
   //
 }
@@ -126,16 +126,22 @@ string CommandPayload::describe() const
 
   switch (action) {
     case COMMAND_ADD:
-      builder << "add " << root << " at channel " << channel_id;
+      builder << "add " << root << " at channel " << arg;
       break;
     case COMMAND_REMOVE:
-      builder << "remove channel " << channel_id;
+      builder << "remove channel " << arg;
       break;
     case COMMAND_LOG_FILE:
       builder << "log to file " << root;
       break;
     case COMMAND_LOG_DISABLE:
       builder << "disable logging";
+      break;
+    case COMMAND_POLLING_INTERVAL:
+      builder << "polling interval " << arg;
+      break;
+    case COMMAND_POLLING_THROTTLE:
+      builder << "polling throttle " << arg;
       break;
     case COMMAND_DRAIN:
       builder << "drain";

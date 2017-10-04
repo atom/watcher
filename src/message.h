@@ -72,6 +72,8 @@ enum CommandAction {
   COMMAND_LOG_STDERR,
   COMMAND_LOG_STDOUT,
   COMMAND_LOG_DISABLE,
+  COMMAND_POLLING_INTERVAL,
+  COMMAND_POLLING_THROTTLE,
   COMMAND_DRAIN,
   COMMAND_MIN = COMMAND_ADD,
   COMMAND_MAX = COMMAND_DRAIN
@@ -87,7 +89,7 @@ public:
     const CommandAction action,
     const CommandID id = NULL_COMMAND_ID,
     const std::string &&root = "",
-    const ChannelID channel_id = NULL_CHANNEL_ID
+    const uint_fast32_t arg = NULL_CHANNEL_ID
   );
   CommandPayload(CommandPayload &&original);
   ~CommandPayload() {};
@@ -99,14 +101,15 @@ public:
   CommandID get_id() const { return id; }
   const CommandAction &get_action() const { return action; }
   const std::string &get_root() const { return root; }
-  const ChannelID &get_channel_id() const { return channel_id; }
+  const uint_fast32_t &get_arg() const { return arg; }
+  const ChannelID &get_channel_id() const { return arg; }
 
   std::string describe() const;
 private:
   const CommandID id;
   const CommandAction action;
   const std::string root;
-  const ChannelID channel_id;
+  const uint_fast32_t arg;
 };
 
 class AckPayload {
