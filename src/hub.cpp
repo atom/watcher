@@ -73,11 +73,11 @@ Result<> Hub::watch(
 Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
 {
   string root;
-  AllCallback &all = AllCallback::create(move(ack_callback));
+  shared_ptr<AllCallback> all = AllCallback::create(move(ack_callback));
 
   Result<> r = ok_result();
-  r &= send_command(worker_thread, COMMAND_REMOVE, all.create_callback(), "", channel_id);
-  r &= send_command(polling_thread, COMMAND_REMOVE, all.create_callback(), "", channel_id);
+  r &= send_command(worker_thread, COMMAND_REMOVE, all->create_callback(), "", channel_id);
+  r &= send_command(polling_thread, COMMAND_REMOVE, all->create_callback(), "", channel_id);
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {

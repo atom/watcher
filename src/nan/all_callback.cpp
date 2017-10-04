@@ -19,21 +19,23 @@ using std::bind;
 using std::move;
 using std::forward_list;
 using std::unique_ptr;
+using std::shared_ptr;
 using std::placeholders::_1;
 
-forward_list<AllCallback> AllCallback::retained;
+forward_list<shared_ptr<AllCallback>> AllCallback::retained;
 
-AllCallback &AllCallback::create(unique_ptr<Callback> &&done)
+shared_ptr<AllCallback> AllCallback::create(unique_ptr<Callback> &&done)
 {
   auto previous_begin = retained.begin();
-  retained.emplace_front(move(done), internal());
+  shared_ptr<AllCallback> created(new AllCallback(move(done)));
+  retained.emplace_front(created);
   if (previous_begin != retained.end()) {
-    previous_begin->before_it = retained.begin();
+    (*previous_begin)->before_it = retained.begin();
   }
   return retained.front();
 }
 
-AllCallback::AllCallback(unique_ptr<Callback> &&done, const internal &key) :
+AllCallback::AllCallback(unique_ptr<Callback> &&done) :
   done(move(done)),
   fired{false},
   total{0},

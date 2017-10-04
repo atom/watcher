@@ -18,6 +18,7 @@ using v8::Function;
 using v8::FunctionTemplate;
 using std::string;
 using std::unique_ptr;
+using std::shared_ptr;
 using std::move;
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
@@ -60,7 +61,7 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!get_bool_option(options, "pollingLogStdout", polling_log_stdout)) return;
 
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
-  AllCallback &all = AllCallback::create(move(callback));
+  shared_ptr<AllCallback> all = AllCallback::create(move(callback));
 
   if (main_log_disable) {
     Hub::get().disable_main_log();
@@ -74,27 +75,27 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
 
   Result<> wr = ok_result();
   if (worker_log_disable) {
-    wr = Hub::get().disable_worker_log(all.create_callback());
+    wr = Hub::get().disable_worker_log(all->create_callback());
   } else if (!worker_log_file.empty()) {
-    wr = Hub::get().use_worker_log_file(move(worker_log_file), all.create_callback());
+    wr = Hub::get().use_worker_log_file(move(worker_log_file), all->create_callback());
   } else if (worker_log_stderr) {
-    wr = Hub::get().use_worker_log_stderr(all.create_callback());
+    wr = Hub::get().use_worker_log_stderr(all->create_callback());
   } else if (worker_log_stdout) {
-    wr = Hub::get().use_worker_log_stdout(all.create_callback());
+    wr = Hub::get().use_worker_log_stdout(all->create_callback());
   }
 
   Result<> pr = ok_result();
   if (polling_log_disable) {
-    pr = Hub::get().disable_polling_log(all.create_callback());
+    pr = Hub::get().disable_polling_log(all->create_callback());
   } else if (!polling_log_file.empty()) {
-    pr = Hub::get().use_polling_log_file(move(polling_log_file), all.create_callback());
+    pr = Hub::get().use_polling_log_file(move(polling_log_file), all->create_callback());
   } else if (polling_log_stderr) {
-    pr = Hub::get().use_polling_log_stderr(all.create_callback());
+    pr = Hub::get().use_polling_log_stderr(all->create_callback());
   } else if (polling_log_stdout) {
-    pr = Hub::get().use_polling_log_stdout(all.create_callback());
+    pr = Hub::get().use_polling_log_stdout(all->create_callback());
   }
 
-  all.fire_if_empty();
+  all->fire_if_empty();
 }
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
