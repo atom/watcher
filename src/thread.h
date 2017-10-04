@@ -153,6 +153,7 @@ protected:
   // without effect. Override and call the base to handle logging by default.
   virtual Result<OfflineCommandOutcome> handle_offline_command(const CommandPayload *payload);
 
+  // Method dispatch table for command actions
   using CommandHandler = Result<CommandOutcome> (Thread::*)(const CommandPayload*);
   static const CommandHandler command_handlers[];
 
@@ -178,25 +179,35 @@ protected:
   size_t get_out_queue_size() { return out.size(); }
 
 private:
+  // Phases of a thread's lifecycle.
   enum State {
-    STOPPED,
-    STARTING,
-    RUNNING,
-    STOPPING
+    STOPPED, // The thread is not running.
+    STARTING, // The thread's start has been requested, but it has not launched yet.
+    RUNNING, // The thread is running.
+    STOPPING // The thread has processed a batch of messages that requested a stop.
   };
 
+  // The currently active phase.
   std::atomic<State> state;
 
+  // Stores state collected from messages received while `STOPPED` to initialize the thread when it begins running.
   std::unique_ptr<ThreadStarter> starter;
 
+  // Input and output queues.
   Queue in;
   Queue out;
 
+  // Handle used to trigger the main thread to consume `Messages` waiting on the output queue with
+  // `Thread::receive_all()`.
   uv_async_t *main_callback;
 
+  // Running thread handle.
   uv_thread_t uv_handle;
   std::function<void()> work_fn;
 
+  // Store any `Messages` received between the receipt of a batch that causes the thread to begin shutting down and the
+  // thread's `state` being set to `STOPPING` to signal this. Messages here are processed by a call to `Thread::drain()`
+  // or the next call to `Thread::send()`.
   std::unique_ptr<std::vector<Message>> dead_letter_office;
 };
 
