@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 #include <iostream>
+#include <iomanip>
 #include <uv.h>
 
 #include "../log.h"
@@ -15,6 +16,9 @@
 using std::string;
 using std::set;
 using std::endl;
+using std::hex;
+using std::dec;
+using std::ostream;
 using std::move;
 using std::shared_ptr;
 
@@ -25,6 +29,45 @@ struct FSReq {
     uv_fs_req_cleanup(&req);
   }
 };
+
+ostream &operator<<(ostream &out, const uv_timespec_t &ts)
+{
+  return out
+     << ts.tv_sec << "s "
+     << ts.tv_nsec << "ns";
+}
+
+ostream &operator<<(ostream &out, const uv_stat_t &stat)
+{
+  out
+    << "[ino=" << stat.st_ino
+    << " size=" << stat.st_size
+    << " mode=" << hex << stat.st_mode
+    << " flags=" << stat.st_flags << dec << " (";
+  if (stat.st_flags & S_IFIFO) out << " FIFO";
+  if (stat.st_flags & S_IFCHR) out << " CHR";
+  if (stat.st_flags & S_IFDIR) out << " DIR";
+  if (stat.st_flags & S_IFBLK) out << " BLK";
+  if (stat.st_flags & S_IFREG) out << " REG";
+  if (stat.st_flags & S_IFLNK) out << " LNK";
+  if (stat.st_flags & S_IFSOCK) out << " SOCK";
+  if (stat.st_flags & S_IFWHT) out << " WHT";
+  out
+    << ") atim=" << stat.st_atim
+    << " mtim=" << stat.st_mtim
+    << " birthtim=" << stat.st_birthtim
+    << "]";
+  return out;
+}
+
+ostream &operator<<(ostream &out, const FSReq &r)
+{
+  if (r.req.result < 0) {
+    return out << "[" << uv_strerror(r.req.result) << "]";
+  }
+
+  return out << r.req.statbuf;
+}
 
 inline bool ts_less_than(const uv_timespec_t &left, const uv_timespec_t &right)
 {
@@ -118,6 +161,16 @@ void DirectoryRecord::entry(
 
   if (existed_before) previous_kind = kind_from_stat(previous->second);
   if (exists_now) current_kind = kind_from_stat(lstat_req.req.statbuf);
+
+  ostream &logline = LOGGER << entry_path << ":\n  ";
+  if (existed_before) {
+    logline << previous->second;
+  } else {
+    logline << "(missing)";
+  }
+  logline << "\n  ==>\n  "
+    << lstat_req
+    << endl;
 
   if (existed_before && exists_now) {
     // Modification or no change
