@@ -153,9 +153,16 @@ protected:
   // without effect. Override and call the base to handle logging by default.
   virtual Result<OfflineCommandOutcome> handle_offline_command(const CommandPayload *payload);
 
-  // Method dispatch table for command actions
+  // Method dispatch table for command actions.
   using CommandHandler = Result<CommandOutcome> (Thread::*)(const CommandPayload*);
-  static const CommandHandler command_handlers[];
+  class DispatchTable {
+  public:
+    DispatchTable();
+    const CommandHandler &operator[](CommandAction action) const { return handlers[action]; }
+  private:
+    CommandHandler handlers[COMMAND_MAX + 1];
+  };
+  static const DispatchTable command_handlers;
 
   // Atomically transition this thread to the specifed state.
   void mark_stopped() { state.store(State::STOPPED); }

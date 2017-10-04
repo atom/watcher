@@ -27,14 +27,18 @@ void thread_callback_helper(void *arg)
   (*bound_fn)();
 }
 
-const Thread::CommandHandler Thread::command_handlers[] = {
-  [COMMAND_ADD]=&Thread::handle_add_command,
-  [COMMAND_REMOVE]=&Thread::handle_remove_command,
-  [COMMAND_LOG_FILE]=&Thread::handle_log_file_command,
-  [COMMAND_LOG_STDERR]=&Thread::handle_log_stderr_command,
-  [COMMAND_LOG_STDOUT]=&Thread::handle_log_stdout_command,
-  [COMMAND_LOG_DISABLE]=&Thread::handle_log_disable_command
-};
+Thread::DispatchTable::DispatchTable()
+{
+  handlers[COMMAND_ADD] = &Thread::handle_add_command;
+  handlers[COMMAND_REMOVE] = &Thread::handle_remove_command;
+  handlers[COMMAND_LOG_FILE] = &Thread::handle_log_file_command;
+  handlers[COMMAND_LOG_STDERR] = &Thread::handle_log_stderr_command;
+  handlers[COMMAND_LOG_STDOUT] = &Thread::handle_log_stdout_command;
+  handlers[COMMAND_LOG_DISABLE] = &Thread::handle_log_disable_command;
+  handlers[COMMAND_DRAIN] = &Thread::handle_unknown_command;
+}
+
+const Thread::DispatchTable Thread::command_handlers;
 
 Thread::Thread(std::string name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
   SyncErrable(name),
