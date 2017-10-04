@@ -43,14 +43,9 @@ ostream &operator<<(ostream &out, const uv_stat_t &stat)
     << "[ino=" << stat.st_ino
     << " size=" << stat.st_size
     << " mode=" << hex << stat.st_mode << dec << " (";
-  if (stat.st_mode & S_IFIFO) out << " FIFO";
-  if (stat.st_mode & S_IFCHR) out << " CHR";
   if (stat.st_mode & S_IFDIR) out << " DIR";
-  if (stat.st_mode & S_IFBLK) out << " BLK";
   if (stat.st_mode & S_IFREG) out << " REG";
   if ((stat.st_mode & S_IFLNK) == S_IFLNK) out << " LNK";
-  if ((stat.st_mode & S_IFSOCK) == S_IFSOCK) out << " SOCK";
-  if ((stat.st_mode & S_IFWHT) == S_IFWHT) out << " WHT";
   out
     << " ) atim=" << stat.st_atim
     << " mtim=" << stat.st_mtim
