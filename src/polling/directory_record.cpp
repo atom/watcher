@@ -179,7 +179,10 @@ void DirectoryRecord::entry(
     uv_stat_t &current_stat = lstat_req.req.statbuf;
 
     // TODO consider modifications to mode or ownership bits?
-    if (kinds_are_different(previous_kind, current_kind)) {
+    if (
+      kinds_are_different(previous_kind, current_kind) ||
+      previous_stat.st_ino != current_stat.st_ino
+    ) {
       entry_deleted(it, entry_path, previous_kind);
       entry_created(it, entry_path, current_kind);
     } else if (
