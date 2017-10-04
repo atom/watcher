@@ -11,7 +11,7 @@
 #include "../result.h"
 #include "polled_root.h"
 
-const std::chrono::milliseconds DEFAULT_POLL_INTERVAL = std::chrono::milliseconds(500);
+const std::chrono::milliseconds DEFAULT_POLL_INTERVAL = std::chrono::milliseconds(100);
 const uint_fast64_t DEFAULT_POLL_THROTTLE = 1000;
 
 class PollingThread : public Thread {
