@@ -37,7 +37,7 @@ describe('configuration', function () {
   describe('for the polling thread', function () {
     let sub
 
-    afterEach(async function() {
+    afterEach(async function () {
       if (sub) await sub.unwatch()
     })
 
