@@ -31,7 +31,7 @@ describe('polling', function () {
       assert.equal(watcher.status().pollingThreadState, 'running')
 
       await sub.unwatch()
-      assert.equal(watcher.status().pollingThreadState, 'stopped')
+      await until(() => watcher.status().pollingThreadState === 'stopped')
     })
   })
 })
