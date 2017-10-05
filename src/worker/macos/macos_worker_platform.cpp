@@ -168,12 +168,14 @@ public:
 
     FSEventStreamScheduleWithRunLoop(event_stream, run_loop, kCFRunLoopDefaultMode);
     if (!FSEventStreamStart(event_stream)) {
-      string msg("Unable start event stream for watch root: ");
-      msg += root_path;
+      LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
       CFRelease(watch_roots);
       CFRelease(watch_root);
-      return Result<bool>::make_error(move(msg));
+
+      // Emit an Add command for the polling thread to pick up
+      emit(Message(CommandPayload(COMMAND_ADD, command, move(root_path), channel)));
+      return ok_result(false);
     }
 
     CFRelease(watch_roots);
