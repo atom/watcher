@@ -140,6 +140,8 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
         auto former = previous;
         ++previous;
         entries.erase(former);
+
+        subdirectories.erase(previous_entry_name);
       } else {
         ++previous;
       }
