@@ -169,6 +169,7 @@ void Thread::start()
     LOGGER << "Thread stopping normally." << endl;
   }
 
+  Logger::disable();
   mark_stopped();
 }
 
