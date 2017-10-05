@@ -245,6 +245,19 @@ void DirectoryRecord::entry(
   }
 }
 
+bool DirectoryRecord::all_populated()
+{
+  if (!populated) return false;
+
+  for (auto &pair : subdirectories) {
+    if (!pair.second->all_populated()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, const string &name) :
   parent{parent},
   name(move(name)),

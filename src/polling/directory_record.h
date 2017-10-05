@@ -50,6 +50,9 @@ public:
   // Note that this `DirectoryResult` has had an initial `scan()` and set of `entry()` calls completed. Subsequent
   // calls should emit actual events.
   void mark_populated() { populated = true; }
+
+  // Return true if all `DirectoryResults` beneath this one have been populated by an initial scan.
+  bool all_populated();
 private:
   // Construct a `DirectoryRecord` for a child entry.
   DirectoryRecord(DirectoryRecord *parent, const std::string &name);
