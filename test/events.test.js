@@ -132,7 +132,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
       ))
     })
 
-    it('when a file is renamed from inside of the watch root out ^windows', async function () {
+    it('when a file is renamed from inside of the watch root out', async function () {
       const outsideFile = path.join(fixtureDir, 'file.txt')
       const insideFile = path.join(watchDir, 'file.txt')
       const flagFile = path.join(watchDir, 'flag.txt')
@@ -154,7 +154,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
       await fs.writeFile(flagFile, 'flag 2')
 
       await until('the deletion event arrives', eventMatching(
-        {action: 'deleted', kind: 'file', path: insideFile}
+        {action: 'deleted', path: insideFile}
       ))
     })
 
