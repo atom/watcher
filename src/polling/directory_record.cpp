@@ -135,7 +135,7 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
       Entry previous_entry(previous_entry_name, previous_entry_kind);
       Entry unknown_entry(previous_entry_name, KIND_UNKNOWN);
 
-      if (scanned_entries.count(previous_entry) == 0 && scanned_entries.count(unknown_entry)) {
+      if (scanned_entries.count(previous_entry) == 0 && scanned_entries.count(unknown_entry) == 0) {
         entry_deleted(it, previous_entry_path, previous_entry_kind);
         auto former = previous;
         ++previous;
