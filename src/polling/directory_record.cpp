@@ -57,7 +57,7 @@ ostream &operator<<(ostream &out, const uv_stat_t &stat)
 ostream &operator<<(ostream &out, const FSReq &r)
 {
   if (r.req.result < 0) {
-    return out << "[" << uv_strerror(r.req.result) << "]";
+    return out << "[" << uv_strerror(static_cast<int>(r.req.result)) << "]";
   }
 
   return out << r.req.statbuf;
