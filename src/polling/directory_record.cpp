@@ -109,13 +109,6 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
     if (dirent.type == UV_DIRENT_FILE) entry_kind = KIND_FILE;
     if (dirent.type == UV_DIRENT_DIR) entry_kind = KIND_DIRECTORY;
 
-    LOGGER
-      << "scandir: "
-      << entry_name
-      << " kind: "
-      << entry_kind
-      << "." << endl;
-
     it->push_entry(string(entry_name), entry_kind);
     if (populated) scanned_entries.emplace(move(entry_name), entry_kind);
 
@@ -171,16 +164,6 @@ void DirectoryRecord::entry(
 
   if (existed_before) previous_kind = kind_from_stat(previous->second);
   if (exists_now) current_kind = kind_from_stat(lstat_req.req.statbuf);
-
-  ostream &logline = LOGGER << entry_path << ":\n  ";
-  if (existed_before) {
-    logline << previous->second;
-  } else {
-    logline << "(missing)";
-  }
-  logline << "\n  ==>\n  "
-    << lstat_req
-    << endl;
 
   if (existed_before && exists_now) {
     // Modification or no change
