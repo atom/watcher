@@ -101,6 +101,14 @@ Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(cons
     return ok_result(TRIGGER_RUN);
   }
 
+  if (payload->get_action() == COMMAND_POLLING_INTERVAL) {
+    handle_polling_interval_command(payload);
+  }
+
+  if (payload->get_action() == COMMAND_POLLING_THROTTLE) {
+    handle_polling_throttle_command(payload);
+  }
+
   return ok_result(OFFLINE_ACK);
 }
 
