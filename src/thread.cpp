@@ -35,6 +35,8 @@ Thread::DispatchTable::DispatchTable()
   handlers[COMMAND_LOG_STDERR] = &Thread::handle_log_stderr_command;
   handlers[COMMAND_LOG_STDOUT] = &Thread::handle_log_stdout_command;
   handlers[COMMAND_LOG_DISABLE] = &Thread::handle_log_disable_command;
+  handlers[COMMAND_POLLING_INTERVAL] = &Thread::handle_polling_interval_command;
+  handlers[COMMAND_POLLING_THROTTLE] = &Thread::handle_polling_throttle_command;
   handlers[COMMAND_DRAIN] = &Thread::handle_unknown_command;
 }
 
@@ -305,6 +307,16 @@ Result<Thread::CommandOutcome> Thread::handle_log_disable_command(const CommandP
   Logger::disable();
   starter->set_logging(payload);
   return ok_result(ACK);
+}
+
+Result<Thread::CommandOutcome> Thread::handle_polling_interval_command(const CommandPayload *payload)
+{
+  return handle_unknown_command(payload);
+}
+
+Result<Thread::CommandOutcome> Thread::handle_polling_throttle_command(const CommandPayload *payload)
+{
+  return handle_unknown_command(payload);
 }
 
 Result<Thread::CommandOutcome> Thread::handle_unknown_command(const CommandPayload *payload)

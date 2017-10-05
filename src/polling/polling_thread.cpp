@@ -136,3 +136,15 @@ Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const Comman
 
   return ok_result(ACK);
 }
+
+Result<Thread::CommandOutcome> PollingThread::handle_polling_interval_command(const CommandPayload *payload)
+{
+  poll_interval = std::chrono::milliseconds(payload->get_arg());
+  return ok_result(ACK);
+}
+
+Result<Thread::CommandOutcome> PollingThread::handle_polling_throttle_command(const CommandPayload *payload)
+{
+  poll_throttle = payload->get_arg();
+  return ok_result(ACK);
+}

@@ -139,6 +139,12 @@ protected:
   // Disable logging from this thread.
   Result<CommandOutcome> handle_log_disable_command(const CommandPayload *payload);
 
+  // Configure the polling thread's sleep interval.
+  virtual Result<CommandOutcome> handle_polling_interval_command(const CommandPayload *payload);
+
+  // Configure the number of system calls to perform during each polling cycle.
+  virtual Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *payload);
+
   // Called when a `Message` with an unexpected command type is received. Logs the message and acknowledges.
   Result<CommandOutcome> handle_unknown_command(const CommandPayload *payload);
 

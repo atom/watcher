@@ -72,6 +72,16 @@ public:
     return send_command(polling_thread, COMMAND_LOG_DISABLE, std::move(callback));
   }
 
+  Result<> set_polling_interval(uint_fast32_t interval, std::unique_ptr<Nan::Callback> callback)
+  {
+    return send_command(polling_thread, COMMAND_POLLING_INTERVAL, std::move(callback), "", interval);
+  }
+
+  Result<> set_polling_throttle(uint_fast32_t throttle, std::unique_ptr<Nan::Callback> callback)
+  {
+    return send_command(polling_thread, COMMAND_POLLING_THROTTLE, std::move(callback), "", throttle);
+  }
+
   Result<> watch(
     std::string &&root,
     bool poll,
@@ -93,7 +103,7 @@ private:
     const CommandAction action,
     std::unique_ptr<Nan::Callback> callback,
     const std::string &&root = "",
-    ChannelID channel_id = NULL_CHANNEL_ID
+    uint_fast32_t arg = NULL_CHANNEL_ID
   );
 
   void handle_events_from(Thread &thread);

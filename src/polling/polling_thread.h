@@ -12,7 +12,7 @@
 #include "polled_root.h"
 
 const std::chrono::milliseconds DEFAULT_POLL_INTERVAL = std::chrono::milliseconds(100);
-const uint_fast64_t DEFAULT_POLL_THROTTLE = 1000;
+const uint_fast32_t DEFAULT_POLL_THROTTLE = 1000;
 
 // The PollingThread observes filesystem changes by repeatedly calling scandir() and lstat() on registered root
 // directories. It runs automatically when a `COMMAND_ADD` message is sent to it, and stops automatically when a
@@ -41,8 +41,14 @@ private:
 
   Result<CommandOutcome> handle_remove_command(const CommandPayload *payload) override;
 
+  // Configure the sleep interval.
+  Result<CommandOutcome> handle_polling_interval_command(const CommandPayload *payload) override;
+
+  // Configure the number of system calls to perform during each `cycle()`.
+  Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *payload) override;
+
   std::chrono::milliseconds poll_interval;
-  uint_fast64_t poll_throttle;
+  uint_fast32_t poll_throttle;
 
   std::map<ChannelID, PolledRoot> roots;
 };
