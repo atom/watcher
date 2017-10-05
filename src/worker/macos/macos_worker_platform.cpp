@@ -173,7 +173,6 @@ public:
 
       CFRelease(watch_roots);
       CFRelease(watch_root);
-      FSEventStreamRelease(event_stream);
       return Result<bool>::make_error(move(msg));
     }
 
