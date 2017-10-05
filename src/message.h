@@ -2,9 +2,12 @@
 #define MESSAGE_H
 
 #include <string>
+#include <utility>
 #include <iostream>
 #include <memory>
 #include <cstdint>
+
+#include "result.h"
 
 enum FileSystemAction {
   ACTION_CREATED = 0,
@@ -25,9 +28,11 @@ std::ostream &operator<<(std::ostream &out, EntryKind kind);
 
 bool kinds_are_different(EntryKind a, EntryKind b);
 
+typedef std::pair<std::string, EntryKind> Entry;
+
 typedef uint_fast32_t ChannelID;
 
-static const ChannelID NULL_CHANNEL_ID = 0;
+const ChannelID NULL_CHANNEL_ID = 0;
 
 class FileSystemPayload {
 public:
@@ -66,18 +71,25 @@ enum CommandAction {
   COMMAND_LOG_FILE,
   COMMAND_LOG_STDERR,
   COMMAND_LOG_STDOUT,
-  COMMAND_LOG_DISABLE
+  COMMAND_LOG_DISABLE,
+  COMMAND_POLLING_INTERVAL,
+  COMMAND_POLLING_THROTTLE,
+  COMMAND_DRAIN,
+  COMMAND_MIN = COMMAND_ADD,
+  COMMAND_MAX = COMMAND_DRAIN
 };
 
 typedef uint_fast32_t CommandID;
 
+const CommandID NULL_COMMAND_ID = 0;
+
 class CommandPayload {
 public:
   CommandPayload(
-    const CommandID id,
     const CommandAction action,
-    const std::string &&root,
-    const ChannelID channel_id = NULL_CHANNEL_ID
+    const CommandID id = NULL_COMMAND_ID,
+    const std::string &&root = "",
+    const uint_fast32_t arg = NULL_CHANNEL_ID
   );
   CommandPayload(CommandPayload &&original);
   ~CommandPayload() {};
@@ -89,14 +101,15 @@ public:
   CommandID get_id() const { return id; }
   const CommandAction &get_action() const { return action; }
   const std::string &get_root() const { return root; }
-  const ChannelID &get_channel_id() const { return channel_id; }
+  const uint_fast32_t &get_arg() const { return arg; }
+  const ChannelID &get_channel_id() const { return arg; }
 
   std::string describe() const;
 private:
   const CommandID id;
   const CommandAction action;
   const std::string root;
-  const ChannelID channel_id;
+  const uint_fast32_t arg;
 };
 
 class AckPayload {
@@ -130,6 +143,10 @@ enum MessageKind {
 
 class Message {
 public:
+  static Message ack(const Message &original, bool success, const std::string &&message = "");
+
+  static Message ack(const Message &original, const Result<> &result);
+
   explicit Message(FileSystemPayload &&e);
   explicit Message(CommandPayload &&e);
   explicit Message(AckPayload &&e);

@@ -3,16 +3,25 @@
         "target_name": "watcher",
 
         "sources": [
-            "src/main.cpp",
+            "src/binding.cpp",
+            "src/hub.cpp",
             "src/log.cpp",
             "src/errable.cpp",
             "src/queue.cpp",
             "src/lock.cpp",
             "src/message.cpp",
             "src/message_buffer.cpp",
+            "src/thread_starter.cpp",
             "src/thread.cpp",
             "src/status.cpp",
-            "src/worker/worker_thread.cpp"
+            "src/worker/worker_thread.cpp",
+            "src/polling/directory_record.cpp",
+            "src/polling/polled_root.cpp",
+            "src/polling/polling_iterator.cpp",
+            "src/polling/polling_thread.cpp",
+            "src/nan/all_callback.cpp",
+            "src/nan/functional_callback.cpp",
+            "src/nan/options.cpp"
         ],
         "include_dirs": [
             "<!(node -e \"require('nan')\")"
@@ -20,6 +29,7 @@
         "conditions": [
             ["OS=='mac'", {
                 "sources": [
+                    "src/helper/common_posix.cpp",
                     "src/worker/macos/macos_worker_platform.cpp",
                     "src/worker/macos/recent_file_cache.cpp",
                     "src/worker/macos/event_handler.cpp",
@@ -38,6 +48,7 @@
             }],
             ["OS=='win'", {
                 "sources": [
+                    "src/helper/common_win.cpp",
                     "src/helper/windows/helper.cpp",
                     "src/worker/windows/subscription.cpp",
                     "src/worker/windows/windows_worker_platform.cpp"
@@ -45,6 +56,7 @@
             }],
             ["OS=='linux'", {
                 "sources": [
+                    "src/helper/common_posix.cpp",
                     "src/worker/linux/pipe.cpp",
                     "src/worker/linux/side_effect.cpp",
                     "src/worker/linux/cookie_jar.cpp",

@@ -6,18 +6,18 @@ const watcher = require('../lib')
 const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 describe('unwatching a directory', function () {
-  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile
+  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
 
   beforeEach(async function () {
-    ({fixtureDir, watchDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
+    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
     subs = []
 
-    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile})
+    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile, pollingLog: pollingLogFile})
   })
 
   afterEach(async function () {
     await Promise.all(subs.map(sub => sub.unwatch()))
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
     await cleanupFixtureDir(fixtureDir)
   })
 
@@ -25,7 +25,7 @@ describe('unwatching a directory', function () {
     let error = null
     const events = []
 
-    const sub = await watcher.watch(watchDir, (err, es) => {
+    const sub = await watcher.watch(watchDir, {}, (err, es) => {
       error = err
       events.push(...es)
     })
@@ -35,10 +35,10 @@ describe('unwatching a directory', function () {
     await fs.writeFile(filePath, 'original')
 
     await until('the event arrives', () => events.some(event => event.path === filePath))
-    const eventCount = events.length
     assert.isNull(error)
 
     await sub.unwatch()
+    const eventCount = events.length
 
     await fs.writeFile(filePath, 'the modification')
 
@@ -51,7 +51,7 @@ describe('unwatching a directory', function () {
 
   it('is a no-op if the directory is not being watched', async function () {
     let error = null
-    const sub = await watcher.watch(watchDir, err => (error = err))
+    const sub = await watcher.watch(watchDir, {}, err => (error = err))
     subs.push(sub)
     assert.isNull(error)
 

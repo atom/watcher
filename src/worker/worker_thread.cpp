@@ -19,7 +19,7 @@ using std::move;
 using std::string;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
-  Thread(this, &WorkerThread::listen, "worker thread", main_callback),
+  Thread("worker thread", main_callback),
   platform{WorkerPlatform::for_worker(this)}
 {
   //
@@ -37,121 +37,30 @@ Result<> WorkerThread::wake()
   return platform->wake();
 }
 
-void WorkerThread::listen()
+Result<> WorkerThread::body()
 {
-  // Handle any commands that were enqueued while the thread was starting.
-  Result<> cr = handle_commands();
-  if (cr.is_error()) {
-    LOGGER << "Unable to handle initially enqueued commands: " << cr << endl;
-  }
-
-  Result<> lr = platform->listen();
-  if (lr.is_error()) {
-    LOGGER << "Unable to listen: " << lr << endl;
-    report_error(string(lr.get_error()));
-  } else {
-    report_error("WorkerPlatform::listen() returned unexpectedly");
-    LOGGER << "listen unexpectedly returned without reporting an error." << endl;
-  }
+  return platform->listen();
 }
 
-Result<> WorkerThread::handle_commands()
+Result<Thread::CommandOutcome> WorkerThread::handle_add_command(const CommandPayload *payload)
 {
-  if (!is_healthy()) return health_err_result();
+  Result<bool> r = platform->handle_add_command(payload->get_id(), payload->get_channel_id(), payload->get_root());
+  if (r.is_error()) return r.propagate<CommandOutcome>();
 
-  Result< unique_ptr<vector<Message>> > pr = process_all();
-  if (pr.is_error()) {
-    return error_result(string(pr.get_error()));
-  }
+  return ok_result(r.get_value() ? ACK : NOTHING);
+}
 
-  unique_ptr<vector<Message>> &accepted = pr.get_value();
-  if (!accepted) {
-    // No command messages to accept.
-    return ok_result();
-  }
+Result<Thread::CommandOutcome> WorkerThread::handle_remove_command(const CommandPayload *payload)
+{
+  Result<bool> r = platform->handle_remove_command(payload->get_id(), payload->get_channel_id());
+  if (r.is_error()) return r.propagate<CommandOutcome>();
 
-  vector<Message> acks;
-  acks.reserve(accepted->size());
-
-  for (auto it = accepted->begin(); it != accepted->end(); ++it) {
-    const CommandPayload *command = it->as_command();
-    if (!command) {
-      LOGGER << "Received unexpected message " << *it << "." << endl;
-      continue;
-    }
-
-    bool success = true;
-    bool ack = true;
-    string message = "";
-
-    switch (command->get_action()) {
-      case COMMAND_ADD:
-        {
-          Result<bool> r = platform->handle_add_command(
-            command->get_id(),
-            command->get_channel_id(),
-            command->get_root());
-          if (r.is_error()) {
-            success = false;
-            message = r.get_error();
-          } else {
-            ack = r.get_value();
-          }
-        }
-        break;
-
-      case COMMAND_REMOVE:
-        {
-          Result<bool> r = platform->handle_remove_command(
-            command->get_id(),
-            command->get_channel_id());
-          if (r.is_error()) {
-            success = false;
-            message = r.get_error();
-          } else {
-            ack = r.get_value();
-          }
-        }
-        break;
-
-      case COMMAND_LOG_FILE:
-        Logger::to_file(command->get_root().c_str());
-        break;
-
-      case COMMAND_LOG_STDERR:
-        Logger::to_stderr();
-        break;
-
-      case COMMAND_LOG_STDOUT:
-        Logger::to_stdout();
-        break;
-
-      case COMMAND_LOG_DISABLE:
-        LOGGER << "Disabling logger." << endl;
-        Logger::disable();
-        break;
-
-      default:
-        LOGGER << "Received command with unexpected action " << *it << "." << endl;
-        break;
-    }
-
-    if (!message.empty()) {
-      LOGGER << "Reporting platform error: " << message << "." << endl;
-    }
-
-    if (ack) {
-      AckPayload ack(command->get_id(), command->get_channel_id(), success, move(message));
-      Message response(move(ack));
-      acks.push_back(move(response));
-    }
-  }
-
-  return emit_all(acks.begin(), acks.end());
+  return ok_result(r.get_value() ? ACK : NOTHING);
 }
 
 void WorkerThread::collect_status(Status &status)
 {
+  status.worker_thread_state = state_name();
   status.worker_thread_ok = get_error();
   status.worker_in_size = get_in_queue_size();
   status.worker_in_ok = get_in_queue_error();

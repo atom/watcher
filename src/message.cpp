@@ -97,15 +97,15 @@ string FileSystemPayload::describe() const
 }
 
 CommandPayload::CommandPayload(
-  const CommandID id,
   const CommandAction action,
+  const CommandID id,
   const std::string &&root,
-  const ChannelID channel_id
+  const uint_fast32_t arg
 ) :
   id{id},
   action{action},
   root{move(root)},
-  channel_id{channel_id}
+  arg{arg}
 {
   //
 }
@@ -114,7 +114,7 @@ CommandPayload::CommandPayload(CommandPayload &&original) :
   id{original.id},
   action{original.action},
   root{move(original.root)},
-  channel_id{original.channel_id}
+  arg{original.arg}
 {
   //
 }
@@ -126,16 +126,25 @@ string CommandPayload::describe() const
 
   switch (action) {
     case COMMAND_ADD:
-      builder << "add " << root << " at channel " << channel_id;
+      builder << "add " << root << " at channel " << arg;
       break;
     case COMMAND_REMOVE:
-      builder << "remove channel " << channel_id;
+      builder << "remove channel " << arg;
       break;
     case COMMAND_LOG_FILE:
       builder << "log to file " << root;
       break;
     case COMMAND_LOG_DISABLE:
       builder << "disable logging";
+      break;
+    case COMMAND_POLLING_INTERVAL:
+      builder << "polling interval " << arg;
+      break;
+    case COMMAND_POLLING_THROTTLE:
+      builder << "polling throttle " << arg;
+      break;
+    case COMMAND_DRAIN:
+      builder << "drain";
       break;
     default:
       builder << "!!action=" << action;
@@ -175,6 +184,25 @@ const CommandPayload* Message::as_command() const
 const AckPayload* Message::as_ack() const
 {
   return kind == KIND_ACK ? &ack_payload : nullptr;
+}
+
+Message Message::ack(const Message &original, bool success, const string &&message)
+{
+  const CommandPayload *payload = original.as_command();
+  assert(payload != nullptr);
+
+  return Message(
+    AckPayload(payload->get_id(), payload->get_channel_id(), success, move(message))
+  );
+}
+
+Message Message::ack(const Message &original, const Result<> &result)
+{
+  if (result.is_ok()) {
+    return ack(original, true, "");
+  } else {
+    return ack(original, false, move(result.get_error()));
+  }
 }
 
 Message::Message(FileSystemPayload &&p) : kind{KIND_FILESYSTEM}, filesystem_payload{move(p)}

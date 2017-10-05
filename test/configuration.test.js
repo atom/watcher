@@ -5,14 +5,14 @@ const watcher = require('../lib')
 const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
 
 describe('configuration', function () {
-  let fixtureDir, mainLogFile, workerLogFile
+  let fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
 
   beforeEach(async function () {
-    ({fixtureDir, mainLogFile, workerLogFile} = await prepareFixtureDir())
+    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
   })
 
   afterEach(async function () {
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile)
+    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
     await cleanupFixtureDir(fixtureDir)
   })
 
@@ -32,5 +32,37 @@ describe('configuration', function () {
 
     const contents = await fs.readFile(workerLogFile)
     assert.match(contents, /FileLogger opened/)
+  })
+
+  describe('for the polling thread', function () {
+    let sub
+
+    afterEach(async function () {
+      if (sub) await sub.unwatch()
+    })
+
+    describe("while it's stopped", function () {
+      it('configures the logger', async function () {
+        await watcher.configure({pollingLog: pollingLogFile})
+
+        assert.isFalse(await fs.pathExists(pollingLogFile))
+
+        sub = await watcher.watch(watchDir, {poll: true}, () => {})
+
+        const contents = await fs.readFile(pollingLogFile)
+        assert.match(contents, /FileLogger opened/)
+      })
+    })
+
+    describe("after it's started", function () {
+      it('configures the logger', async function () {
+        sub = await watcher.watch(watchDir, {poll: true}, () => {})
+
+        await watcher.configure({pollingLog: pollingLogFile})
+
+        const contents = await fs.readFile(pollingLogFile)
+        assert.match(contents, /FileLogger opened/)
+      })
+    })
   })
 })
