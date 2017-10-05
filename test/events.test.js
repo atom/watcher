@@ -449,7 +449,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
       await fs.mkdir(reusedPath)
 
       if (poll) {
-        await until('creation and deletion events arrive', orderedEventsMatching(
+        await until('creation and deletion events arrive', allEventsMatching(
           {action: 'deleted', kind: 'file', path: reusedPath},
           {action: 'created', kind: 'file', path: newFilePath},
           {action: 'created', kind: 'directory', path: reusedPath}
