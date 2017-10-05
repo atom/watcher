@@ -35,10 +35,10 @@ describe('unwatching a directory', function () {
     await fs.writeFile(filePath, 'original')
 
     await until('the event arrives', () => events.some(event => event.path === filePath))
-    const eventCount = events.length
     assert.isNull(error)
 
     await sub.unwatch()
+    const eventCount = events.length
 
     await fs.writeFile(filePath, 'the modification')
 
