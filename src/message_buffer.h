@@ -26,6 +26,8 @@ public:
 
   void renamed(ChannelID channel_id, std::string &&old_path, std::string &&path, const EntryKind &kind);
 
+  void ack(CommandID command_id, ChannelID channel_id, bool success, const std::string &&message);
+
   void reserve(size_t capacity) { messages.reserve(capacity); }
 
   MessageBuffer::iter begin() { return messages.begin(); }
@@ -67,6 +69,11 @@ public:
   void renamed(std::string &&old_path, std::string &&path, const EntryKind &kind)
   {
     buffer.renamed(channel_id, std::move(old_path), std::move(path), kind);
+  }
+
+  void ack(CommandID command_id, bool success, const std::string &&message)
+  {
+    buffer.ack(command_id, channel_id, success, std::move(message));
   }
 
   void reserve(size_t capacity) { buffer.reserve(capacity); }

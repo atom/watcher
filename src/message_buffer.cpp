@@ -51,6 +51,15 @@ void MessageBuffer::renamed(ChannelID channel_id, std::string &&old_path, std::s
   messages.push_back(move(message));
 }
 
+void MessageBuffer::ack(CommandID command_id, ChannelID channel_id, bool success, const string &&msg)
+{
+  Message message(AckPayload(command_id, channel_id, success, move(msg)));
+
+  LOGGER << "Emitting ack message " << message << endl;
+
+  messages.push_back(move(message));
+}
+
 ChannelMessageBuffer::ChannelMessageBuffer(MessageBuffer &buffer, ChannelID channel_id) :
   channel_id{channel_id},
   buffer{buffer}
