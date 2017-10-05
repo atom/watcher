@@ -122,10 +122,10 @@ Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPa
   roots.emplace(
     std::piecewise_construct,
     std::forward_as_tuple(payload->get_channel_id()),
-    std::forward_as_tuple(string(payload->get_root()), payload->get_channel_id())
+    std::forward_as_tuple(string(payload->get_root()), payload->get_id(), payload->get_channel_id())
   );
 
-  return ok_result(ACK);
+  return ok_result(NOTHING);
 }
 
 Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const CommandPayload *payload)
