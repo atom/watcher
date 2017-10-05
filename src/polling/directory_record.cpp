@@ -133,8 +133,9 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
       const string previous_entry_path(path_join(dir, previous_entry_name));
       EntryKind previous_entry_kind = kind_from_stat(previous->second);
       Entry previous_entry(previous_entry_name, previous_entry_kind);
+      Entry unknown_entry(previous_entry_name, KIND_UNKNOWN);
 
-      if (scanned_entries.count(previous_entry) == 0) {
+      if (scanned_entries.count(previous_entry) == 0 && scanned_entries.count(unknown_entry)) {
         entry_deleted(it, previous_entry_path, previous_entry_kind);
         auto former = previous;
         ++previous;
