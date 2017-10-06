@@ -211,6 +211,8 @@ void Hub::handle_events_from(Thread &thread)
         } else if (dr.get_value()) {
           repeat = true;
         }
+      } else if (command->get_action() == COMMAND_ADD && &thread == &worker_thread) {
+        polling_thread.send(move(message));
       } else {
         LOGGER << "Ignoring unexpected command." << endl;
       }

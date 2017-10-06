@@ -231,7 +231,7 @@ Result<size_t> Thread::handle_commands()
     Result<CommandOutcome> hr = (this->*handler)(command);
 
     if (hr.is_error()) {
-      LOGGER << "Reporting command handler error: " << hr << "." << endl;
+      acks.emplace_back(Message::ack(message, hr.propagate_as_void()));
     } else {
       CommandOutcome &outcome = hr.get_value();
 
