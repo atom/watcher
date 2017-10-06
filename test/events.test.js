@@ -1,32 +1,25 @@
 const fs = require('fs-extra')
-const path = require('path')
 
-const watcher = require('../lib')
-
-const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
+const {Fixture} = require('./helper');
 
 [false, true].forEach(poll => {
   describe(`events with poll = ${poll}`, function () {
-    let fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
-    let errors, events, sub
+    let fixture, errors, events
 
     beforeEach(async function () {
-      ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
+      fixture = new Fixture()
       errors = []
       events = []
 
-      await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile, pollingLog: pollingLogFile})
-
-      sub = await watcher.watch(watchDir, {poll}, (err, es) => {
+      await fixture.before()
+      await fixture.watch([], {poll}, (err, es) => {
         errors.push(err)
         events.push(...es)
       })
     })
 
     afterEach(async function () {
-      await sub.unwatch()
-      await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
-      await cleanupFixtureDir(fixtureDir)
+      await fixture.after(this.currentTest)
     })
 
     function specMatches (spec, event) {
@@ -74,7 +67,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     }
 
     it('when a file is created', async function () {
-      const createdFile = path.join(watchDir, 'file.txt')
+      const createdFile = fixture.watchPath('file.txt')
       await fs.writeFile(createdFile, 'contents')
 
       await until('the creation event arrives', eventMatching(
@@ -83,7 +76,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is modified', async function () {
-      const modifiedFile = path.join(watchDir, 'file.txt')
+      const modifiedFile = fixture.watchPath('file.txt')
       await fs.writeFile(modifiedFile, 'initial contents\n')
 
       await until('the creation event arrives', eventMatching(
@@ -97,14 +90,14 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is renamed', async function () {
-      const oldPath = path.join(watchDir, 'old-file.txt')
+      const oldPath = fixture.watchPath('old-file.txt')
       await fs.writeFile(oldPath, 'initial contents\n')
 
       await until('the creation event arrives', eventMatching(
         {action: 'created', kind: 'file', path: oldPath}
       ))
 
-      const newPath = path.join(watchDir, 'new-file.txt')
+      const newPath = fixture.watchPath('new-file.txt')
 
       await fs.rename(oldPath, newPath)
 
@@ -121,8 +114,8 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is renamed from outside of the watch root in', async function () {
-      const outsideFile = path.join(fixtureDir, 'file.txt')
-      const insideFile = path.join(watchDir, 'file.txt')
+      const outsideFile = fixture.fixturePath('file.txt')
+      const insideFile = fixture.watchPath('file.txt')
 
       await fs.writeFile(outsideFile, 'contents')
       await fs.rename(outsideFile, insideFile)
@@ -133,9 +126,9 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is renamed from inside of the watch root out', async function () {
-      const outsideFile = path.join(fixtureDir, 'file.txt')
-      const insideFile = path.join(watchDir, 'file.txt')
-      const flagFile = path.join(watchDir, 'flag.txt')
+      const outsideFile = fixture.fixturePath('file.txt')
+      const insideFile = fixture.watchPath('file.txt')
+      const flagFile = fixture.watchPath('flag.txt')
 
       await fs.writeFile(insideFile, 'contents')
 
@@ -159,7 +152,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is deleted', async function () {
-      const deletedPath = path.join(watchDir, 'file.txt')
+      const deletedPath = fixture.watchPath('file.txt')
       await fs.writeFile(deletedPath, 'initial contents\n')
 
       await until('the creation event arrives', eventMatching(
@@ -176,9 +169,9 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     // The polling thread will never be able to distinguish rapid events
     if (!poll) {
       it('understands coalesced creation and deletion events', async function () {
-        const deletedPath = path.join(watchDir, 'deleted.txt')
-        const recreatedPath = path.join(watchDir, 'recreated.txt')
-        const createdPath = path.join(watchDir, 'created.txt')
+        const deletedPath = fixture.watchPath('deleted.txt')
+        const recreatedPath = fixture.watchPath('recreated.txt')
+        const createdPath = fixture.watchPath('created.txt')
 
         await fs.writeFile(deletedPath, 'initial contents\n')
         await until('file creation event arrives', eventMatching(
@@ -202,12 +195,12 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     }
 
     it('correlates rapid file rename events', async function () {
-      const oldPath0 = path.join(watchDir, 'old-file-0.txt')
-      const oldPath1 = path.join(watchDir, 'old-file-1.txt')
-      const oldPath2 = path.join(watchDir, 'old-file-2.txt')
-      const newPath0 = path.join(watchDir, 'new-file-0.txt')
-      const newPath1 = path.join(watchDir, 'new-file-1.txt')
-      const newPath2 = path.join(watchDir, 'new-file-2.txt')
+      const oldPath0 = fixture.watchPath('old-file-0.txt')
+      const oldPath1 = fixture.watchPath('old-file-1.txt')
+      const oldPath2 = fixture.watchPath('old-file-2.txt')
+      const newPath0 = fixture.watchPath('new-file-0.txt')
+      const newPath1 = fixture.watchPath('new-file-1.txt')
+      const newPath2 = fixture.watchPath('new-file-2.txt')
 
       await Promise.all(
         [oldPath0, oldPath1, oldPath2].map(oldPath => fs.writeFile(oldPath, 'original\n'))
@@ -243,7 +236,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is created', async function () {
-      const subdir = path.join(watchDir, 'subdir')
+      const subdir = fixture.watchPath('subdir')
       await fs.mkdirs(subdir)
 
       await until('directory creation event arrives', eventMatching(
@@ -252,8 +245,8 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is renamed', async function () {
-      const oldDir = path.join(watchDir, 'subdir')
-      const newDir = path.join(watchDir, 'newdir')
+      const oldDir = fixture.watchPath('subdir')
+      const newDir = fixture.watchPath('newdir')
 
       await fs.mkdirs(oldDir)
       await until('directory creation event arrives', eventMatching(
@@ -274,7 +267,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is deleted', async function () {
-      const subdir = path.join(watchDir, 'subdir')
+      const subdir = fixture.watchPath('subdir')
       await fs.mkdirs(subdir)
       await until('directory creation event arrives', eventMatching(
         {action: 'created', kind: 'directory', path: subdir}
@@ -287,7 +280,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is deleted and a file is created in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
+      const reusedPath = fixture.watchPath('reused')
       await fs.mkdir(reusedPath)
       await until('directory creation event arrives', eventMatching(
         {action: 'created', kind: 'directory', path: reusedPath}
@@ -303,8 +296,8 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is deleted and a file is renamed in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
-      const oldFilePath = path.join(watchDir, 'oldfile')
+      const reusedPath = fixture.watchPath('reused')
+      const oldFilePath = fixture.watchPath('oldfile')
 
       await Promise.all([
         fs.mkdirs(reusedPath),
@@ -333,8 +326,8 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is renamed and a file is created in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
-      const newDirPath = path.join(watchDir, 'newdir')
+      const reusedPath = fixture.watchPath('reused')
+      const newDirPath = fixture.watchPath('newdir')
 
       await fs.mkdirs(reusedPath)
       await until('directory creation event arrives', eventMatching(
@@ -359,9 +352,9 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a directory is renamed and a file is renamed in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
-      const oldFilePath = path.join(watchDir, 'oldfile')
-      const newDirPath = path.join(watchDir, 'newdir')
+      const reusedPath = fixture.watchPath('reused')
+      const oldFilePath = fixture.watchPath('oldfile')
+      const newDirPath = fixture.watchPath('newdir')
 
       await Promise.all([
         fs.mkdirs(reusedPath),
@@ -391,7 +384,7 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is deleted and a directory is created in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
+      const reusedPath = fixture.watchPath('reused')
       await fs.writeFile(reusedPath, 'something\n')
       await until('directory creation event arrives', eventMatching(
         {action: 'created', kind: 'file', path: reusedPath}
@@ -407,8 +400,8 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is deleted and a directory is renamed in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
-      const oldDirPath = path.join(watchDir, 'olddir')
+      const reusedPath = fixture.watchPath('reused')
+      const oldDirPath = fixture.watchPath('olddir')
 
       await Promise.all([
         fs.writeFile(reusedPath, 'something\n'),
@@ -437,8 +430,8 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is renamed and a directory is created in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
-      const newFilePath = path.join(watchDir, 'newfile')
+      const reusedPath = fixture.watchPath('reused')
+      const newFilePath = fixture.watchPath('newfile')
 
       await fs.writeFile(reusedPath, 'something\n')
       await until('directory creation event arrives', eventMatching(
@@ -463,9 +456,9 @@ const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper');
     })
 
     it('when a file is renamed and a directory is renamed in its place', async function () {
-      const reusedPath = path.join(watchDir, 'reused')
-      const oldDirPath = path.join(watchDir, 'olddir')
-      const newFilePath = path.join(watchDir, 'newfile')
+      const reusedPath = fixture.watchPath('reused')
+      const oldDirPath = fixture.watchPath('olddir')
+      const newFilePath = fixture.watchPath('newfile')
 
       await Promise.all([
         fs.writeFile(reusedPath, 'something\n'),

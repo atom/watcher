@@ -1,19 +1,19 @@
+/* eslint-dev mocha */
 const fs = require('fs-extra')
 
 const watcher = require('../lib')
-
-const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
+const {Fixture} = require('./helper')
 
 describe('configuration', function () {
-  let fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
+  let fixture
 
   beforeEach(async function () {
-    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
+    fixture = new Fixture()
+    await fixture.before()
   })
 
   afterEach(async function () {
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
-    await cleanupFixtureDir(fixtureDir)
+    await fixture.after(this.currentTest)
   })
 
   it('validates its arguments', async function () {
@@ -21,46 +21,40 @@ describe('configuration', function () {
   })
 
   it('configures the main thread logger', async function () {
-    await watcher.configure({mainLog: mainLogFile})
+    await watcher.configure({mainLog: fixture.mainLogFile})
 
-    const contents = await fs.readFile(mainLogFile)
+    const contents = await fs.readFile(fixture.mainLogFile)
     assert.match(contents, /FileLogger opened/)
   })
 
   it('configures the worker thread logger', async function () {
-    await watcher.configure({workerLog: workerLogFile})
+    await watcher.configure({workerLog: fixture.workerLogFile})
 
-    const contents = await fs.readFile(workerLogFile)
+    const contents = await fs.readFile(fixture.workerLogFile)
     assert.match(contents, /FileLogger opened/)
   })
 
   describe('for the polling thread', function () {
-    let sub
-
-    afterEach(async function () {
-      if (sub) await sub.unwatch()
-    })
-
     describe("while it's stopped", function () {
       it('configures the logger', async function () {
-        await watcher.configure({pollingLog: pollingLogFile})
+        await watcher.configure({pollingLog: fixture.pollingLogFile})
 
-        assert.isFalse(await fs.pathExists(pollingLogFile))
+        assert.isFalse(await fs.pathExists(fixture.pollingLogFile))
 
-        sub = await watcher.watch(watchDir, {poll: true}, () => {})
+        await fixture.watch([], {poll: true}, () => {})
 
-        const contents = await fs.readFile(pollingLogFile)
+        const contents = await fs.readFile(fixture.pollingLogFile)
         assert.match(contents, /FileLogger opened/)
       })
     })
 
     describe("after it's started", function () {
       it('configures the logger', async function () {
-        sub = await watcher.watch(watchDir, {poll: true}, () => {})
+        await fixture.watch([], {poll: true}, () => {})
 
-        await watcher.configure({pollingLog: pollingLogFile})
+        await watcher.configure({pollingLog: fixture.pollingLogFile})
 
-        const contents = await fs.readFile(pollingLogFile)
+        const contents = await fs.readFile(fixture.pollingLogFile)
         assert.match(contents, /FileLogger opened/)
       })
     })

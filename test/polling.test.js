@@ -1,24 +1,17 @@
 const watcher = require('../lib')
-
-const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
+const {Fixture} = require('./helper')
 
 describe('polling', function () {
-  let watchDir, fixtureDir, mainLogFile, workerLogFile, pollingLogFile, sub
+  let fixture
 
   beforeEach(async function () {
-    ({watchDir, fixtureDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
-
-    await watcher.configure({
-      mainLog: mainLogFile,
-      workerLog: workerLogFile,
-      pollingLog: pollingLogFile
-    })
+    fixture = new Fixture()
+    await fixture.before()
+    await fixture.log()
   })
 
   afterEach(async function () {
-    if (sub) await sub.unwatch()
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
-    await cleanupFixtureDir(fixtureDir)
+    await fixture.after(this.currentTest)
   })
 
   describe('thread state', function () {
@@ -27,7 +20,7 @@ describe('polling', function () {
     })
 
     it('runs the polling thread when polling a directory for changes', async function () {
-      sub = await watcher.watch(watchDir, {poll: true}, () => {})
+      const sub = await fixture.watch([], {poll: true}, () => {})
       assert.equal(watcher.status().pollingThreadState, 'running')
 
       await sub.unwatch()
