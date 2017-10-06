@@ -272,12 +272,14 @@ void RecentFileCache::prune()
     << plural(by_path.size(), "entry", "entries") << " remain." << endl;
 }
 
-void RecentFileCache::prepopulate(const string &root, size_t count)
+void RecentFileCache::prepopulate(const string &root, size_t max)
 {
+  size_t count = 0;
+  size_t entries = 0;
   queue<string> next_roots;
   next_roots.push(root);
 
-  while (count > 0 && !next_roots.empty()) {
+  while (count < max && !next_roots.empty()) {
     string current_root(next_roots.front());
     next_roots.pop();
 
@@ -285,6 +287,7 @@ void RecentFileCache::prepopulate(const string &root, size_t count)
     if (!dir) {
       errno_t opendir_errno = errno;
       LOGGER << "Unable to open directory " << root << ": " << opendir_errno << "." << endl;
+      LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
       return;
     }
 
@@ -292,22 +295,29 @@ void RecentFileCache::prepopulate(const string &root, size_t count)
     dirent *entry = readdir(dir);
     while (entry != NULL) {
       string entry_name(entry->d_name, entry->d_namlen);
-      string entry_path(path_join(root, entry_name));
 
-      bool file_hint = (entry->d_type & DT_REG) == DT_REG;
-      bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
+      if (entry_name != "." && entry_name != "..") {
+        string entry_path(path_join(current_root, entry_name));
 
-      shared_ptr<StatResult> r = StatResult::at(entry_path, file_hint, dir_hint);
-      if (r->is_present()) {
-        insert(r);
+        bool file_hint = (entry->d_type & DT_REG) == DT_REG;
+        bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
 
-        if (r->get_entry_kind() == KIND_DIRECTORY) {
-          next_roots.push(entry_path);
+        shared_ptr<StatResult> r = StatResult::at(entry_path, file_hint, dir_hint);
+        if (r->is_present()) {
+          entries++;
+          insert(r);
+
+          if (r->get_entry_kind() == KIND_DIRECTORY) {
+            next_roots.push(entry_path);
+          }
+        }
+
+        count++;
+        if (count >= max) {
+          LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
+          return;
         }
       }
-
-      count--;
-      if (count <= 0) return;
 
       errno = 0;
       entry = readdir(dir);
@@ -322,4 +332,6 @@ void RecentFileCache::prepopulate(const string &root, size_t count)
       LOGGER << "Unable to close directory " << root << ": " << closedir_errno << "." << endl;
     }
   }
+
+  LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
 }
