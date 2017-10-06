@@ -180,6 +180,8 @@ public:
 
     CFRelease(watch_roots);
     CFRelease(watch_root);
+
+    cache.prepopulate(root_path, 4096);
     return ok_result(true);
   }
 
