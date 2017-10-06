@@ -12,6 +12,7 @@ const {Fixture} = require('./helper');
       events = []
 
       await fixture.before()
+      await fixture.log()
       await fixture.watch([], {poll}, (err, es) => {
         errors.push(err)
         events.push(...es)
