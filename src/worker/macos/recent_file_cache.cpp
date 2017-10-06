@@ -4,6 +4,7 @@
 #include <chrono>
 #include <unordered_map>
 #include <map>
+#include <queue>
 #include <memory>
 #include <utility>
 #include <iostream>
@@ -12,6 +13,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include "../../helper/common.h"
 #include "../../log.h"
 
 using std::string;
@@ -20,6 +22,7 @@ using std::move;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::multimap;
+using std::queue;
 using std::ostream;
 using std::ostringstream;
 using std::chrono::steady_clock;
@@ -267,4 +270,56 @@ void RecentFileCache::prune()
 
   LOGGER << "Pruned " << plural(prune_count, "entry", "entries") << ". "
     << plural(by_path.size(), "entry", "entries") << " remain." << endl;
+}
+
+void RecentFileCache::prepopulate(const string &root, size_t count)
+{
+  queue<string> next_roots;
+  next_roots.push(root);
+
+  while (count > 0 && !next_roots.empty()) {
+    string current_root(next_roots.front());
+    next_roots.pop();
+
+    DIR *dir = opendir(current_root.c_str());
+    if (!dir) {
+      errno_t opendir_errno = errno;
+      LOGGER << "Unable to open directory " << root << ": " << opendir_errno << "." << endl;
+      return;
+    }
+
+    errno = 0;
+    dirent *entry = readdir(dir);
+    while (entry != NULL) {
+      string entry_name(entry->d_name, entry->d_namlen);
+      string entry_path(path_join(root, entry_name));
+
+      bool file_hint = (entry->d_type & DT_REG) == DT_REG;
+      bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
+
+      shared_ptr<StatResult> r = StatResult::at(entry_path, file_hint, dir_hint);
+      if (r->is_present()) {
+        insert(r);
+
+        if (r->get_entry_kind() == KIND_DIRECTORY) {
+          next_roots.push(entry_path);
+        }
+      }
+
+      count--;
+      if (count <= 0) return;
+
+      errno = 0;
+      entry = readdir(dir);
+    }
+    errno_t readdir_errno = errno;
+    if (readdir_errno) {
+      LOGGER << "Unable to read directory entry within " << root << ": " << readdir_errno << "." << endl;
+    }
+
+    if (closedir(dir)) {
+      errno_t closedir_errno = errno;
+      LOGGER << "Unable to close directory " << root << ": " << closedir_errno << "." << endl;
+    }
+  }
 }

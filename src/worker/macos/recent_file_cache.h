@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <iostream>
+#include <dirent.h>
 #include <sys/stat.h>
 
 #include "../../message.h"
@@ -77,6 +78,8 @@ public:
   std::shared_ptr<StatResult> at_path(const std::string &path, bool file_hint, bool directory_hint);
 
   void prune();
+
+  void prepopulate(const std::string &root, size_t count);
 private:
   std::unordered_map<std::string, std::shared_ptr<PresentEntry>> by_path;
   std::multimap<std::chrono::time_point<std::chrono::steady_clock>, std::shared_ptr<PresentEntry>> by_timestamp;
