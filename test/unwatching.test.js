@@ -1,37 +1,29 @@
 const fs = require('fs-extra')
-const path = require('path')
-
-const watcher = require('../lib')
-
-const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
+const {Fixture} = require('./helper')
 
 describe('unwatching a directory', function () {
-  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
+  let fixture
 
   beforeEach(async function () {
-    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
-    subs = []
-
-    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile, pollingLog: pollingLogFile})
+    fixture = new Fixture()
+    await fixture.before()
+    await fixture.log()
   })
 
   afterEach(async function () {
-    await Promise.all(subs.map(sub => sub.unwatch()))
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
-    await cleanupFixtureDir(fixtureDir)
+    await fixture.after(this.currentTest)
   })
 
   it('unwatches a previously watched directory', async function () {
     let error = null
     const events = []
 
-    const sub = await watcher.watch(watchDir, {}, (err, es) => {
+    const sub = await fixture.watch([], {}, (err, es) => {
       error = err
       events.push(...es)
     })
-    subs.push(sub)
 
-    const filePath = path.join(watchDir, 'file.txt')
+    const filePath = fixture.watchPath('file.txt')
     await fs.writeFile(filePath, 'original')
 
     await until('the event arrives', () => events.some(event => event.path === filePath))
@@ -51,8 +43,7 @@ describe('unwatching a directory', function () {
 
   it('is a no-op if the directory is not being watched', async function () {
     let error = null
-    const sub = await watcher.watch(watchDir, {}, err => (error = err))
-    subs.push(sub)
+    const sub = await fixture.watch([], {}, err => (error = err))
     assert.isNull(error)
 
     await sub.unwatch()

@@ -1,36 +1,29 @@
 const fs = require('fs-extra')
-const path = require('path')
-
-const watcher = require('../lib')
-
-const {prepareFixtureDir, reportLogs, cleanupFixtureDir} = require('./helper')
+const {Fixture} = require('./helper')
 
 describe('watching a directory', function () {
-  let subs, fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile
+  let fixture
 
   beforeEach(async function () {
-    subs = [];
-    ({fixtureDir, watchDir, mainLogFile, workerLogFile, pollingLogFile} = await prepareFixtureDir())
-
-    await watcher.configure({mainLog: mainLogFile, workerLog: workerLogFile, pollingLog: pollingLogFile})
+    fixture = new Fixture()
+    await fixture.before()
+    await fixture.log()
   })
 
   afterEach(async function () {
-    await Promise.all(subs.map(sub => sub.unwatch()))
-    await reportLogs(this.currentTest, mainLogFile, workerLogFile, pollingLogFile)
-    await cleanupFixtureDir(fixtureDir)
+    await fixture.after(this.currentTest)
   })
 
   it('begins receiving events within that directory', async function () {
     let error = null
     const events = []
 
-    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
+    await fixture.watch([], {}, (err, es) => {
       error = err
       events.push(...es)
-    }))
+    })
 
-    await fs.writeFile(path.join(watchDir, 'file.txt'), 'indeed')
+    await fs.writeFile(fixture.watchPath('file.txt'), 'indeed')
 
     await until('an event arrives', () => events.length > 0)
     assert.isNull(error)
@@ -41,26 +34,26 @@ describe('watching a directory', function () {
     const eventsA = []
     const eventsB = []
 
-    const watchDirA = path.join(watchDir, 'dir_a')
-    const watchDirB = path.join(watchDir, 'dir_b')
+    const watchDirA = fixture.watchPath('dir_a')
+    const watchDirB = fixture.watchPath('dir_b')
     await Promise.all(
       [watchDirA, watchDirB].map(subdir => fs.mkdir(subdir))
     )
 
-    subs.push(await watcher.watch(watchDirA, {}, (err, es) => {
+    await fixture.watch(['dir_a'], {}, (err, es) => {
       errors.push(err)
       eventsA.push(...es)
-    }))
-    subs.push(await watcher.watch(watchDirB, {}, (err, es) => {
+    })
+    await fixture.watch(['dir_b'], {}, (err, es) => {
       errors.push(err)
       eventsB.push(...es)
-    }))
+    })
 
-    const fileA = path.join(watchDirA, 'a.txt')
+    const fileA = fixture.watchPath('dir_a', 'a.txt')
     await fs.writeFile(fileA, 'file a')
     await until('watcher A picks up its event', () => eventsA.some(event => event.path === fileA))
 
-    const fileB = path.join(watchDirB, 'b.txt')
+    const fileB = fixture.watchPath('dir_b', 'b.txt')
     await fs.writeFile(fileB, 'file b')
     await until('watcher B picks up its event', () => eventsB.some(event => event.path === fileB))
 
@@ -74,24 +67,24 @@ describe('watching a directory', function () {
     const errors = []
     const events = []
 
-    const subdir0 = path.join(watchDir, 'subdir0')
-    const subdir1 = path.join(watchDir, 'subdir1')
+    const subdir0 = fixture.watchPath('subdir0')
+    const subdir1 = fixture.watchPath('subdir1')
     await Promise.all(
       [subdir0, subdir1].map(subdir => fs.mkdir(subdir))
     )
 
-    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
+    await fixture.watch([], {}, (err, es) => {
       errors.push(err)
       events.push(...es)
-    }))
+    })
 
-    const rootFile = path.join(watchDir, 'root.txt')
+    const rootFile = fixture.watchPath('root.txt')
     await fs.writeFile(rootFile, 'root')
 
-    const file0 = path.join(subdir0, '0.txt')
+    const file0 = fixture.watchPath('subdir0', '0.txt')
     await fs.writeFile(file0, 'file 0')
 
-    const file1 = path.join(subdir1, '1.txt')
+    const file1 = fixture.watchPath('subdir1', '1.txt')
     await fs.writeFile(file1, 'file 1')
 
     await until('all three events arrive', () => {
@@ -104,13 +97,13 @@ describe('watching a directory', function () {
     const errors = []
     const events = []
 
-    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
+    await fixture.watch([], {}, (err, es) => {
       errors.push(err)
       events.push(...es)
-    }))
+    })
 
-    const subdir = path.join(watchDir, 'subdir')
-    const file0 = path.join(subdir, 'file-0.txt')
+    const subdir = fixture.watchPath('subdir')
+    const file0 = fixture.watchPath('subdir', 'file-0.txt')
 
     await fs.mkdir(subdir)
     await until('the subdirectory creation event arrives', () => {
@@ -128,21 +121,20 @@ describe('watching a directory', function () {
     const errors = []
     const events = []
 
-    const externalDir = path.join(fixtureDir, 'outside')
-    const externalSubdir = path.join(externalDir, 'directory')
-    const externalFile = path.join(externalSubdir, 'file.txt')
+    const externalDir = fixture.fixturePath('outside')
+    const externalSubdir = fixture.fixturePath('outside', 'directory')
+    const externalFile = fixture.fixturePath('outside', 'directory', 'file.txt')
 
-    const internalDir = path.join(watchDir, 'inside')
-    const internalSubdir = path.join(internalDir, 'directory')
-    const internalFile = path.join(internalSubdir, 'file.txt')
+    const internalDir = fixture.watchPath('inside')
+    const internalFile = fixture.watchPath('inside', 'directory', 'file.txt')
 
     await fs.mkdirs(externalSubdir)
     await fs.writeFile(externalFile, 'contents')
 
-    subs.push(await watcher.watch(watchDir, {}, (err, es) => {
+    await fixture.watch([], {}, (err, es) => {
       errors.push(err)
       events.push(...es)
-    }))
+    })
 
     await fs.rename(externalDir, internalDir)
     await until('creation event arrives', () => {
