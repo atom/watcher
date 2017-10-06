@@ -7,7 +7,7 @@
     "lint": "standard",
     "build:debug": "node-gyp rebuild --debug",
     "build:verbose": "node-gyp rebuild --verbose",
-    "mocha": "mocha --require test/global.js --harmony",
+    "mocha": "mocha --require test/global.js --require mocha-stress --harmony",
     "mocha:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js",
     "test": "npm run lint && npm run mocha",
     "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5 --timeout 30000",
@@ -34,6 +34,7 @@
     "mocha": "3.4.2",
     "mocha-appveyor-reporter": "^0.4.0",
     "mocha-junit-reporter": "^1.13.0",
+    "mocha-stress": "^1.0.0",
     "standard": "10.0.2",
     "test-until": "^1.1.1"
   },
