@@ -7,6 +7,7 @@ machine:
 
 dependencies:
   pre:
+  - brew update
   - brew install nvm
   - mkdir -p ${NVM_DIR}
   - echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
