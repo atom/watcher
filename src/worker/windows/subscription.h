@@ -21,7 +21,7 @@ public:
 
   ~Subscription();
 
-  Result<> schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn);
+  Result<bool> schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn);
 
   Result<> use_network_size();
 
