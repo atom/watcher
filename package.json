@@ -5,6 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "lint": "standard",
+    "format:cpp": "script/format",
     "build:debug": "node-gyp rebuild --debug",
     "build:verbose": "node-gyp rebuild --verbose",
     "mocha": "mocha --require test/global.js --require mocha-stress --harmony",
