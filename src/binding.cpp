@@ -1,25 +1,25 @@
-#include <string>
 #include <memory>
-#include <utility>
 #include <nan.h>
+#include <string>
+#include <utility>
 #include <v8.h>
 
+#include "hub.h"
 #include "nan/all_callback.h"
 #include "nan/options.h"
-#include "hub.h"
 
-using v8::Local;
-using v8::Value;
-using v8::Object;
-using v8::String;
-using v8::Uint32;
+using std::move;
+using std::shared_ptr;
+using std::string;
+using std::unique_ptr;
 using v8::Boolean;
 using v8::Function;
 using v8::FunctionTemplate;
-using std::string;
-using std::unique_ptr;
-using std::shared_ptr;
-using std::move;
+using v8::Local;
+using v8::Object;
+using v8::String;
+using v8::Uint32;
+using v8::Value;
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
 {
@@ -178,101 +178,65 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
   Hub::get().collect_status(status);
 
   Local<Object> status_object = Nan::New<Object>();
-  Nan::Set(
-    status_object,
+  Nan::Set(status_object,
     Nan::New<String>("pendingCallbackCount").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count))
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count)));
+  Nan::Set(status_object,
     Nan::New<String>("channelCallbackCount").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count))
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count)));
+  Nan::Set(status_object,
     Nan::New<String>("workerThreadState").ToLocalChecked(),
-    Nan::New<String>(status.worker_thread_state).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.worker_thread_state).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("workerThreadOk").ToLocalChecked(),
-    Nan::New<String>(status.worker_thread_ok).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.worker_thread_ok).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("workerInSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_in_size))
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_in_size)));
+  Nan::Set(status_object,
     Nan::New<String>("workerInOk").ToLocalChecked(),
-    Nan::New<String>(status.worker_in_ok).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.worker_in_ok).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("workerOutSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_out_size))
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_out_size)));
+  Nan::Set(status_object,
     Nan::New<String>("workerOutOk").ToLocalChecked(),
-    Nan::New<String>(status.worker_out_ok).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.worker_out_ok).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("pollingThreadState").ToLocalChecked(),
-    Nan::New<String>(status.polling_thread_state).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.polling_thread_state).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("pollingThreadOk").ToLocalChecked(),
-    Nan::New<String>(status.polling_thread_ok).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.polling_thread_ok).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("pollingInSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_in_size))
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_in_size)));
+  Nan::Set(status_object,
     Nan::New<String>("pollingInOk").ToLocalChecked(),
-    Nan::New<String>(status.polling_in_ok).ToLocalChecked()
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<String>(status.polling_in_ok).ToLocalChecked());
+  Nan::Set(status_object,
     Nan::New<String>("pollingOutSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_out_size))
-  );
-  Nan::Set(
-    status_object,
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_out_size)));
+  Nan::Set(status_object,
     Nan::New<String>("pollingOutOk").ToLocalChecked(),
-    Nan::New<String>(status.polling_out_ok).ToLocalChecked()
-  );
+    Nan::New<String>(status.polling_out_ok).ToLocalChecked());
   info.GetReturnValue().Set(status_object);
 }
 
 void initialize(Local<Object> exports)
 {
-  Nan::Set(
-    exports,
+  Nan::Set(exports,
     Nan::New<String>("configure").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked()
-  );
-  Nan::Set(
-    exports,
+    Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked());
+  Nan::Set(exports,
     Nan::New<String>("watch").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(watch)).ToLocalChecked()
-  );
-  Nan::Set(
-    exports,
+    Nan::GetFunction(Nan::New<FunctionTemplate>(watch)).ToLocalChecked());
+  Nan::Set(exports,
     Nan::New<String>("unwatch").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(unwatch)).ToLocalChecked()
-  );
-  Nan::Set(
-    exports,
+    Nan::GetFunction(Nan::New<FunctionTemplate>(unwatch)).ToLocalChecked());
+  Nan::Set(exports,
     Nan::New<String>("status").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(status)).ToLocalChecked()
-  );
+    Nan::GetFunction(Nan::New<FunctionTemplate>(status)).ToLocalChecked());
 }
 
 NODE_MODULE(watcher, initialize);

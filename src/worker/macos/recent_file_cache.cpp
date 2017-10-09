@@ -1,33 +1,33 @@
 #include "recent_file_cache.h"
 
-#include <string>
 #include <chrono>
-#include <unordered_map>
-#include <map>
-#include <queue>
-#include <memory>
-#include <utility>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <sys/stat.h>
 #include <errno.h>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <queue>
+#include <sstream>
+#include <string>
+#include <sys/stat.h>
+#include <unordered_map>
+#include <utility>
 
 #include "../../helper/common.h"
 #include "../../log.h"
 
-using std::string;
-using std::endl;
-using std::move;
-using std::shared_ptr;
-using std::static_pointer_cast;
-using std::multimap;
-using std::queue;
-using std::ostream;
-using std::ostringstream;
+using std::chrono::minutes;
 using std::chrono::steady_clock;
 using std::chrono::time_point;
-using std::chrono::minutes;
+using std::endl;
+using std::move;
+using std::multimap;
+using std::ostream;
+using std::ostringstream;
+using std::queue;
+using std::shared_ptr;
+using std::static_pointer_cast;
+using std::string;
 
 // If the cache contains more than this many entries, any entries older than CACHE_AGEOFF will be purged.
 static const size_t CACHE_WATERMARK = 4096;
@@ -48,11 +48,8 @@ shared_ptr<StatResult> StatResult::at(const string &path, bool file_hint, bool d
     // (c) have names that are too long
     // (d) have a path component that is (no longer) a directory
     // Log any other errno that we see.
-    if (stat_errno != ENOENT &&
-        stat_errno != EACCES &&
-        stat_errno != ELOOP &&
-        stat_errno != ENAMETOOLONG &&
-        stat_errno != ENOTDIR) {
+    if (stat_errno != ENOENT && stat_errno != EACCES && stat_errno != ELOOP && stat_errno != ENAMETOOLONG
+      && stat_errno != ENOTDIR) {
       LOGGER << "lstat(" << path << ") failed with errno " << stat_errno << "." << endl;
     }
 
@@ -120,7 +117,7 @@ bool PresentEntry::has_changed_from(const StatResult &other) const
   if (StatResult::has_changed_from(other)) return true;
   if (other.is_absent()) return true;
 
-  const PresentEntry &casted = static_cast<const PresentEntry&>(other);
+  const PresentEntry &casted = static_cast<const PresentEntry &>(other);
 
   return inode != casted.get_inode() || get_path() != casted.get_path();
 }
@@ -130,14 +127,14 @@ bool PresentEntry::could_be_rename_of(const StatResult &other) const
   if (!StatResult::could_be_rename_of(other)) return false;
   if (other.is_absent()) return false;
 
-  const PresentEntry &casted = static_cast<const PresentEntry&>(other);
+  const PresentEntry &casted = static_cast<const PresentEntry &>(other);
 
   return inode == casted.get_inode();
 }
 
 ino_t PresentEntry::get_inode() const
 {
-   return inode;
+  return inode;
 }
 
 off_t PresentEntry::get_size() const
@@ -154,13 +151,7 @@ string PresentEntry::to_string() const
 {
   ostringstream result;
 
-  result << "[present "
-    << get_entry_kind()
-    << " ("
-    << get_path()
-    << ") inode " << inode
-    << " size " << size
-    << "]";
+  result << "[present " << get_entry_kind() << " (" << get_path() << ") inode " << inode << " size " << size << "]";
 
   return result.str();
 }
@@ -190,12 +181,7 @@ string AbsentEntry::to_string() const
 {
   ostringstream result;
 
-  result
-    << "[absent "
-    << get_entry_kind()
-    << " ("
-    << get_path()
-    << ")]";
+  result << "[absent " << get_entry_kind() << " (" << get_path() << ")]";
 
   return result.str();
 }
@@ -250,8 +236,7 @@ void RecentFileCache::prune()
     return;
   }
 
-  LOGGER << "Cache currently contains " << plural(by_path.size(), "entry", "entries")
-    << ". Pruning triggered." << endl;
+  LOGGER << "Cache currently contains " << plural(by_path.size(), "entry", "entries") << ". Pruning triggered." << endl;
 
   time_point<steady_clock> oldest = steady_clock::now() - CACHE_AGEOFF;
 
@@ -268,8 +253,8 @@ void RecentFileCache::prune()
     by_timestamp.erase(by_timestamp.begin(), to_keep);
   }
 
-  LOGGER << "Pruned " << plural(prune_count, "entry", "entries") << ". "
-    << plural(by_path.size(), "entry", "entries") << " remain." << endl;
+  LOGGER << "Pruned " << plural(prune_count, "entry", "entries") << ". " << plural(by_path.size(), "entry", "entries")
+         << " remain." << endl;
 }
 
 void RecentFileCache::prepopulate(const string &root, size_t max)

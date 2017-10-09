@@ -1,19 +1,19 @@
 #include "rename_buffer.h"
 
-#include <string>
 #include <memory>
-#include <utility>
+#include <string>
 #include <sys/stat.h>
+#include <utility>
 
+#include "../../log.h"
 #include "event_handler.h"
 #include "recent_file_cache.h"
-#include "../../log.h"
 
-using std::string;
-using std::move;
 using std::endl;
+using std::move;
 using std::shared_ptr;
 using std::static_pointer_cast;
+using std::string;
 
 void RenameBuffer::observe_entry(shared_ptr<StatResult> former, shared_ptr<StatResult> current)
 {
@@ -56,22 +56,20 @@ void RenameBuffer::observe_present_entry(shared_ptr<PresentEntry> present, bool 
 
     // The former end is the "from" end and the current end is the "to" end.
     if (!existing.current && current) {
-      message_buffer.renamed(string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
+      message_buffer.renamed(
+        string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
     } else if (existing.current && !current) {
-      message_buffer.renamed(string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
+      message_buffer.renamed(
+        string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
     } else {
       // Either both entries are still present (re-used inode?) or both are missing (rapidly renamed and deleted?)
       // This could happen if the entry is renamed again between the lstat() calls, possibly.
       string existing_desc = existing.current ? " (current) " : " (former) ";
       string incoming_desc = current ? " (current) " : " (former) ";
 
-      LOGGER
-        << "Current entry: "
-        << *present << incoming_desc
-        << " conflicts with buffered entry: "
-        << *(existing.entry) << existing_desc
-        << ". Unable to correlate rename event."
-        << endl;
+      LOGGER << "Current entry: " << *present << incoming_desc
+             << " conflicts with buffered entry: " << *(existing.entry) << existing_desc
+             << ". Unable to correlate rename event." << endl;
     }
 
     observed_by_inode.erase(maybe_entry);

@@ -1,21 +1,21 @@
-#include <thread>
 #include <chrono>
-#include <string>
-#include <map>
-#include <utility>
 #include <cstdint>
+#include <map>
+#include <string>
+#include <thread>
+#include <utility>
 #include <uv.h>
 
-#include "polling_thread.h"
-#include "polled_root.h"
-#include "../thread.h"
-#include "../status.h"
-#include "../result.h"
-#include "../message_buffer.h"
 #include "../log.h"
+#include "../message_buffer.h"
+#include "../result.h"
+#include "../status.h"
+#include "../thread.h"
+#include "polled_root.h"
+#include "polling_thread.h"
 
-using std::string;
 using std::endl;
+using std::string;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
   Thread("polling thread", main_callback),
@@ -70,16 +70,14 @@ Result<> PollingThread::cycle()
 
   auto it = roots.begin();
   size_t roots_left = roots.size();
-  LOGGER << "Polling " << plural(roots_left, "root")
-    << " with " << plural(poll_throttle, "throttle slot")
-    << "." << endl;
+  LOGGER << "Polling " << plural(roots_left, "root") << " with " << plural(poll_throttle, "throttle slot") << "."
+         << endl;
 
   while (it != roots.end()) {
     PolledRoot &root = it->second;
     size_t allotment = remaining / roots_left;
 
-    LOGGER << "Polling " << root
-      << " with an allotment of " << plural(allotment, "throttle slot") << "." << endl;
+    LOGGER << "Polling " << root << " with an allotment of " << plural(allotment, "throttle slot") << "." << endl;
 
     size_t progress = root.advance(buffer, allotment);
     remaining -= progress;
@@ -114,25 +112,19 @@ Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(cons
 
 Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPayload *payload)
 {
-  LOGGER << "Adding poll root at path "
-    << payload->get_root()
-    << " to channel " << payload->get_channel_id()
-    << "." << endl;
+  LOGGER << "Adding poll root at path " << payload->get_root() << " to channel " << payload->get_channel_id() << "."
+         << endl;
 
-  roots.emplace(
-    std::piecewise_construct,
+  roots.emplace(std::piecewise_construct,
     std::forward_as_tuple(payload->get_channel_id()),
-    std::forward_as_tuple(string(payload->get_root()), payload->get_id(), payload->get_channel_id())
-  );
+    std::forward_as_tuple(string(payload->get_root()), payload->get_id(), payload->get_channel_id()));
 
   return ok_result(NOTHING);
 }
 
 Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const CommandPayload *payload)
 {
-  LOGGER << "Removing poll root at channel "
-    << payload->get_channel_id()
-    << "." << endl;
+  LOGGER << "Removing poll root at channel " << payload->get_channel_id() << "." << endl;
 
   auto it = roots.find(payload->get_channel_id());
   if (it != roots.end()) roots.erase(it);

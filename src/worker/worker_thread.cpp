@@ -1,22 +1,22 @@
-#include <vector>
-#include <memory>
 #include <iostream>
-#include <utility>
+#include <memory>
 #include <string>
+#include <utility>
 #include <uv.h>
+#include <vector>
 
-#include "worker_thread.h"
-#include "worker_platform.h"
 #include "../log.h"
-#include "../queue.h"
 #include "../message.h"
+#include "../queue.h"
 #include "../result.h"
+#include "worker_platform.h"
+#include "worker_thread.h"
 
 using std::endl;
-using std::vector;
-using std::unique_ptr;
 using std::move;
 using std::string;
+using std::unique_ptr;
+using std::vector;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
   Thread("worker thread", main_callback),

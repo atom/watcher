@@ -1,26 +1,26 @@
-#include <vector>
 #include <forward_list>
-#include <utility>
 #include <memory>
 #include <nan.h>
+#include <utility>
 #include <v8.h>
+#include <vector>
 
-#include "functional_callback.h"
 #include "all_callback.h"
+#include "functional_callback.h"
 
 using Nan::Callback;
 using Nan::FunctionCallback;
 using Nan::FunctionCallbackInfo;
 using Nan::HandleScope;
+using std::bind;
+using std::forward_list;
+using std::move;
+using std::placeholders::_1;
+using std::shared_ptr;
+using std::unique_ptr;
+using v8::Array;
 using v8::Local;
 using v8::Value;
-using v8::Array;
-using std::bind;
-using std::move;
-using std::forward_list;
-using std::unique_ptr;
-using std::shared_ptr;
-using std::placeholders::_1;
 
 forward_list<shared_ptr<AllCallback>> AllCallback::retained;
 

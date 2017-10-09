@@ -1,21 +1,18 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <string>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
 
-#include "../../result.h"
 #include "../../errable.h"
 #include "../../helper/linux/helper.h"
+#include "../../result.h"
 #include "pipe.h"
 
 using std::string;
 
 const char WAKE = '!';
 
-Pipe::Pipe(const string &name) :
-  SyncErrable(name),
-  read_fd{0},
-  write_fd{0}
+Pipe::Pipe(const string &name) : SyncErrable(name), read_fd{0}, write_fd{0}
 {
   int fds[2] = {0, 0};
   int err = pipe(fds);

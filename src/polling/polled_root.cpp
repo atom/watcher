@@ -1,13 +1,13 @@
 #include <string>
 #include <utility>
 
-#include "directory_record.h"
 #include "../message.h"
 #include "../message_buffer.h"
+#include "directory_record.h"
 #include "polled_root.h"
 
-using std::string;
 using std::move;
+using std::string;
 
 PolledRoot::PolledRoot(string &&root_path, CommandID command_id, ChannelID channel_id) :
   root(new DirectoryRecord(move(root_path))),

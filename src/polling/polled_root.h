@@ -1,16 +1,17 @@
 #ifndef POLLED_ROOT_H
 #define POLLED_ROOT_H
 
-#include <string>
-#include <memory>
 #include <iostream>
+#include <memory>
+#include <string>
 
+#include "../message.h"
 #include "directory_record.h"
 #include "polling_iterator.h"
-#include "../message.h"
 
 // Single root directory monitored by the `PollingThread`.
-class PolledRoot {
+class PolledRoot
+{
 public:
   // Begin watching a new root directory. Events produced by changes observed within this subtree should be
   // sent to `channel_id`.
@@ -32,6 +33,7 @@ public:
   // up where this call left off. When a complete scan is performed, the iteration will stop and the iterator will be
   // left ready to begin again at the root directory next time.
   size_t advance(MessageBuffer &buffer, size_t throttle_allocation);
+
 private:
   // Recursive data structure used to remember the last stat results from the entire filesystem subhierarchy.
   std::shared_ptr<DirectoryRecord> root;

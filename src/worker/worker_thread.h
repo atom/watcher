@@ -4,15 +4,16 @@
 #include <memory>
 #include <uv.h>
 
-#include "../queue.h"
 #include "../message.h"
-#include "../thread.h"
-#include "../status.h"
+#include "../queue.h"
 #include "../result.h"
+#include "../status.h"
+#include "../thread.h"
 
 class WorkerPlatform;
 
-class WorkerThread : public Thread {
+class WorkerThread : public Thread
+{
 public:
   WorkerThread(uv_async_t *main_callback);
 

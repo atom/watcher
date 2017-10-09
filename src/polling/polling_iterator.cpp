@@ -1,19 +1,19 @@
 #include <memory>
-#include <string>
-#include <stack>
 #include <queue>
 #include <set>
+#include <stack>
+#include <string>
 
 #include "../helper/common.h"
-#include "../message_buffer.h"
 #include "../log.h"
+#include "../message_buffer.h"
 #include "directory_record.h"
 #include "polling_iterator.h"
 
-using std::string;
-using std::shared_ptr;
-using std::set;
 using std::endl;
+using std::set;
+using std::shared_ptr;
+using std::string;
 
 PollingIterator::PollingIterator(shared_ptr<DirectoryRecord> root) :
   root(root),

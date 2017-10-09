@@ -2,16 +2,16 @@
 #define QUEUE_H
 
 #include <algorithm>
-#include <memory>
-#include <vector>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <utility>
 #include <uv.h>
+#include <vector>
 
+#include "errable.h"
 #include "lock.h"
 #include "message.h"
-#include "errable.h"
 #include "result.h"
 
 // Primary channel of communication between threads.
@@ -19,7 +19,8 @@
 // The producing thread accumulates a sequence of Messages to be handled through repeated
 // calls to .enqueue_all(). The consumer processes a chunk of Messages by calling
 // .accept_all().
-class Queue : public Errable {
+class Queue : public Errable
+{
 public:
   Queue(std::string name = "queue");
   ~Queue();
@@ -43,7 +44,7 @@ public:
   //
   // Returns a result containing unique_ptr to the vector of Messages, nullptr if no Messages were
   // present, or an error if the Queue is unhealthy.
-  Result< std::unique_ptr<std::vector<Message>> > accept_all();
+  Result<std::unique_ptr<std::vector<Message>>> accept_all();
 
   // Atomically report the number of items waiting on the queue.
   size_t size();

@@ -1,23 +1,23 @@
 #ifndef WATCHER_REGISTRY_H
 #define WATCHER_REGISTRY_H
 
-#include <string>
 #include <memory>
+#include <string>
+#include <sys/inotify.h>
 #include <unordered_map>
 #include <vector>
-#include <sys/inotify.h>
 
 #include "../../errable.h"
-#include "../../result.h"
 #include "../../message_buffer.h"
+#include "../../result.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 #include "watched_directory.h"
 
 // Manage the set of open inotify watch descriptors.
-class WatchRegistry : public Errable {
+class WatchRegistry : public Errable
+{
 public:
-
   // Initialize inotify. Enter an error state if inotify initialization fails.
   WatchRegistry();
 

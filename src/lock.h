@@ -5,7 +5,8 @@
 
 // Hold a UV mutex for the lifetime of the Lock instance.
 // RAII FTW
-class Lock {
+class Lock
+{
 public:
   Lock(uv_mutex_t &mutex);
   ~Lock();
@@ -15,7 +16,8 @@ private:
 };
 
 // Hold a read lock on a uv_rwlock_t for the lifetime of this instance.
-class ReadLock {
+class ReadLock
+{
 public:
   ReadLock(uv_rwlock_t &rwlock);
   ~ReadLock();
@@ -25,7 +27,8 @@ private:
 };
 
 // Hold a write lock on a uv_rwlock_t for the lifetime of this instance.
-class WriteLock {
+class WriteLock
+{
 public:
   WriteLock(uv_rwlock_t &rwlock);
   ~WriteLock();

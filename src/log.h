@@ -1,21 +1,22 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <string>
 #include <ostream>
+#include <string>
 
-class Logger {
+class Logger
+{
 public:
   virtual ~Logger() {}
 
-  static Logger* current();
+  static Logger *current();
   static void to_file(const char *filename);
   static void to_stderr();
   static void to_stdout();
   static void disable();
 
-  virtual Logger* prefix(const char *file, int line) = 0;
-  virtual std::ostream& stream() = 0;
+  virtual Logger *prefix(const char *file, int line) = 0;
+  virtual std::ostream &stream() = 0;
 };
 
 std::string plural(long quantity, const std::string &singular_form, const std::string &plural_form);

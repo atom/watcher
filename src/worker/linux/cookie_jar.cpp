@@ -1,16 +1,16 @@
-#include <string>
-#include <map>
 #include <deque>
-#include <utility>
+#include <map>
 #include <memory>
+#include <string>
 #include <sys/types.h>
+#include <utility>
 
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "cookie_jar.h"
 
-using std::string;
 using std::move;
+using std::string;
 using std::unique_ptr;
 
 Cookie::Cookie(ChannelID channel_id, std::string &&from_path, EntryKind kind) :
@@ -21,16 +21,12 @@ Cookie::Cookie(ChannelID channel_id, std::string &&from_path, EntryKind kind) :
   //
 }
 
-Cookie::Cookie(Cookie &&other) :
-  channel_id{other.channel_id},
-  from_path(move(other.from_path)),
-  kind{other.kind}
+Cookie::Cookie(Cookie &&other) : channel_id{other.channel_id}, from_path(move(other.from_path)), kind{other.kind}
 {
   //
 }
 
-void CookieBatch::moved_from(
-  MessageBuffer &messages,
+void CookieBatch::moved_from(MessageBuffer &messages,
   ChannelID channel_id,
   uint32_t cookie,
   string &&old_path,
@@ -70,14 +66,12 @@ void CookieBatch::flush(MessageBuffer &messages)
   from_paths.clear();
 }
 
-CookieJar::CookieJar(unsigned int max_batches) :
-  batches(max_batches)
+CookieJar::CookieJar(unsigned int max_batches) : batches(max_batches)
 {
   //
 }
 
-void CookieJar::moved_from(
-  MessageBuffer &messages,
+void CookieJar::moved_from(MessageBuffer &messages,
   ChannelID channel_id,
   uint32_t cookie,
   std::string &&old_path,
@@ -88,8 +82,7 @@ void CookieJar::moved_from(
   batches.back().moved_from(messages, channel_id, cookie, move(old_path), kind);
 }
 
-void CookieJar::moved_to(
-  MessageBuffer &messages,
+void CookieJar::moved_to(MessageBuffer &messages,
   ChannelID channel_id,
   uint32_t cookie,
   std::string &&new_path,

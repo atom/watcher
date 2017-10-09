@@ -1,10 +1,10 @@
 #ifndef DIRECTORY_RECORD_H
 #define DIRECTORY_RECORD_H
 
-#include <map>
-#include <string>
-#include <memory>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <string>
 #include <uv.h>
 
 #include "../message.h"
@@ -13,7 +13,8 @@ class BoundPollingIterator;
 
 // Remembered stat() results from the previous time a polling cycle visited a subdirectory of a `PolledRoot`. Contains
 // a recursive substructure that mirrors the last-known state of the filesystem tree.
-class DirectoryRecord {
+class DirectoryRecord
+{
 public:
   // Create a new, unpopulated directory with no parent. `prefix` should be a fully qualified path to the directory
   // tree.
@@ -40,12 +41,10 @@ public:
   // Perform a single `lstat()` on an entry within this directory. If the DirectoryRecord is populated and the entry
   // has been created, deleted, or modified since the previous `DirectoryRecord::entry()` call, emit the appropriate
   // events into the `iterator`'s buffer.
-  void entry(
-    BoundPollingIterator *iterator,
+  void entry(BoundPollingIterator *iterator,
     const std::string &entry_name,
     const std::string &entry_path,
-    EntryKind scan_kind
-  );
+    EntryKind scan_kind);
 
   // Note that this `DirectoryResult` has had an initial `scan()` and set of `entry()` calls completed. Subsequent
   // calls should emit actual events.
@@ -53,6 +52,7 @@ public:
 
   // Return true if all `DirectoryResults` beneath this one have been populated by an initial scan.
   bool all_populated();
+
 private:
   // Construct a `DirectoryRecord` for a child entry.
   DirectoryRecord(DirectoryRecord *parent, const std::string &name);
@@ -83,9 +83,8 @@ private:
   // For great logging.
   friend std::ostream &operator<<(std::ostream &out, const DirectoryRecord &record)
   {
-    out << "DirectoryRecord{" << record.name
-      << " entries=" << record.entries.size()
-      << " subdirectories=" << record.subdirectories.size();
+    out << "DirectoryRecord{" << record.name << " entries=" << record.entries.size()
+        << " subdirectories=" << record.subdirectories.size();
     if (record.populated) out << " populated";
     return out << "}";
   }

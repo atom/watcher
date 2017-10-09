@@ -1,23 +1,19 @@
 #ifndef SUBSCRIPTION_H
 #define SUBSCRIPTION_H
 
-#include <string>
-#include <sstream>
 #include <memory>
+#include <sstream>
+#include <string>
 
-#include "../../result.h"
 #include "../../message.h"
+#include "../../result.h"
 
 class WindowsWorkerPlatform;
 
-class Subscription {
+class Subscription
+{
 public:
-  Subscription(
-    ChannelID channel,
-    HANDLE root,
-    const std::wstring &path,
-    WindowsWorkerPlatform *platform
-  );
+  Subscription(ChannelID channel, HANDLE root, const std::wstring &path, WindowsWorkerPlatform *platform);
 
   ~Subscription();
 
@@ -31,25 +27,13 @@ public:
 
   Result<> stop(const CommandID command);
 
-  CommandID get_command_id() const
-  {
-    return command;
-  }
+  CommandID get_command_id() const { return command; }
 
-  ChannelID get_channel() const
-  {
-    return channel;
-  }
+  ChannelID get_channel() const { return channel; }
 
-  WindowsWorkerPlatform* get_platform() const
-  {
-    return platform;
-  }
+  WindowsWorkerPlatform *get_platform() const { return platform; }
 
-  bool is_terminating() const
-  {
-    return terminating;
-  }
+  bool is_terminating() const { return terminating; }
 
 private:
   CommandID command;

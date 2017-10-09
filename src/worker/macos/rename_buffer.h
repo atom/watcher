@@ -1,26 +1,24 @@
 #ifndef RENAME_BUFFER_H
 #define RENAME_BUFFER_H
 
-#include <string>
-#include <unordered_map>
 #include <memory>
-#include <utility>
+#include <string>
 #include <sys/stat.h>
+#include <unordered_map>
+#include <utility>
 
-#include "recent_file_cache.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "recent_file_cache.h"
 
 // Filesystem entry that was flagged as participating in a rename by a received filesystem event.
-class RenameBufferEntry {
+class RenameBufferEntry
+{
 public:
-  RenameBufferEntry(RenameBufferEntry &&original) :
-    entry{std::move(original.entry)},
-    current{original.current} {};
+  RenameBufferEntry(RenameBufferEntry &&original) : entry{std::move(original.entry)}, current{original.current} {};
 
 private:
-  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) :
-    entry{entry}, current{current} {};
+  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) : entry{entry}, current{current} {};
 
   std::shared_ptr<PresentEntry> entry;
   bool current;
@@ -28,7 +26,8 @@ private:
   friend class RenameBuffer;
 };
 
-class RenameBuffer {
+class RenameBuffer
+{
 public:
   // Create a new buffer with a reference to the ChannelMessageBuffer it should use to enqueue messages.
   RenameBuffer(ChannelMessageBuffer &message_buffer) : message_buffer{message_buffer} {};
@@ -40,6 +39,7 @@ public:
   // Enqueue creation and removal events for any buffer entries that have not been paired during the current
   // event handler callback invocation.
   void flush_unmatched();
+
 private:
   void observe_present_entry(std::shared_ptr<PresentEntry> present, bool current);
 

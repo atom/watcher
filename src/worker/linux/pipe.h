@@ -3,13 +3,13 @@
 
 #include <string>
 
-#include "../../result.h"
 #include "../../errable.h"
+#include "../../result.h"
 
 // RAII wrapper for a Linux pipe created with pipe(2). We don't care about the actual data transmitted.
-class Pipe : public SyncErrable {
+class Pipe : public SyncErrable
+{
 public:
-
   // Construct a new Pipe identified in Result<> errors with a specified name.
   Pipe(const std::string &name);
 

@@ -1,16 +1,17 @@
 #ifndef EVENT_HANDLER_H
 #define EVENT_HANDLER_H
 
+#include <CoreServices/CoreServices.h>
 #include <string>
 #include <vector>
-#include <CoreServices/CoreServices.h>
 
-#include "recent_file_cache.h"
-#include "rename_buffer.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "recent_file_cache.h"
+#include "rename_buffer.h"
 
-class EventHandler {
+class EventHandler
+{
 public:
   EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache);
   EventHandler(const EventHandler &) = delete;

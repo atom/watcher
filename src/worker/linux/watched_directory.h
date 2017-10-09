@@ -2,16 +2,17 @@
 #define WATCHED_DIRECTORY
 
 #include <string>
-#include <vector>
 #include <sys/inotify.h>
+#include <vector>
 
-#include "../../result.h"
 #include "../../message_buffer.h"
-#include "side_effect.h"
+#include "../../result.h"
 #include "cookie_jar.h"
+#include "side_effect.h"
 
 // Associate resources used to watch inotify events that are delivered with a single watch descriptor.
-class WatchedDirectory {
+class WatchedDirectory
+{
 public:
   WatchedDirectory(int wd, ChannelID channel_id, std::string &&directory);
 

@@ -1,15 +1,16 @@
 #ifndef ALL_CALLBACK_H
 #define ALL_CALLBACK_H
 
-#include <functional>
 #include <forward_list>
+#include <functional>
 #include <memory>
 #include <nan.h>
 #include <v8.h>
 
 #include "functional_callback.h"
 
-class AllCallback {
+class AllCallback
+{
 public:
   static std::shared_ptr<AllCallback> create(std::unique_ptr<Nan::Callback> &&done);
 

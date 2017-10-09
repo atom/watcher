@@ -2,31 +2,29 @@
 #define WORKER_PLATFORM_H
 
 #include <memory>
-#include <utility>
 #include <string>
+#include <utility>
 
-#include "worker_thread.h"
-#include "../message.h"
 #include "../errable.h"
+#include "../message.h"
 #include "../result.h"
+#include "worker_thread.h"
 
-class WorkerPlatform : public Errable {
+class WorkerPlatform : public Errable
+{
 public:
   static std::unique_ptr<WorkerPlatform> for_worker(WorkerThread *thread);
 
-  WorkerPlatform() : Errable("platform") {};
-  virtual ~WorkerPlatform() {};
+  WorkerPlatform() : Errable("platform"){};
+  virtual ~WorkerPlatform(){};
 
   virtual Result<> wake() = 0;
 
   virtual Result<> listen() = 0;
-  virtual Result<bool> handle_add_command(
-    const CommandID command,
+  virtual Result<bool> handle_add_command(const CommandID command,
     const ChannelID channel,
     const std::string &root_path) = 0;
-  virtual Result<bool> handle_remove_command(
-    const CommandID command,
-    const ChannelID channel) = 0;
+  virtual Result<bool> handle_remove_command(const CommandID command, const ChannelID channel) = 0;
 
   Result<> handle_commands()
   {

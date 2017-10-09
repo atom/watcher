@@ -1,18 +1,18 @@
 #include <string>
+#include <sys/inotify.h>
 #include <utility>
 #include <vector>
-#include <sys/inotify.h>
 
-#include "../../result.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "../../result.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 #include "watched_directory.h"
 
+using std::move;
 using std::string;
 using std::vector;
-using std::move;
 
 WatchedDirectory::WatchedDirectory(int wd, ChannelID channel_id, string &&directory) :
   wd{wd},
@@ -22,8 +22,7 @@ WatchedDirectory::WatchedDirectory(int wd, ChannelID channel_id, string &&direct
   //
 }
 
-Result<> WatchedDirectory::accept_event(
-  MessageBuffer &buffer,
+Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
   CookieJar &jar,
   SideEffect &side,
   const inotify_event &event)

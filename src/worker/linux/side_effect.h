@@ -2,8 +2,8 @@
 #define SIDE_EFFECT_H
 
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "../../message.h"
 #include "../../result.h"
@@ -13,7 +13,8 @@ class WatchRegistry;
 
 // Record additional actions that should be triggered by inotify events received in the course of a single notification
 // cycle.
-class SideEffect {
+class SideEffect
+{
 public:
   SideEffect() = default;
 
@@ -29,7 +30,8 @@ private:
   SideEffect &operator=(const SideEffect &other) = delete;
   SideEffect &operator=(SideEffect &&other) = delete;
 
-  struct Subdirectory {
+  struct Subdirectory
+  {
     Subdirectory(std::string &&path, ChannelID channel_id) : path(std::move(path)), channel_id{channel_id}
     {
       //

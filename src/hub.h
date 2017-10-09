@@ -2,19 +2,20 @@
 #define HUB_H
 
 #include <memory>
-#include <string>
-#include <utility>
-#include <unordered_map>
 #include <nan.h>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <uv.h>
 
-#include "result.h"
-#include "message.h"
 #include "log.h"
-#include "worker/worker_thread.h"
+#include "message.h"
 #include "polling/polling_thread.h"
+#include "result.h"
+#include "worker/worker_thread.h"
 
-class Hub {
+class Hub
+{
 public:
   static Hub &get() { return the_hub; }
 
@@ -82,12 +83,10 @@ public:
     return send_command(polling_thread, COMMAND_POLLING_THROTTLE, std::move(callback), "", throttle);
   }
 
-  Result<> watch(
-    std::string &&root,
+  Result<> watch(std::string &&root,
     bool poll,
     std::unique_ptr<Nan::Callback> ack_callback,
-    std::unique_ptr<Nan::Callback> event_callback
-  );
+    std::unique_ptr<Nan::Callback> event_callback);
 
   Result<> unwatch(ChannelID channel_id, std::unique_ptr<Nan::Callback> &&ack_callback);
 
@@ -98,13 +97,11 @@ public:
 private:
   Hub();
 
-  Result<> send_command(
-    Thread &thread,
+  Result<> send_command(Thread &thread,
     const CommandAction action,
     std::unique_ptr<Nan::Callback> callback,
     const std::string &&root = "",
-    uint_fast32_t arg = NULL_CHANNEL_ID
-  );
+    uint_fast32_t arg = NULL_CHANNEL_ID);
 
   void handle_events_from(Thread &thread);
 

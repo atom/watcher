@@ -1,14 +1,14 @@
 #ifndef POLLING_THREAD_H
 #define POLLING_THREAD_H
 
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <map>
 #include <uv.h>
 
-#include "../thread.h"
-#include "../status.h"
 #include "../result.h"
+#include "../status.h"
+#include "../thread.h"
 #include "polled_root.h"
 
 const std::chrono::milliseconds DEFAULT_POLL_INTERVAL = std::chrono::milliseconds(100);
@@ -21,7 +21,8 @@ const uint_fast32_t DEFAULT_POLL_THROTTLE = 1000;
 // It has a configurable "throttle" which roughly corresponds to the number of filesystem calls performed within each
 // polling cycle. The throttle is distributed among polled roots so that small directories won't be starved by large
 // ones.
-class PollingThread : public Thread {
+class PollingThread : public Thread
+{
 public:
   PollingThread(uv_async_t *main_callback);
   ~PollingThread();

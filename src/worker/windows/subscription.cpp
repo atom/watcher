@@ -1,28 +1,23 @@
-#include <windows.h>
-#include <string>
-#include <sstream>
 #include <iostream>
 #include <memory>
+#include <sstream>
+#include <string>
+#include <windows.h>
 
-#include "subscription.h"
+#include "../../helper/windows/helper.h"
 #include "../../log.h"
 #include "../../result.h"
-#include "../../helper/windows/helper.h"
+#include "subscription.h"
 
-using std::wstring;
+using std::endl;
 using std::ostringstream;
 using std::wostringstream;
-using std::endl;
+using std::wstring;
 
 const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
 const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
 
-Subscription::Subscription(
-  ChannelID channel,
-  HANDLE root,
-  const wstring &path,
-  WindowsWorkerPlatform *platform
-) :
+Subscription::Subscription(ChannelID channel, HANDLE root, const wstring &path, WindowsWorkerPlatform *platform) :
   command{0},
   channel{channel},
   platform{platform},
@@ -46,22 +41,21 @@ Result<> Subscription::schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn)
 {
   if (terminating) {
     LOGGER << "Declining to schedule a new change callback for channel " << channel
-      << " because the subscription is terminating." << endl;
+           << " because the subscription is terminating." << endl;
     return ok_result();
   }
   LOGGER << "Scheduling the next change callback for channel " << channel << "." << endl;
 
-  int success = ReadDirectoryChangesW(
-    root, // root directory handle
-    buffer.get(), // result buffer
-    buffer_size, // result buffer size
-    TRUE, // recursive
-    FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES
-      | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS
-      | FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SECURITY, // change flags
-    NULL, // bytes returned
-    &overlapped, // overlapped
-    fn // completion routine
+  int success = ReadDirectoryChangesW(root,  // root directory handle
+    buffer.get(),  // result buffer
+    buffer_size,  // result buffer size
+    TRUE,  // recursive
+    FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE
+      | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS | FILE_NOTIFY_CHANGE_CREATION
+      | FILE_NOTIFY_CHANGE_SECURITY,  // change flags
+    NULL,  // bytes returned
+    &overlapped,  // overlapped
+    fn  // completion routine
   );
   if (!success) {
     return windows_error_result<>("Unable to subscribe to filesystem events");
@@ -74,10 +68,7 @@ Result<> Subscription::use_network_size()
 {
   if (buffer_size <= NETWORK_BUFFER_SIZE) {
     ostringstream out("Buffer size of ");
-    out
-      << buffer_size
-      << " is already lower than the network buffer size "
-      << NETWORK_BUFFER_SIZE;
+    out << buffer_size << " is already lower than the network buffer size " << NETWORK_BUFFER_SIZE;
     return error_result(out.str());
   }
 

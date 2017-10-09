@@ -1,20 +1,17 @@
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <utility>
-#include <sstream>
-#include <iostream>
 #include <uv.h>
 
 #include "errable.h"
 #include "lock.h"
 
+using std::move;
 using std::ostream;
 using std::string;
-using std::move;
 
-Errable::Errable(string source) :
-  healthy{true},
-  source{source},
-  message{"ok"}
+Errable::Errable(string source) : healthy{true}, source{source}, message{"ok"}
 {
   //
 }
@@ -35,7 +32,8 @@ void Errable::report_uv_error(int err_code)
   report_error(uv_strerror(err_code));
 }
 
-string Errable::get_error() {
+string Errable::get_error()
+{
   return message;
 }
 

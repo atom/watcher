@@ -6,7 +6,7 @@
 using std::string;
 using std::wstring;
 
-template < class Str >
+template <class Str>
 Str _path_join_impl(const Str &left, const Str &right, const typename Str::value_type &sep)
 {
   Str joined(left);

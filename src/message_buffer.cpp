@@ -1,15 +1,15 @@
-#include <string>
-#include <vector>
-#include <utility>
 #include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "log.h"
 #include "message.h"
 #include "message_buffer.h"
 
-using std::string;
-using std::move;
 using std::endl;
+using std::move;
+using std::string;
 
 void MessageBuffer::created(ChannelID channel_id, std::string &&path, const EntryKind &kind)
 {
@@ -62,7 +62,6 @@ void MessageBuffer::ack(CommandID command_id, ChannelID channel_id, bool success
 
 ChannelMessageBuffer::ChannelMessageBuffer(MessageBuffer &buffer, ChannelID channel_id) :
   channel_id{channel_id},
-  buffer{buffer}
-{
-  //
-};
+  buffer{buffer} {
+    //
+  };

@@ -1,51 +1,51 @@
-#include <memory>
-#include <string>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
-#include <map>
-#include <utility>
-#include <iomanip>
-#include <sstream>
 #include <CoreServices/CoreServices.h>
-#include <sys/stat.h>
 #include <errno.h>
+#include <iomanip>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <sys/stat.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
-#include "../worker_platform.h"
-#include "../worker_thread.h"
-#include "recent_file_cache.h"
-#include "event_handler.h"
-#include "flags.h"
 #include "../../log.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "../../result.h"
+#include "../worker_platform.h"
+#include "../worker_thread.h"
+#include "event_handler.h"
+#include "flags.h"
+#include "recent_file_cache.h"
 
-using std::vector;
-using std::ostream;
-using std::string;
-using std::ostringstream;
-using std::endl;
-using std::unique_ptr;
-using std::move;
-using std::pair;
-using std::make_pair;
-using std::unordered_set;
-using std::unordered_map;
 using std::dec;
+using std::endl;
 using std::hex;
+using std::make_pair;
+using std::move;
+using std::ostream;
+using std::ostringstream;
+using std::pair;
+using std::string;
+using std::unique_ptr;
+using std::unordered_map;
+using std::unordered_set;
+using std::vector;
 
 static void command_perform_helper(void *info);
 
-static void event_stream_helper(
-  ConstFSEventStreamRef event_stream,
+static void event_stream_helper(ConstFSEventStreamRef event_stream,
   void *info,
   size_t num_events,
   void *event_paths,
   const FSEventStreamEventFlags *event_flags,
   const FSEventStreamEventId *event_ids);
 
-struct Subscription {
+struct Subscription
+{
   WorkerPlatform *platform;
   ChannelID channel;
   FSEventStreamRef event_stream;
@@ -56,15 +56,15 @@ struct Subscription {
   }
 };
 
-class MacOSWorkerPlatform : public WorkerPlatform {
+class MacOSWorkerPlatform : public WorkerPlatform
+{
 public:
   MacOSWorkerPlatform(WorkerThread *thread) :
     WorkerPlatform(thread),
     run_loop{nullptr},
-    command_source{nullptr}
-  {
-    //
-  };
+    command_source{nullptr} {
+      //
+    };
 
   ~MacOSWorkerPlatform() override
   {
@@ -90,16 +90,16 @@ public:
     CFRetain(run_loop);
 
     CFRunLoopSourceContext command_context = {
-      0, // version
-      this, // info
-      NULL, // retain
-      NULL, // release
-      NULL, // copyDescription
-      NULL, // equal
-      NULL, // hash
-      NULL, // schedule
-      NULL, // cancel
-      command_perform_helper // perform
+      0,  // version
+      this,  // info
+      NULL,  // retain
+      NULL,  // release
+      NULL,  // copyDescription
+      NULL,  // equal
+      NULL,  // hash
+      NULL,  // schedule
+      NULL,  // cancel
+      command_perform_helper  // perform
     };
     command_source = CFRunLoopSourceCreate(kCFAllocatorDefault, 1, &command_context);
     CFRunLoopAddSource(run_loop, command_source, kCFRunLoopDefaultMode);
@@ -108,10 +108,7 @@ public:
     return ok_result();
   }
 
-  Result<bool> handle_add_command(
-    const CommandID command,
-    const ChannelID channel,
-    const string &root_path) override
+  Result<bool> handle_add_command(const CommandID command, const ChannelID channel, const string &root_path) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
     LOGGER << "Adding watcher for path " << root_path << " at channel " << channel << "." << endl;
@@ -119,32 +116,25 @@ public:
     Subscription *subscription = new Subscription(this, channel);
 
     FSEventStreamContext stream_context = {
-      0, // version
-      subscription, // info
-      NULL, // retain
-      NULL, // release
-      NULL // copyDescription
+      0,  // version
+      subscription,  // info
+      NULL,  // retain
+      NULL,  // release
+      NULL  // copyDescription
     };
 
-    CFStringRef watch_root = CFStringCreateWithBytes(
-      kCFAllocatorDefault,
-      reinterpret_cast<const UInt8*>(root_path.c_str()),
+    CFStringRef watch_root = CFStringCreateWithBytes(kCFAllocatorDefault,
+      reinterpret_cast<const UInt8 *>(root_path.c_str()),
       root_path.size(),
       kCFStringEncodingUTF8,
-      false
-    );
+      false);
     if (watch_root == NULL) {
       string msg("Unable to allocate string for root path: ");
       msg += root_path;
       return Result<bool>::make_error(move(msg));
     }
 
-    CFArrayRef watch_roots = CFArrayCreate(
-      kCFAllocatorDefault,
-      reinterpret_cast<const void**>(&watch_root),
-      1,
-      NULL
-    );
+    CFArrayRef watch_roots = CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void **>(&watch_root), 1, NULL);
     if (watch_roots == NULL) {
       string msg("Unable to allocate array for watch root: ");
       msg += root_path;
@@ -153,15 +143,13 @@ public:
       return Result<bool>::make_error(move(msg));
     }
 
-    FSEventStreamRef event_stream = FSEventStreamCreate(
-      kCFAllocatorDefault,
+    FSEventStreamRef event_stream = FSEventStreamCreate(kCFAllocatorDefault,
       event_stream_helper,
       &stream_context,
       watch_roots,
       kFSEventStreamEventIdSinceNow,
       LATENCY,
-      kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagFileEvents
-    );
+      kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagFileEvents);
     subscription->event_stream = event_stream;
 
     subscriptions.insert(make_pair(channel, subscription));
@@ -185,9 +173,7 @@ public:
     return ok_result(true);
   }
 
-  Result<bool> handle_remove_command(
-    const CommandID,
-    const ChannelID channel) override
+  Result<bool> handle_remove_command(const CommandID, const ChannelID channel) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
     LOGGER << "Removing watcher for channel " << channel << "." << endl;
@@ -209,15 +195,14 @@ public:
     return ok_result(true);
   }
 
-  void handle_fs_event(
-    ChannelID channel_id,
+  void handle_fs_event(ChannelID channel_id,
     ConstFSEventStreamRef event_stream,
     size_t num_events,
     void *event_paths,
     const FSEventStreamEventFlags *event_flags,
     const FSEventStreamEventId *event_ids)
   {
-    char **paths = reinterpret_cast<char**>(event_paths);
+    char **paths = reinterpret_cast<char **>(event_paths);
     MessageBuffer buffer;
     ChannelMessageBuffer message_buffer(buffer, channel_id);
 
@@ -238,7 +223,7 @@ public:
     }
 
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
-      << plural(message_buffer.size(), "message") << " produced." << endl;
+           << plural(message_buffer.size(), "message") << " produced." << endl;
 
     cache.prune();
   }
@@ -247,29 +232,28 @@ private:
   CFRunLoopRef run_loop;
   CFRunLoopSourceRef command_source;
 
-  unordered_map<ChannelID, Subscription*> subscriptions;
+  unordered_map<ChannelID, Subscription *> subscriptions;
   RecentFileCache cache;
 };
 
 static void command_perform_helper(void *info)
 {
-  MacOSWorkerPlatform *platform = reinterpret_cast<MacOSWorkerPlatform*>(info);
+  MacOSWorkerPlatform *platform = reinterpret_cast<MacOSWorkerPlatform *>(info);
   Result<> r = platform->handle_commands();
   if (r.is_error()) {
     LOGGER << "Unable to handle incoming commands: " << r << "." << endl;
   }
 }
 
-static void event_stream_helper(
-  ConstFSEventStreamRef event_stream,
+static void event_stream_helper(ConstFSEventStreamRef event_stream,
   void *info,
   size_t num_events,
   void *event_paths,
   const FSEventStreamEventFlags *event_flags,
   const FSEventStreamEventId *event_ids)
 {
-  Subscription *sub = reinterpret_cast<Subscription*>(info);
-  MacOSWorkerPlatform *platform = static_cast<MacOSWorkerPlatform*>(sub->platform);
+  Subscription *sub = reinterpret_cast<Subscription *>(info);
+  MacOSWorkerPlatform *platform = static_cast<MacOSWorkerPlatform *>(sub->platform);
 
   platform->handle_fs_event(sub->channel, event_stream, num_events, event_paths, event_flags, event_ids);
 }

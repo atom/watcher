@@ -1,8 +1,8 @@
 #ifndef ERRABLE_H
 #define ERRABLE_H
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <utility>
 #include <uv.h>
 
@@ -19,14 +19,15 @@
 // attempting to take any actions, and return early otherwise, indicating failure.
 //
 // External consumers of the resource can use get_error() to log the cause of the failure.
-class Errable {
+class Errable
+{
 public:
   Errable(std::string source);
 
   virtual bool is_healthy();
   virtual void report_error(std::string &&message);
 
-  template < class V = void* >
+  template <class V = void *>
   void report_error(const Result<V> &result)
   {
     report_error(std::string(result.get_error()));
@@ -38,7 +39,7 @@ public:
 
   // Generate a Result from the current error status of this resource. If it has entered an error state,
   // an errored Result will be created with its error message. Otherwise, an ok Result will be regurned.
-  template < class V = void* >
+  template <class V = void *>
   Result<V> health_err_result()
   {
     std::string m = get_error();
@@ -54,7 +55,8 @@ private:
 };
 
 // Thread-safe superclass for resources that can enter an errored state.
-class SyncErrable : public Errable {
+class SyncErrable : public Errable
+{
 public:
   SyncErrable(std::string source);
   ~SyncErrable();
@@ -62,6 +64,7 @@ public:
   bool is_healthy() override;
   void report_error(std::string &&message) override;
   std::string get_error() override;
+
 private:
   bool lock_healthy;
   uv_rwlock_t rwlock;

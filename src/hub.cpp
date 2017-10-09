@@ -1,34 +1,34 @@
 #include <memory>
-#include <string>
-#include <utility>
-#include <unordered_map>
-#include <vector>
 #include <nan.h>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <uv.h>
 #include <v8.h>
+#include <vector>
 
-#include "result.h"
-#include "message.h"
-#include "log.h"
-#include "worker/worker_thread.h"
-#include "polling/polling_thread.h"
-#include "nan/all_callback.h"
 #include "hub.h"
+#include "log.h"
+#include "message.h"
+#include "nan/all_callback.h"
+#include "polling/polling_thread.h"
+#include "result.h"
+#include "worker/worker_thread.h"
 
-using v8::Local;
-using v8::Value;
-using v8::Object;
-using v8::String;
-using v8::Number;
-using v8::Array;
 using Nan::Callback;
+using std::endl;
+using std::move;
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
-using std::shared_ptr;
 using std::unordered_map;
 using std::vector;
-using std::move;
-using std::endl;
+using v8::Array;
+using v8::Local;
+using v8::Number;
+using v8::Object;
+using v8::String;
+using v8::Value;
 
 void handle_events_helper(uv_async_t *handle)
 {
@@ -37,9 +37,7 @@ void handle_events_helper(uv_async_t *handle)
 
 Hub Hub::the_hub;
 
-Hub::Hub() :
-  worker_thread(&event_handler),
-  polling_thread(&event_handler)
+Hub::Hub() : worker_thread(&event_handler), polling_thread(&event_handler)
 {
   int err;
 
@@ -52,12 +50,8 @@ Hub::Hub() :
   worker_thread.run();
 }
 
-Result<> Hub::watch(
-  string &&root,
-  bool poll,
-  unique_ptr<Callback> ack_callback,
-  unique_ptr<Callback> event_callback
-) {
+Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback, unique_ptr<Callback> event_callback)
+{
   ChannelID channel_id = next_channel_id;
   next_channel_id++;
 
@@ -103,13 +97,12 @@ void Hub::collect_status(Status &status)
   polling_thread.collect_status(status);
 }
 
-Result<> Hub::send_command(
-  Thread &thread,
+Result<> Hub::send_command(Thread &thread,
   const CommandAction action,
   unique_ptr<Callback> callback,
   const string &&root,
-  ChannelID channel_id
-) {
+  ChannelID channel_id)
+{
   CommandID command_id = next_command_id;
   Message command(CommandPayload(action, command_id, move(root), channel_id));
   pending_callbacks.emplace(command_id, move(callback));
@@ -127,7 +120,7 @@ void Hub::handle_events_from(Thread &thread)
   Nan::HandleScope scope;
   bool repeat = true;
 
-  Result< unique_ptr<vector<Message>> > rr = thread.receive_all();
+  Result<unique_ptr<vector<Message>>> rr = thread.receive_all();
   if (rr.is_error()) {
     LOGGER << "Unable to receive messages from thread: " << rr << "." << endl;
     return;
@@ -180,21 +173,12 @@ void Hub::handle_events_from(Thread &thread)
 
       Local<Object> js_event = Nan::New<Object>();
       js_event->Set(
-        Nan::New<String>("action").ToLocalChecked(),
-        Nan::New<Number>(static_cast<int>(fs->get_filesystem_action()))
-      );
+        Nan::New<String>("action").ToLocalChecked(), Nan::New<Number>(static_cast<int>(fs->get_filesystem_action())));
       js_event->Set(
-        Nan::New<String>("kind").ToLocalChecked(),
-        Nan::New<Number>(static_cast<int>(fs->get_entry_kind()))
-      );
+        Nan::New<String>("kind").ToLocalChecked(), Nan::New<Number>(static_cast<int>(fs->get_entry_kind())));
       js_event->Set(
-        Nan::New<String>("oldPath").ToLocalChecked(),
-        Nan::New<String>(fs->get_old_path()).ToLocalChecked()
-      );
-      js_event->Set(
-        Nan::New<String>("path").ToLocalChecked(),
-        Nan::New<String>(fs->get_path()).ToLocalChecked()
-      );
+        Nan::New<String>("oldPath").ToLocalChecked(), Nan::New<String>(fs->get_old_path()).ToLocalChecked());
+      js_event->Set(Nan::New<String>("path").ToLocalChecked(), Nan::New<String>(fs->get_path()).ToLocalChecked());
 
       to_deliver[channel_id].push_back(js_event);
       continue;
@@ -234,8 +218,8 @@ void Hub::handle_events_from(Thread &thread)
     }
     shared_ptr<Callback> callback = maybe_callback->second;
 
-    LOGGER << "Dispatching " << js_events.size()
-      << " event(s) on channel " << channel_id << " to node callbacks." << endl;
+    LOGGER << "Dispatching " << js_events.size() << " event(s) on channel " << channel_id << " to node callbacks."
+           << endl;
 
     Local<Array> js_array = Nan::New<Array>(js_events.size());
 
@@ -245,10 +229,7 @@ void Hub::handle_events_from(Thread &thread)
       index++;
     }
 
-    Local<Value> argv[] = {
-      Nan::Null(),
-      js_array
-    };
+    Local<Value> argv[] = {Nan::Null(), js_array};
     callback->Call(2, argv);
   }
 

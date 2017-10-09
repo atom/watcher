@@ -1,11 +1,11 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include <string.h>
 #include <errno.h>
+#include <string.h>
 
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "../../result.h"
 
@@ -23,10 +23,10 @@ inline int _strerror_result(char *buffer, char *&out, char *r)
   return 0;
 }
 
-template < class V = void* >
+template <class V = void *>
 Result<V> errno_result(const std::string &prefix);
 
-template < class V = void* >
+template <class V = void *>
 Result<V> errno_result(const std::string &prefix, int errnum)
 {
   const size_t BUFSIZE = 1024;
@@ -49,7 +49,7 @@ Result<V> errno_result(const std::string &prefix, int errnum)
   return Result<V>::make_error(out.str());
 }
 
-template < class V >
+template <class V>
 Result<V> errno_result(const std::string &prefix)
 {
   return errno_result(prefix, errno);

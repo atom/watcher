@@ -1,12 +1,13 @@
 #ifndef STATUS_H
 #define STATUS_H
 
-#include <string>
 #include <iostream>
+#include <string>
 
 // Summarize the module's health. This includes information like the health of all Errable and SyncErrable
 // resources and the sizes of internal queues and buffers.
-class Status {
+class Status
+{
 public:
   // Main thread
   size_t pending_callback_count;

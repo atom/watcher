@@ -1,19 +1,20 @@
 #ifndef COOKIE_JAR
 #define COOKIE_JAR
 
-#include <string>
-#include <map>
 #include <deque>
-#include <utility>
+#include <map>
 #include <memory>
+#include <string>
 #include <sys/types.h>
+#include <utility>
 
 #include "../../message.h"
 #include "../../message_buffer.h"
 
 // Remember a path that was observed in an IN_MOVED_FROM inotify event until its corresponding IN_MOVED_TO event
 // is observed, or until it times out.
-class Cookie {
+class Cookie
+{
 public:
   Cookie(ChannelID channel_id, std::string &&from_path, EntryKind kind);
   Cookie(Cookie &&other);
@@ -36,18 +37,16 @@ private:
 
 // Collection of Cookies observed from rename events within a single cycle of inotify events. Batches are used to
 // age off rename events that haven't been matched after a fixed number of inotify deliveries.
-class CookieBatch {
+class CookieBatch
+{
 public:
-
   // Insert a new Cookie to eventually match an IN_MOVED_FROM event. If an existing Cookie already exists for this
   // cookie value, immediately age the old Cookie off and buffer a deletion event.
-  void moved_from(
-    MessageBuffer &messages,
+  void moved_from(MessageBuffer &messages,
     ChannelID channel_id,
     uint32_t cookie,
     std::string &&old_path,
-    EntryKind kind
-  );
+    EntryKind kind);
 
   // Remove a Cookie from this batch that has the specified cookie value. Return nullptr instead if no such cookie
   // exists.
@@ -66,9 +65,9 @@ private:
 // notification cycles. The CookieJar contains a fixed number of CookieBatches that contain unmatched IN_MOVED_FROM
 // events collected within a single notification cycle. As more notifications arrive, events that remain unmatched
 // are aged off and emitted as deletion events.
-class CookieJar {
+class CookieJar
+{
 public:
-
   // Construct a CookieJar capable of correlating rename events across `max_batches` consecutive inotify event cycles.
   // Specifying a higher number of batches improves the watcher's ability to match rename events that occur at
   // high rates, at the cost of increasing memory usage and the latency of delete events delivered when an entry
@@ -85,25 +84,17 @@ public:
   CookieJar &operator=(CookieJar &&other) = delete;
 
   // Observe an IN_MOVED_FROM event by adding a Cookie to the freshest CookieBatch.
-  void moved_from(
-    MessageBuffer &messages,
+  void moved_from(MessageBuffer &messages,
     ChannelID channel_id,
     uint32_t cookie,
     std::string &&old_path,
-    EntryKind kind
-  );
+    EntryKind kind);
 
   // Observe an IN_MOVED_TO event. Search the current CookieBatches for a recent IN_MOVED_FROM event with a matching
   // `cookie` value. If no match is found, emit a creation event for the entry. If a match is found but the channel
   // or entry kind don't match, emit a delete/create event pair for the old and new entries. Otherwise, emit the
   // successfully correlated rename event.
-  void moved_to(
-    MessageBuffer &messages,
-    ChannelID channel_id,
-    uint32_t cookie,
-    std::string &&new_path,
-    EntryKind kind
-  );
+  void moved_to(MessageBuffer &messages, ChannelID channel_id, uint32_t cookie, std::string &&new_path, EntryKind kind);
 
   // Buffer deletion events for any Cookies that have not been matched within `max_batches` CookieBatches. Add a
   // fresh CookieBatch to capture the next cycle of rename events.

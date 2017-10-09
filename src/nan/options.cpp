@@ -1,21 +1,21 @@
-#include <string>
-#include <sstream>
-#include <v8.h>
 #include <nan.h>
+#include <sstream>
+#include <string>
+#include <v8.h>
 
 #include "options.h"
 
+using Nan::Maybe;
+using Nan::MaybeLocal;
+using std::ostringstream;
+using std::string;
 using v8::Local;
-using v8::Value;
 using v8::Object;
 using v8::String;
 using v8::Uint32;
-using Nan::MaybeLocal;
-using Nan::Maybe;
-using std::string;
-using std::ostringstream;
+using v8::Value;
 
-bool get_string_option(Local<Object>& options, const char *key_name, string &out)
+bool get_string_option(Local<Object> &options, const char *key_name, string &out)
 {
   Nan::HandleScope scope;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
@@ -49,7 +49,7 @@ bool get_string_option(Local<Object>& options, const char *key_name, string &out
   return true;
 }
 
-bool get_bool_option(Local<Object>& options, const char *key_name, bool &out)
+bool get_bool_option(Local<Object> &options, const char *key_name, bool &out)
 {
   Nan::HandleScope scope;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();

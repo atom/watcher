@@ -1,32 +1,32 @@
-#include <string>
-#include <utility>
-#include <memory>
-#include <unordered_map>
-#include <set>
-#include <vector>
-#include <iostream>
-#include <sys/inotify.h>
-#include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
+#include <iostream>
+#include <memory>
+#include <set>
+#include <string>
+#include <sys/inotify.h>
+#include <sys/types.h>
 #include <unistd.h>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
+#include "../../helper/linux/helper.h"
 #include "../../log.h"
-#include "../../result.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
-#include "../../helper/linux/helper.h"
+#include "../../result.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
-#include "watched_directory.h"
 #include "watch_registry.h"
+#include "watched_directory.h"
 
-using std::string;
-using std::move;
 using std::endl;
-using std::shared_ptr;
-using std::set;
+using std::move;
 using std::ostream;
+using std::set;
+using std::shared_ptr;
+using std::string;
 
 static ostream &operator<<(ostream &out, const inotify_event *event)
 {
@@ -58,8 +58,7 @@ static ostream &operator<<(ostream &out, const inotify_event *event)
   return out;
 }
 
-WatchRegistry::WatchRegistry() :
-  Errable("inotify watcher registry")
+WatchRegistry::WatchRegistry() : Errable("inotify watcher registry")
 {
   inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
@@ -79,8 +78,8 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
 {
   if (!is_healthy()) return health_err_result<>();
 
-  uint32_t mask =  IN_ATTRIB | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE_SELF |
-      IN_MOVED_FROM | IN_MOVED_TO | IN_DONT_FOLLOW | IN_EXCL_UNLINK;
+  uint32_t mask = IN_ATTRIB | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_FROM
+    | IN_MOVED_TO | IN_DONT_FOLLOW | IN_EXCL_UNLINK;
   if (recursive) mask |= IN_ONLYDIR;
 
   LOGGER << "Watching path [" << root << "]." << endl;
@@ -180,7 +179,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEff
   if (!is_healthy()) return health_err_result<>();
 
   const size_t BUFSIZE = 2048 * sizeof(inotify_event);
-  char buf[BUFSIZE] __attribute__ ((aligned(__alignof__(struct inotify_event))));
+  char buf[BUFSIZE] __attribute__((aligned(__alignof__(struct inotify_event))));
   ssize_t result = 0;
 
   while (true) {
@@ -207,7 +206,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEff
     char *current = buf;
     inotify_event *event = nullptr;
     while (current < buf + result) {
-      event = reinterpret_cast<inotify_event*>(current);
+      event = reinterpret_cast<inotify_event *>(current);
       current += sizeof(inotify_event) + event->len;
 
       LOGGER << "Received inotify event: " << event << "." << endl;

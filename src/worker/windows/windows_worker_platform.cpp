@@ -1,45 +1,44 @@
 #define WIN32_LEAN_AND_MEAN
 
-#include <windows.h>
-#include <uv.h>
-#include <string>
-#include <sstream>
 #include <map>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
+#include <uv.h>
 #include <vector>
+#include <windows.h>
 
 #include "../../helper/windows/helper.h"
+#include "../../lock.h"
+#include "../../log.h"
+#include "../../message.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
-#include "../../message.h"
-#include "../../log.h"
-#include "../../lock.h"
 #include "subscription.h"
 
-using std::string;
-using std::wstring;
-using std::ostringstream;
-using std::wostringstream;
-using std::unique_ptr;
-using std::shared_ptr;
 using std::default_delete;
-using std::map;
-using std::pair;
-using std::make_pair;
-using std::vector;
-using std::move;
 using std::endl;
+using std::make_pair;
+using std::map;
+using std::move;
+using std::ostringstream;
+using std::pair;
+using std::shared_ptr;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+using std::wostringstream;
+using std::wstring;
 
 static void CALLBACK command_perform_helper(__in ULONG_PTR payload);
 
 static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped);
 
-class WindowsWorkerPlatform : public WorkerPlatform {
+class WindowsWorkerPlatform : public WorkerPlatform
+{
 public:
-  WindowsWorkerPlatform(WorkerThread *thread) :
-    WorkerPlatform(thread),
-    thread_handle{0}
+  WindowsWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread), thread_handle{0}
   {
     int err;
 
@@ -49,10 +48,7 @@ public:
     }
   };
 
-  ~WindowsWorkerPlatform() override
-  {
-    uv_mutex_destroy(&thread_handle_mutex);
-  }
+  ~WindowsWorkerPlatform() override { uv_mutex_destroy(&thread_handle_mutex); }
 
   Result<> wake() override
   {
@@ -64,11 +60,7 @@ public:
       return ok_result();
     }
 
-    BOOL success = QueueUserAPC(
-      command_perform_helper,
-      thread_handle,
-      reinterpret_cast<ULONG_PTR>(this)
-    );
+    BOOL success = QueueUserAPC(command_perform_helper, thread_handle, reinterpret_cast<ULONG_PTR>(this));
     if (!success) {
       return windows_error_result<>("Unable to queue APC");
     }
@@ -84,14 +76,13 @@ public:
       Lock lock(thread_handle_mutex);
 
       HANDLE pseudo_handle = GetCurrentThread();
-      BOOL success = DuplicateHandle(
-        GetCurrentProcess(), // Source process
-        pseudo_handle, // Source handle
-        GetCurrentProcess(), // Destination process
-        &thread_handle, // Destination handle
-        0, // Desired access
-        FALSE, // Inheritable by new processes
-        DUPLICATE_SAME_ACCESS // options
+      BOOL success = DuplicateHandle(GetCurrentProcess(),  // Source process
+        pseudo_handle,  // Source handle
+        GetCurrentProcess(),  // Destination process
+        &thread_handle,  // Destination handle
+        0,  // Desired access
+        FALSE,  // Inheritable by new processes
+        DUPLICATE_SAME_ACCESS  // options
       );
       if (!success) {
         Result<> r = windows_error_result<>("Unable to duplicate thread handle");
@@ -108,10 +99,7 @@ public:
     return health_err_result();
   }
 
-  Result<bool> handle_add_command(
-    const CommandID command,
-    const ChannelID channel,
-    const string &root_path) override
+  Result<bool> handle_add_command(const CommandID command, const ChannelID channel, const string &root_path) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
 
@@ -121,14 +109,13 @@ public:
     wstring &root_path_w = convr.get_value();
 
     // Open a directory handle
-    HANDLE root = CreateFileW(
-      root_path_w.c_str(), // null-terminated wchar file name
-      FILE_LIST_DIRECTORY, // desired access
-      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, // share mode
-      NULL, // security attributes
-      OPEN_EXISTING, // creation disposition
-      FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, // flags and attributes
-      NULL // template file
+    HANDLE root = CreateFileW(root_path_w.c_str(),  // null-terminated wchar file name
+      FILE_LIST_DIRECTORY,  // desired access
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,  // share mode
+      NULL,  // security attributes
+      OPEN_EXISTING,  // creation disposition
+      FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,  // flags and attributes
+      NULL  // template file
     );
     if (root == INVALID_HANDLE_VALUE) {
       return windows_error_result<bool>("Unable to open directory handle");
@@ -153,9 +140,7 @@ public:
     return ok_result(true);
   }
 
-  Result<bool> handle_remove_command(
-    const CommandID command,
-    const ChannelID channel) override
+  Result<bool> handle_remove_command(const CommandID command, const ChannelID channel) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
 
@@ -172,7 +157,7 @@ public:
     return ok_result(false);
   }
 
-  Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription* sub)
+  Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription *sub)
   {
     if (!is_healthy()) return health_err_result();
 
@@ -256,8 +241,7 @@ public:
   }
 
 private:
-  Result<> process_event_payload(
-    PFILE_NOTIFY_INFORMATION info,
+  Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info,
     Subscription *sub,
     vector<Message> &messages,
     bool &old_path_seen,
@@ -288,70 +272,59 @@ private:
     string &path = u8r.get_value();
 
     switch (info->Action) {
-    case FILE_ACTION_ADDED:
-      {
+      case FILE_ACTION_ADDED: {
         FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
         Message message(move(payload));
 
         LOGGER << "Emitting filesystem message " << message << "." << endl;
         messages.push_back(move(message));
-      }
-      break;
-    case FILE_ACTION_MODIFIED:
-      {
+      } break;
+      case FILE_ACTION_MODIFIED: {
         FileSystemPayload payload(channel, ACTION_MODIFIED, kind, "", move(path));
         Message message(move(payload));
 
         LOGGER << "Emitting filesystem message " << message << "." << endl;
         messages.push_back(move(message));
-      }
-      break;
-    case FILE_ACTION_REMOVED:
-      {
+      } break;
+      case FILE_ACTION_REMOVED: {
         FileSystemPayload payload(channel, ACTION_DELETED, kind, "", move(path));
         Message message(move(payload));
 
         LOGGER << "Emitting filesystem message " << message << "." << endl;
         messages.push_back(move(message));
-      }
-      break;
-    case FILE_ACTION_RENAMED_OLD_NAME:
-      old_path_seen = true;
-      old_path = move(path);
-      break;
-    case FILE_ACTION_RENAMED_NEW_NAME:
-      if (old_path_seen) {
-        // Old name received first
-        {
-          FileSystemPayload payload(channel, ACTION_RENAMED, kind, move(old_path), move(path));
-          Message message(move(payload));
+      } break;
+      case FILE_ACTION_RENAMED_OLD_NAME:
+        old_path_seen = true;
+        old_path = move(path);
+        break;
+      case FILE_ACTION_RENAMED_NEW_NAME:
+        if (old_path_seen) {
+          // Old name received first
+          {
+            FileSystemPayload payload(channel, ACTION_RENAMED, kind, move(old_path), move(path));
+            Message message(move(payload));
 
-          LOGGER << "Emitting filesystem message " << message << "." << endl;
-          messages.push_back(move(message));
+            LOGGER << "Emitting filesystem message " << message << "." << endl;
+            messages.push_back(move(message));
+          }
+
+          old_path_seen = false;
+        } else {
+          // No old name. Treat it as a creation
+          {
+            FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
+            Message message(move(payload));
+
+            LOGGER << "Emitting filesystem message " << message << "." << endl;
+            messages.push_back(move(message));
+          }
         }
-
-        old_path_seen = false;
-      } else {
-        // No old name. Treat it as a creation
-        {
-          FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
-          Message message(move(payload));
-
-          LOGGER << "Emitting filesystem message " << message << "." << endl;
-          messages.push_back(move(message));
-        }
-      }
-      break;
-    default:
-      {
+        break;
+      default: {
         ostringstream out;
-        out
-          << "Unexpected action " << info->Action
-          << " reported by ReadDirectoryChangesW for "
-          << path;
+        out << "Unexpected action " << info->Action << " reported by ReadDirectoryChangesW for " << path;
         return error_result(out.str());
-      }
-      break;
+      } break;
     }
 
     return ok_result();
@@ -360,7 +333,7 @@ private:
   uv_mutex_t thread_handle_mutex;
   HANDLE thread_handle;
 
-  map<ChannelID, Subscription*> subscriptions;
+  map<ChannelID, Subscription *> subscriptions;
 };
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
@@ -370,13 +343,13 @@ unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
 
 void CALLBACK command_perform_helper(__in ULONG_PTR payload)
 {
-  WindowsWorkerPlatform *platform = reinterpret_cast<WindowsWorkerPlatform*>(payload);
+  WindowsWorkerPlatform *platform = reinterpret_cast<WindowsWorkerPlatform *>(payload);
   platform->handle_commands();
 }
 
 static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped)
 {
-  Subscription *sub = static_cast<Subscription*>(overlapped->hEvent);
+  Subscription *sub = static_cast<Subscription *>(overlapped->hEvent);
   Result<> r = sub->get_platform()->handle_fs_event(error_code, num_bytes, sub);
   if (r.is_error()) {
     LOGGER << "Unable to handle filesystem events: " << r << "." << endl;

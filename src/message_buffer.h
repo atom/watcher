@@ -2,12 +2,13 @@
 #define MESSAGE_BUFFER_H
 
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "message.h"
 
-class MessageBuffer {
+class MessageBuffer
+{
 public:
   MessageBuffer() = default;
   MessageBuffer(const MessageBuffer &) = delete;
@@ -42,7 +43,8 @@ private:
   std::vector<Message> messages;
 };
 
-class ChannelMessageBuffer {
+class ChannelMessageBuffer
+{
 public:
   ChannelMessageBuffer(MessageBuffer &buffer, ChannelID channel_id);
   ChannelMessageBuffer(const ChannelMessageBuffer &) = delete;
@@ -51,20 +53,11 @@ public:
   ChannelMessageBuffer &operator=(const ChannelMessageBuffer &) = delete;
   ChannelMessageBuffer &operator=(ChannelMessageBuffer &&) = delete;
 
-  void created(std::string &&path, const EntryKind &kind)
-  {
-    buffer.created(channel_id, std::move(path), kind);
-  }
+  void created(std::string &&path, const EntryKind &kind) { buffer.created(channel_id, std::move(path), kind); }
 
-  void modified(std::string &&path, const EntryKind &kind)
-  {
-    buffer.modified(channel_id, std::move(path), kind);
-  }
+  void modified(std::string &&path, const EntryKind &kind) { buffer.modified(channel_id, std::move(path), kind); }
 
-  void deleted(std::string &&path, const EntryKind &kind)
-  {
-    buffer.deleted(channel_id, std::move(path), kind);
-  }
+  void deleted(std::string &&path, const EntryKind &kind) { buffer.deleted(channel_id, std::move(path), kind); }
 
   void renamed(std::string &&old_path, std::string &&path, const EntryKind &kind)
   {

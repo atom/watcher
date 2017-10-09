@@ -6,7 +6,8 @@
 
 #include "message.h"
 
-class ThreadStarter {
+class ThreadStarter
+{
 public:
   ThreadStarter();
   ThreadStarter(const ThreadStarter &) = delete;
