@@ -204,6 +204,7 @@ public:
 
     // Handle errors.
     if (error_code == ERROR_INVALID_PARAMETER) {
+      LOGGER << "Attempting to revert to a network-friendly buffer size." << endl;
       Result<> resize = sub->use_network_size();
       if (resize.is_error()) return resize;
 
@@ -274,8 +275,6 @@ private:
       if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND) {
         return windows_error_result<>("GetFileAttributesW failed", attr_err);
       }
-      Result<> t = windows_error_result<>("GetFileAttributesW reports");
-      LOGGER << t << endl;
     } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
       kind = KIND_DIRECTORY;
     } else {
