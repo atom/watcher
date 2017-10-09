@@ -147,8 +147,14 @@ public:
 
     LOGGER << "Added directory root " << root_path << "." << endl;
 
-    Result<> schedr = sub->schedule(&event_helper);
+    Result<bool> schedr = sub->schedule(&event_helper);
     if (schedr.is_error()) return schedr.propagate<bool>();
+    if (!schedr.get_value()) {
+      LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
+
+      return emit(Message(CommandPayload(COMMAND_ADD, command, move(root_path), channel)))
+        .propagate(false);
+    }
 
     return ok_result(true);
   }
@@ -208,12 +214,12 @@ public:
       Result<> resize = sub->use_network_size();
       if (resize.is_error()) return resize;
 
-      return sub->schedule(&event_helper);
+      return sub->schedule(&event_helper).propagate_as_void();
     }
 
     if (error_code == ERROR_NOTIFY_ENUM_DIR) {
       LOGGER << "Change buffer overflow. Some events may have been lost." << endl;
-      return sub->schedule(&event_helper);
+      return sub->schedule(&event_helper).propagate_as_void();
     }
 
     if (error_code != ERROR_SUCCESS) {
@@ -222,7 +228,7 @@ public:
 
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
-    Result<> next = sub->schedule(&event_helper);
+    Result<bool> next = sub->schedule(&event_helper);
     if (next.is_error()) {
       report_error(string(next.get_error()));
     }
@@ -253,7 +259,7 @@ public:
       }
     }
 
-    return next;
+    return next.propagate_as_void();
   }
 
 private:
