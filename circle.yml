@@ -22,4 +22,4 @@ test:
   override:
   - npm run ci:circle
   - npm run lint
-  - npm run format && git diff
+  - npm run format && git diff --exit-code -- src/ test/
