@@ -12,7 +12,6 @@ readability-*,\
 -clang-diagnostic-unused-command-line-argument"
 FormatStyle: file
 WarningsAsErrors: '*'
-HeaderFilterRegex: 'src/'
 AnalyzeTemporaryDtors: false
 CheckOptions:
   - key: readability-braces-around-statements.ShortStatementLines

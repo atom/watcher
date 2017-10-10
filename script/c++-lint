@@ -20,5 +20,6 @@ for SRCFILE in $(find src -type f -name '*.cpp'); do
   clang-tidy \
     -p "${COMPILATION_DB}" \
     -quiet \
+    "-header-filter=^\.\./src/*" \
     "${SRCFILE}"
 done
