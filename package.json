@@ -5,9 +5,9 @@
   "main": "lib/index.js",
   "scripts": {
     "lint": "standard",
-    "format:cpp": "script/format",
     "build:debug": "node-gyp rebuild --debug",
     "build:verbose": "node-gyp rebuild --verbose",
+    "format:cpp": "script/c++-format",
     "mocha": "mocha --require test/global.js --require mocha-stress --harmony",
     "mocha:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js",
     "test": "npm run lint && npm run mocha",
