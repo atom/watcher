@@ -14,6 +14,7 @@ dependencies:
   - echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
   - nvm install ${NODE_VERSION}
   - nvm alias default ${NODE_VERSION}
+  - npm install -g npm@5.4.2
   override:
   - npm install
 

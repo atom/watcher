@@ -16,6 +16,7 @@ build: off
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm config set msvs_version 2015
+  - npm install -g npm@5.4.2
   - npm install
 
 test_script:

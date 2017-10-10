@@ -19,6 +19,9 @@ branches:
   only:
   - master
 
+before_install:
+- npm install -g npm@5.4.2
+
 script:
 - npm run ci:travis
 - npm run lint
