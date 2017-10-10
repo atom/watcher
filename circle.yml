@@ -4,6 +4,7 @@ machine:
   environment:
     NVM_DIR: "${HOME}/.nvm"
     NODE_VERSION: "8.1.4"
+    PATH: "${PATH}:/usr/local/opt/llvm/bin"
 
 dependencies:
   pre:
