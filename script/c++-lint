@@ -15,11 +15,8 @@ if [ ! -f "${COMPILATION_DB}" ]; then
   node script/helper/gen-compilation-db rebuild
 fi
 
-for SRCFILE in $(find src -type f -name '*.cpp'); do
-  printf "Linting %s:\n" "${SRCFILE}"
-  clang-tidy \
-    -p "${COMPILATION_DB}" \
-    -quiet \
-    "-header-filter=^\.\./src/*" \
-    "${SRCFILE}"
-done
+clang-tidy \
+  -p "${COMPILATION_DB}" \
+  -quiet \
+  "-header-filter=^\.\./src/*" \
+  $(find src -type f -name '*.cpp')
