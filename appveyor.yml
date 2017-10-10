@@ -5,7 +5,7 @@ cache:
   - '%APPDATA%\npm-cache'
 
 environment:
-  nodejs_version: "7.4.0"
+  nodejs_version: "8.1.4"
 
 platform:
   - x86
@@ -20,6 +20,8 @@ install:
 
 test_script:
 - npm run ci:appveyor
+- npm run lint
+- npm run format
 
 shallow_clone: true
 clone_depth: 5

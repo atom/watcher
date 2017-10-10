@@ -8,7 +8,7 @@ machine:
 dependencies:
   pre:
   - brew update
-  - brew install nvm
+  - brew install nvm llvm
   - mkdir -p ${NVM_DIR}
   - echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
   - nvm install ${NODE_VERSION}
@@ -19,3 +19,5 @@ dependencies:
 test:
   override:
   - npm run ci:circle
+  - npm run lint
+  - npm run format && git diff

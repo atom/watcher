@@ -1,13 +1,13 @@
 language: node_js
 node_js:
-- 7.4.0
+- 8.1.4
 sudo: false
 dist: trusty
 
 addons:
   apt:
     packages:
-    - clang-3.3
+    - clang-5.0
     - build-essential
 
 git:
@@ -18,8 +18,9 @@ branches:
   - master
 
 script:
-- npm run lint
 - npm run ci:travis
+- npm run lint
+- npm run format && git diff
 
 env:
   global:
