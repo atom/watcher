@@ -37,13 +37,14 @@ Subscription::~Subscription()
   CloseHandle(root);
 }
 
-Result<> Subscription::schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn)
+Result<bool> Subscription::schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn)
 {
   if (terminating) {
     LOGGER << "Declining to schedule a new change callback for channel " << channel
            << " because the subscription is terminating." << endl;
-    return ok_result();
+    return ok_result(true);
   }
+
   LOGGER << "Scheduling the next change callback for channel " << channel << "." << endl;
 
   int success = ReadDirectoryChangesW(root,  // root directory handle
@@ -57,11 +58,18 @@ Result<> Subscription::schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn)
     &overlapped,  // overlapped
     fn  // completion routine
   );
+
   if (!success) {
-    return windows_error_result<>("Unable to subscribe to filesystem events");
+    DWORD last_error = GetLastError();
+    if (last_error == ERROR_INVALID_FUNCTION) {
+      // Filesystem does not support change events.
+      return ok_result(false);
+    }
+
+    return windows_error_result<bool>("Unable to subscribe to filesystem events", last_error);
   }
 
-  return ok_result();
+  return ok_result(true);
 }
 
 Result<> Subscription::use_network_size()
