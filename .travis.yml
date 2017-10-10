@@ -7,7 +7,9 @@ dist: trusty
 addons:
   apt:
     packages:
-    - clang-5.0
+    - clang-3.9
+    - clang-format-3.9
+    - clang-tidy-3.9
     - build-essential
 
 git:
