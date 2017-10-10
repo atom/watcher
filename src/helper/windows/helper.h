@@ -33,7 +33,7 @@ Result<V> windows_error_result(const std::string &prefix, DWORD error_code)
     NULL  // arguments
   );
 
-  std::string msg_str(static_cast<char*>(msg_buffer));
+  std::string msg_str(static_cast<char *>(msg_buffer));
   // Remove the pesky CRLF and punctuation
   if (msg_str.size() > 3) {
     msg_str.erase(msg_str.size() - 3, 3);

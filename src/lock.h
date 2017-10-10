@@ -15,6 +15,7 @@ public:
 
   Lock &operator=(const Lock &) = delete;
   Lock &operator=(Lock &&) = delete;
+
 private:
   uv_mutex_t &mutex;
 };
@@ -30,6 +31,7 @@ public:
 
   ReadLock &operator=(const ReadLock &) = delete;
   ReadLock &operator=(ReadLock &&) = delete;
+
 private:
   uv_rwlock_t &rwlock;
 };
@@ -45,6 +47,7 @@ public:
 
   WriteLock &operator=(const WriteLock &) = delete;
   WriteLock &operator=(WriteLock &&) = delete;
+
 private:
   uv_rwlock_t &rwlock;
 };

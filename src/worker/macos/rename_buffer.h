@@ -15,13 +15,16 @@
 class RenameBufferEntry
 {
 public:
-  RenameBufferEntry(RenameBufferEntry &&original) noexcept : entry{std::move(original.entry)}, current{original.current} {};
+  RenameBufferEntry(RenameBufferEntry &&original) noexcept :
+    entry{std::move(original.entry)},
+    current{original.current} {};
 
   RenameBufferEntry(const RenameBufferEntry &) = delete;
   ~RenameBufferEntry() = default;
 
   RenameBufferEntry &operator=(const RenameBufferEntry &) = delete;
   RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
+
 private:
   RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) : entry{std::move(entry)}, current{current} {};
 
@@ -50,6 +53,7 @@ public:
   RenameBuffer(RenameBuffer &&) = delete;
   RenameBuffer &operator=(const RenameBuffer &) = delete;
   RenameBuffer &operator=(RenameBuffer &&) = delete;
+
 private:
   void observe_present_entry(const std::shared_ptr<PresentEntry> &present, bool current);
 

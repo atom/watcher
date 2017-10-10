@@ -24,6 +24,7 @@ public:
   WorkerThread(WorkerThread &&) = delete;
   WorkerThread &operator=(const WorkerThread &) = delete;
   WorkerThread &operator=(WorkerThread &&) = delete;
+
 private:
   Result<> wake() override;
 

@@ -24,6 +24,7 @@ public:
   EventHandler(EventHandler &&) = delete;
   EventHandler &operator=(const EventHandler &) = delete;
   EventHandler &operator=(EventHandler &&) = delete;
+
 private:
   RecentFileCache &cache;
   ChannelMessageBuffer &message_buffer;

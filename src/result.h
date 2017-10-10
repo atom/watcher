@@ -201,7 +201,8 @@ Result<V> ok_result(V &&value)
   return Result<V>::make_ok(std::forward<V>(value));
 }
 
-inline Result<void *> ok_result() {
+inline Result<void *> ok_result()
+{
   return Result<void *>::make_ok(nullptr);
 }
 

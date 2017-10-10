@@ -1,7 +1,7 @@
 #include "recent_file_cache.h"
 
-#include <chrono>
 #include <cerrno>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -35,7 +35,8 @@ static const minutes CACHE_AGEOFF = minutes(5);
 
 shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint)
 {
-  struct stat path_stat{};
+  struct stat path_stat
+  {};
 
   if (lstat(path.c_str(), &path_stat) != 0) {
     errno_t stat_errno = errno;
@@ -115,7 +116,7 @@ bool PresentEntry::has_changed_from(const StatResult &other) const
   if (StatResult::has_changed_from(other)) return true;
   if (other.is_absent()) return true;
 
-  const auto &casted = static_cast<const PresentEntry &>(other); // NOLINT
+  const auto &casted = static_cast<const PresentEntry &>(other);  // NOLINT
   return inode != casted.get_inode() || get_path() != casted.get_path();
 }
 
@@ -124,7 +125,7 @@ bool PresentEntry::could_be_rename_of(const StatResult &other) const
   if (!StatResult::could_be_rename_of(other)) return false;
   if (other.is_absent()) return false;
 
-  const auto &casted = static_cast<const PresentEntry &>(other); // NOLINT
+  const auto &casted = static_cast<const PresentEntry &>(other);  // NOLINT
   return inode == casted.get_inode();
 }
 

@@ -33,6 +33,7 @@ public:
 
   PollingThread &operator=(const PollingThread &) = delete;
   PollingThread &operator=(PollingThread &&) = delete;
+
 private:
   Result<> body() override;
 

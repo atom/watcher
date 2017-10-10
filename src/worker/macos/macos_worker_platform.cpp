@@ -44,7 +44,10 @@ struct Subscription
   ChannelID channel;
   FSEventStreamRef event_stream;
 
-  Subscription(MacOSWorkerPlatform *platform, ChannelID channel) : platform{platform}, channel{channel}, event_stream{nullptr}
+  Subscription(MacOSWorkerPlatform *platform, ChannelID channel) :
+    platform{platform},
+    channel{channel},
+    event_stream{nullptr}
   {
     //
   }
@@ -133,7 +136,8 @@ public:
       return Result<bool>::make_error(move(msg));
     }
 
-    CFArrayRef watch_roots = CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void **>(&watch_root), 1, nullptr);
+    CFArrayRef watch_roots =
+      CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void **>(&watch_root), 1, nullptr);
     if (watch_roots == nullptr) {
       string msg("Unable to allocate array for watch root: ");
       msg += root_path;

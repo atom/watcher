@@ -3,7 +3,7 @@ machine:
     version: 8.3
   environment:
     NVM_DIR: "${HOME}/.nvm"
-    NODE_VERSION: "7.4.0"
+    NODE_VERSION: "8.1.4"
 
 dependencies:
   pre:

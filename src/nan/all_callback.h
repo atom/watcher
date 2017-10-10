@@ -24,6 +24,7 @@ public:
 
   AllCallback &operator=(const AllCallback &) = delete;
   AllCallback &operator=(AllCallback &&) = delete;
+
 private:
   explicit AllCallback(std::unique_ptr<Nan::Callback> &&done);
 

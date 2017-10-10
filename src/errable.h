@@ -53,6 +53,7 @@ public:
 
   Errable &operator=(const Errable &) = delete;
   Errable &operator=(Errable &&) = delete;
+
 private:
   bool healthy;
   std::string source;
@@ -74,6 +75,7 @@ public:
 
   SyncErrable &operator=(const SyncErrable &) = delete;
   SyncErrable &operator=(SyncErrable &&) = delete;
+
 private:
   bool lock_healthy;
   uv_rwlock_t rwlock{};

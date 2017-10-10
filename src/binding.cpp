@@ -238,4 +238,4 @@ void initialize(Local<Object> exports)
     Nan::GetFunction(Nan::New<FunctionTemplate>(status)).ToLocalChecked());
 }
 
-NODE_MODULE(watcher, initialize); // NOLINT
+NODE_MODULE(watcher, initialize);  // NOLINT

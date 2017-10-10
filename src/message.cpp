@@ -76,10 +76,7 @@ string FileSystemPayload::describe() const
   return builder.str();
 }
 
-CommandPayload::CommandPayload(CommandAction action,
-  CommandID id,
-  std::string &&root,
-  uint_fast32_t arg) :
+CommandPayload::CommandPayload(CommandAction action, CommandID id, std::string &&root, uint_fast32_t arg) :
   id{id},
   action{action},
   root{move(root)},

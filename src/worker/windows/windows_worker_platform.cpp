@@ -139,8 +139,7 @@ public:
     if (!schedr.get_value()) {
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
-      return emit(Message(CommandPayload(COMMAND_ADD, command, move(root_path), channel)))
-        .propagate(false);
+      return emit(Message(CommandPayload(COMMAND_ADD, command, move(root_path), channel))).propagate(false);
     }
 
     return ok_result(true);
