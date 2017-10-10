@@ -14,11 +14,11 @@
     "build:debug": "node script/helper/gen-compilation-db.js rebuild --debug",
     "test": "mocha --require test/global.js --require mocha-stress --harmony",
     "test:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js",
-    "ci:appveyor": "npm run mocha -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5 --timeout 30000",
-    "ci:circle": "npm run mocha -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
-    "ci:travis": "npm run mocha -- --fgrep '^linux' --invert --reporter list",
-    "aw:test": "npm run clean:fixture && clear && npm run build:debug && clear && npm run mocha",
-    "aw:win": "npm run clean:fixture && cls && npm run build:debug && cls && npm run mocha",
+    "ci:appveyor": "npm run test -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5 --timeout 30000",
+    "ci:circle": "npm run test -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
+    "ci:travis": "npm run test -- --fgrep '^linux' --invert --reporter list",
+    "aw:test": "npm run clean:fixture && clear && npm run build:debug && clear && npm run test",
+    "aw:win": "npm run clean:fixture && cls && npm run build:debug && cls && npm run test",
     "clean:fixture": "git clean -xfd test/fixture"
   },
   "keywords": [
