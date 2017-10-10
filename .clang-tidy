@@ -9,7 +9,15 @@ misc-*,\
 modernize-*,\
 performance-*,\
 readability-*,\
--clang-diagnostic-unused-command-line-argument"
+-bugprone-undefined-memory-manipulation,\
+-clang-diagnostic-unused-command-line-argument,\
+-cppcoreguidelines-pro-bounds-constant-array-index,\
+-cppcoreguidelines-pro-bounds-array-to-pointer-decay,\
+-cppcoreguidelines-pro-type-union-access,\
+-cppcoreguidelines-pro-type-reinterpret-cast,\
+-cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+-modernize-make-unique,\
+-modernize-make-shared,"
 FormatStyle: file
 WarningsAsErrors: '*'
 AnalyzeTemporaryDtors: false
