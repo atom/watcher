@@ -12,7 +12,6 @@ using std::string;
 using v8::Local;
 using v8::Object;
 using v8::String;
-using v8::Uint32;
 using v8::Value;
 
 bool get_string_option(Local<Object> &options, const char *key_name, string &out)

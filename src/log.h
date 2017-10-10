@@ -7,7 +7,10 @@
 class Logger
 {
 public:
-  virtual ~Logger() {}
+  Logger() = default;
+  Logger(const Logger &) = delete;
+  Logger(Logger &&) = delete;
+  virtual ~Logger() = default;
 
   static Logger *current();
   static void to_file(const char *filename);
@@ -17,6 +20,9 @@ public:
 
   virtual Logger *prefix(const char *file, int line) = 0;
   virtual std::ostream &stream() = 0;
+
+  Logger &operator=(const Logger &) = delete;
+  Logger &operator=(Logger &&) = delete;
 };
 
 std::string plural(long quantity, const std::string &singular_form, const std::string &plural_form);

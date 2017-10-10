@@ -12,7 +12,6 @@ using std::move;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
-using v8::Boolean;
 using v8::Function;
 using v8::FunctionTemplate;
 using v8::Local;
@@ -162,7 +161,7 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
     Nan::ThrowError("unwatch() requires a channel ID as its first argument");
     return;
   }
-  ChannelID channel_id = static_cast<ChannelID>(maybe_channel_id.FromJust());
+  auto channel_id = static_cast<ChannelID>(maybe_channel_id.FromJust());
 
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
 
@@ -239,4 +238,4 @@ void initialize(Local<Object> exports)
     Nan::GetFunction(Nan::New<FunctionTemplate>(status)).ToLocalChecked());
 }
 
-NODE_MODULE(watcher, initialize);
+NODE_MODULE(watcher, initialize); // NOLINT

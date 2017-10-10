@@ -22,8 +22,10 @@
 class Queue : public Errable
 {
 public:
-  Queue(std::string name = "queue");
-  ~Queue();
+  explicit Queue(std::string &&name = "queue");
+  Queue(const Queue &) = delete;
+  Queue(Queue &&) = delete;
+  ~Queue() override;
 
   // Atomically enqueue a single Message.
   Result<> enqueue(Message &&message);
@@ -49,8 +51,10 @@ public:
   // Atomically report the number of items waiting on the queue.
   size_t size();
 
+  Queue &operator=(const Queue &) = delete;
+  Queue &operator=(Queue &&) = delete;
 private:
-  uv_mutex_t mutex;
+  uv_mutex_t mutex{};
   std::unique_ptr<std::vector<Message>> active;
 };
 

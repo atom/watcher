@@ -15,7 +15,7 @@ using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
 
-void RenameBuffer::observe_entry(shared_ptr<StatResult> former, shared_ptr<StatResult> current)
+void RenameBuffer::observe_entry(const shared_ptr<StatResult> &former, const shared_ptr<StatResult> &current)
 {
   if (!former->has_changed_from(*current)) {
     // The entry is still there with the same inode.
@@ -34,7 +34,7 @@ void RenameBuffer::observe_entry(shared_ptr<StatResult> former, shared_ptr<StatR
   }
 }
 
-void RenameBuffer::observe_present_entry(shared_ptr<PresentEntry> present, bool current)
+void RenameBuffer::observe_present_entry(const shared_ptr<PresentEntry> &present, bool current)
 {
   auto maybe_entry = observed_by_inode.find(present->get_inode());
   if (maybe_entry == observed_by_inode.end()) {
@@ -80,8 +80,8 @@ void RenameBuffer::observe_present_entry(shared_ptr<PresentEntry> present, bool 
 
 void RenameBuffer::flush_unmatched()
 {
-  for (auto it = observed_by_inode.begin(); it != observed_by_inode.end(); ++it) {
-    RenameBufferEntry &existing = it->second;
+  for (auto &it : observed_by_inode) {
+    RenameBufferEntry &existing = it.second;
     shared_ptr<PresentEntry> entry = existing.entry;
 
     if (existing.current) {

@@ -9,19 +9,17 @@
 #include "queue.h"
 #include "result.h"
 
-using std::back_inserter;
-using std::copy;
 using std::move;
 using std::string;
 using std::unique_ptr;
 using std::vector;
 
-Queue::Queue(string name) : Errable(name), active{new vector<Message>}
+Queue::Queue(string &&name) : Errable(move(name)), active{new vector<Message>}
 {
   int err;
 
   err = uv_mutex_init(&mutex);
-  if (err) {
+  if (err != 0) {
     report_uv_error(err);
   }
 }

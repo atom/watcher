@@ -22,11 +22,11 @@ class PollingIterator
 {
 public:
   // Create an iterator poised to begin at a root `DirectoryRecord`.
-  explicit PollingIterator(std::shared_ptr<DirectoryRecord> root);
+  explicit PollingIterator(const std::shared_ptr<DirectoryRecord> &root);
 
   PollingIterator(const PollingIterator &) = delete;
   PollingIterator(PollingIterator &&) = delete;
-  ~PollingIterator();
+  ~PollingIterator() = default;
   PollingIterator &operator=(const PollingIterator &) = delete;
   PollingIterator &operator=(PollingIterator &&) = delete;
 
@@ -92,15 +92,15 @@ public:
 
   BoundPollingIterator(const BoundPollingIterator &) = delete;
   BoundPollingIterator(BoundPollingIterator &&) = delete;
-  ~BoundPollingIterator();
+  ~BoundPollingIterator() = default;
   BoundPollingIterator &operator=(const BoundPollingIterator &) = delete;
   BoundPollingIterator &operator=(BoundPollingIterator &&) = delete;
 
   // Called from `DirectoryRecord::scan()` to make note of an entry within the current directory.
-  void push_entry(const std::string &&entry, EntryKind kind) { iterator.entries.emplace_back(std::move(entry), kind); }
+  void push_entry(std::string &&entry, EntryKind kind) { iterator.entries.emplace_back(std::move(entry), kind); }
 
   // Called from `DirectoryRecord::entry()` when a subdirectory is encountered to enqueue it for traversal.
-  void push_directory(std::shared_ptr<DirectoryRecord> subdirectory) { iterator.directories.push(subdirectory); }
+  void push_directory(const std::shared_ptr<DirectoryRecord> &subdirectory) { iterator.directories.push(subdirectory); }
 
   // Access the message buffer to emit events from other classes.
   ChannelMessageBuffer &get_buffer() { return buffer; }

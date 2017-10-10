@@ -6,7 +6,7 @@
 #include <nan.h>
 #include <v8.h>
 
-typedef std::function<void(const Nan::FunctionCallbackInfo<v8::Value> &)> FnCallback;
+using FnCallback = std::function<void(const Nan::FunctionCallbackInfo<v8::Value> &)>;
 
 std::unique_ptr<Nan::Callback> fn_callback(FnCallback &fn);
 

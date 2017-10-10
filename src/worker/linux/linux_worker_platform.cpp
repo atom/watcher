@@ -76,13 +76,13 @@ public:
   }
 
   // Recursively watch a directory tree.
-  Result<bool> handle_add_command(const CommandID command, const ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
   {
-    return registry.add(channel, move(root_path), true).propagate(true);
+    return registry.add(channel, string(root_path), true).propagate(true);
   }
 
   // Unwatch a directory tree.
-  Result<bool> handle_remove_command(const CommandID command, const ChannelID channel) override
+  Result<bool> handle_remove_command(CommandID command, ChannelID channel) override
   {
     return registry.remove(channel).propagate(true);
   }

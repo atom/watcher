@@ -11,7 +11,7 @@ using std::move;
 using std::ostream;
 using std::string;
 
-Errable::Errable(string source) : healthy{true}, source{source}, message{"ok"}
+Errable::Errable(string &&source) : healthy{true}, source{move(source)}, message{"ok"}
 {
   //
 }
@@ -37,11 +37,11 @@ string Errable::get_error()
   return message;
 }
 
-SyncErrable::SyncErrable(string source) : Errable(source)
+SyncErrable::SyncErrable(string &&source) : Errable(move(source))
 {
   int err = uv_rwlock_init(&rwlock);
 
-  if (err) {
+  if (err != 0) {
     Errable::report_error(uv_strerror(err));
     lock_healthy = false;
   } else {

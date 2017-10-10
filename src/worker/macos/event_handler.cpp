@@ -1,14 +1,13 @@
 #include "event_handler.h"
 
 #include <CoreServices/CoreServices.h>
-#include <errno.h>
+#include <cerrno>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <sys/stat.h>
 #include <utility>
-#include <vector>
 
 #include "../../log.h"
 #include "../../message.h"
@@ -23,7 +22,6 @@ using std::move;
 using std::ostream;
 using std::shared_ptr;
 using std::string;
-using std::vector;
 
 class EventFunctor
 {
@@ -99,7 +97,7 @@ private:
   void collect_info()
   {
     former = cache.at_path(event_path, flag_file, flag_directory);
-    current = StatResult::at(event_path, flag_file, flag_directory);
+    current = StatResult::at(string(event_path), flag_file, flag_directory);
 
     cache.insert(current);
   }

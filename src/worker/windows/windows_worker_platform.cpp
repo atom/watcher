@@ -99,7 +99,7 @@ public:
     return health_err_result();
   }
 
-  Result<bool> handle_add_command(const CommandID command, const ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
 

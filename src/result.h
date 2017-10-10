@@ -70,15 +70,15 @@ template <class V = void *>
 class Result
 {
 public:
-  static Result<V> make_ok(V &&value) { return Result<V>(std::move(value)); }
+  static Result<V> make_ok(V &&value) { return Result<V>(std::forward<V>(value)); }
 
   static Result<V> make_error(std::string &&message) { return Result<V>(std::move(message), true); }
 
-  Result(Result<V> &&original) : state{original.state}, pending{false} { assign(std::move(original)); }
+  Result(Result<V> &&original) noexcept : state{original.state}, pending{false} { assign(std::move(original)); }
 
   ~Result() { clear(); }
 
-  Result<V> &operator=(Result<V> &&original)
+  Result<V> &operator=(Result<V> &&original) noexcept
   {
     clear();
     assign(std::move(original));
@@ -117,7 +117,7 @@ public:
       return propagate<U>(prefix);
     }
 
-    return Result<U>::make_ok(std::move(value));
+    return Result<U>::make_ok(std::forward<U>(value));
   }
 
   Result<> propagate_as_void() const
@@ -147,7 +147,7 @@ private:
     //
   }
 
-  Result(std::string &&error, bool ignored) : state{RESULT_ERROR}, error{std::move(error)}
+  Result(std::string &&error, bool /*ignored*/) : state{RESULT_ERROR}, error{std::move(error)}
   {
     //
   }
@@ -191,20 +191,17 @@ private:
   {
     V value;
     std::string error;
-    bool pending;
+    bool pending{false};
   };
-
-  friend Result<void *> ok_result();
 };
 
 template <class V>
 Result<V> ok_result(V &&value)
 {
-  return Result<V>::make_ok(std::move(value));
+  return Result<V>::make_ok(std::forward<V>(value));
 }
 
-inline Result<void *> ok_result()
-{
+inline Result<void *> ok_result() {
   return Result<void *>::make_ok(nullptr);
 }
 

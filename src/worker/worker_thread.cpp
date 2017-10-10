@@ -1,7 +1,5 @@
-#include <iostream>
 #include <memory>
 #include <string>
-#include <utility>
 #include <uv.h>
 #include <vector>
 
@@ -12,11 +10,8 @@
 #include "worker_platform.h"
 #include "worker_thread.h"
 
-using std::endl;
-using std::move;
 using std::string;
 using std::unique_ptr;
-using std::vector;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
   Thread("worker thread", main_callback),
@@ -25,10 +20,8 @@ WorkerThread::WorkerThread(uv_async_t *main_callback) :
   //
 }
 
-WorkerThread::~WorkerThread()
-{
-  // Necessary so that unique_ptr can see the full definition of WorkerPlatform
-}
+// Definition must be here to see the full definition of WorkerPlatform.
+WorkerThread::~WorkerThread() = default;
 
 Result<> WorkerThread::wake()
 {

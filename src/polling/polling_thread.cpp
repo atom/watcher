@@ -25,11 +25,6 @@ PollingThread::PollingThread(uv_async_t *main_callback) :
   //
 }
 
-PollingThread::~PollingThread()
-{
-  //
-}
-
 void PollingThread::collect_status(Status &status)
 {
   status.polling_thread_state = state_name();
@@ -90,43 +85,43 @@ Result<> PollingThread::cycle()
   return emit_all(buffer.begin(), buffer.end());
 }
 
-Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(const CommandPayload *payload)
+Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(const CommandPayload *command)
 {
-  Result<OfflineCommandOutcome> r = Thread::handle_offline_command(payload);
+  Result<OfflineCommandOutcome> r = Thread::handle_offline_command(command);
   if (r.is_error()) return r;
 
-  if (payload->get_action() == COMMAND_ADD) {
+  if (command->get_action() == COMMAND_ADD) {
     return ok_result(TRIGGER_RUN);
   }
 
-  if (payload->get_action() == COMMAND_POLLING_INTERVAL) {
-    handle_polling_interval_command(payload);
+  if (command->get_action() == COMMAND_POLLING_INTERVAL) {
+    handle_polling_interval_command(command);
   }
 
-  if (payload->get_action() == COMMAND_POLLING_THROTTLE) {
-    handle_polling_throttle_command(payload);
+  if (command->get_action() == COMMAND_POLLING_THROTTLE) {
+    handle_polling_throttle_command(command);
   }
 
   return ok_result(OFFLINE_ACK);
 }
 
-Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPayload *payload)
+Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPayload *command)
 {
-  LOGGER << "Adding poll root at path " << payload->get_root() << " to channel " << payload->get_channel_id() << "."
+  LOGGER << "Adding poll root at path " << command->get_root() << " to channel " << command->get_channel_id() << "."
          << endl;
 
   roots.emplace(std::piecewise_construct,
-    std::forward_as_tuple(payload->get_channel_id()),
-    std::forward_as_tuple(string(payload->get_root()), payload->get_id(), payload->get_channel_id()));
+    std::forward_as_tuple(command->get_channel_id()),
+    std::forward_as_tuple(string(command->get_root()), command->get_id(), command->get_channel_id()));
 
   return ok_result(NOTHING);
 }
 
-Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const CommandPayload *payload)
+Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const CommandPayload *command)
 {
-  LOGGER << "Removing poll root at channel " << payload->get_channel_id() << "." << endl;
+  LOGGER << "Removing poll root at channel " << command->get_channel_id() << "." << endl;
 
-  auto it = roots.find(payload->get_channel_id());
+  auto it = roots.find(command->get_channel_id());
   if (it != roots.end()) roots.erase(it);
 
   if (roots.empty()) {
@@ -137,14 +132,14 @@ Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const Comman
   return ok_result(ACK);
 }
 
-Result<Thread::CommandOutcome> PollingThread::handle_polling_interval_command(const CommandPayload *payload)
+Result<Thread::CommandOutcome> PollingThread::handle_polling_interval_command(const CommandPayload *command)
 {
-  poll_interval = std::chrono::milliseconds(payload->get_arg());
+  poll_interval = std::chrono::milliseconds(command->get_arg());
   return ok_result(ACK);
 }
 
-Result<Thread::CommandOutcome> PollingThread::handle_polling_throttle_command(const CommandPayload *payload)
+Result<Thread::CommandOutcome> PollingThread::handle_polling_throttle_command(const CommandPayload *command)
 {
-  poll_throttle = payload->get_arg();
+  poll_throttle = command->get_arg();
   return ok_result(ACK);
 }

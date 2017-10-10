@@ -15,10 +15,15 @@
 class RenameBufferEntry
 {
 public:
-  RenameBufferEntry(RenameBufferEntry &&original) : entry{std::move(original.entry)}, current{original.current} {};
+  RenameBufferEntry(RenameBufferEntry &&original) noexcept : entry{std::move(original.entry)}, current{original.current} {};
 
+  RenameBufferEntry(const RenameBufferEntry &) = delete;
+  ~RenameBufferEntry() = default;
+
+  RenameBufferEntry &operator=(const RenameBufferEntry &) = delete;
+  RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
 private:
-  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) : entry{entry}, current{current} {};
+  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) : entry{std::move(entry)}, current{current} {};
 
   std::shared_ptr<PresentEntry> entry;
   bool current;
@@ -31,17 +36,22 @@ class RenameBuffer
 public:
   // Create a new buffer with a reference to the ChannelMessageBuffer it should use to enqueue messages.
   RenameBuffer(ChannelMessageBuffer &message_buffer) : message_buffer{message_buffer} {};
+  ~RenameBuffer() = default;
 
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
   // based on the previous and currently observed state of the entry at that path.
-  void observe_entry(std::shared_ptr<StatResult> former, std::shared_ptr<StatResult> current);
+  void observe_entry(const std::shared_ptr<StatResult> &former, const std::shared_ptr<StatResult> &current);
 
   // Enqueue creation and removal events for any buffer entries that have not been paired during the current
   // event handler callback invocation.
   void flush_unmatched();
 
+  RenameBuffer(const RenameBuffer &) = delete;
+  RenameBuffer(RenameBuffer &&) = delete;
+  RenameBuffer &operator=(const RenameBuffer &) = delete;
+  RenameBuffer &operator=(RenameBuffer &&) = delete;
 private:
-  void observe_present_entry(std::shared_ptr<PresentEntry> present, bool current);
+  void observe_present_entry(const std::shared_ptr<PresentEntry> &present, bool current);
 
   ChannelMessageBuffer &message_buffer;
 

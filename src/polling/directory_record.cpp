@@ -24,9 +24,15 @@ using std::string;
 
 struct FSReq
 {
-  uv_fs_t req;
+  uv_fs_t req{};
 
+  FSReq() = default;
+  FSReq(const FSReq &) = delete;
+  FSReq(FSReq &&) = delete;
   ~FSReq() { uv_fs_req_cleanup(&req); }
+
+  FSReq &operator=(const FSReq &) = delete;
+  FSReq &operator=(FSReq &&) = delete;
 };
 
 ostream &operator<<(ostream &out, const uv_timespec_t &ts)
@@ -37,8 +43,8 @@ ostream &operator<<(ostream &out, const uv_timespec_t &ts)
 ostream &operator<<(ostream &out, const uv_stat_t &stat)
 {
   out << "[ino=" << stat.st_ino << " size=" << stat.st_size << " mode=" << hex << stat.st_mode << dec << " (";
-  if (stat.st_mode & S_IFDIR) out << " DIR";
-  if (stat.st_mode & S_IFREG) out << " REG";
+  if ((stat.st_mode & S_IFDIR) == S_IFDIR) out << " DIR";
+  if ((stat.st_mode & S_IFREG) == S_IFREG) out << " REG";
   if ((stat.st_mode & S_IFLNK) == S_IFLNK) out << " LNK";
   out << " ) atim=" << stat.st_atim << " mtim=" << stat.st_mtim << " birthtim=" << stat.st_birthtim << "]";
   return out;
@@ -60,12 +66,12 @@ inline bool ts_not_equal(const uv_timespec_t &left, const uv_timespec_t &right)
 
 inline EntryKind kind_from_stat(const uv_stat_t &st)
 {
-  if (st.st_mode & S_IFDIR) return KIND_DIRECTORY;
-  if (st.st_mode & S_IFREG) return KIND_FILE;
+  if ((st.st_mode & S_IFDIR) == S_IFDIR) return KIND_DIRECTORY;
+  if ((st.st_mode & S_IFREG) == S_IFREG) return KIND_FILE;
   return KIND_UNKNOWN;
 }
 
-DirectoryRecord::DirectoryRecord(string &&name) : parent{nullptr}, name{move(name)}, populated{false}
+DirectoryRecord::DirectoryRecord(string &&prefix) : parent{nullptr}, name{move(prefix)}, populated{false}
 {
   //
 }
@@ -87,7 +93,7 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
     return;
   }
 
-  uv_dirent_t dirent;
+  uv_dirent_t dirent{};
   int next_err = uv_fs_scandir_next(&scan_req.req, &dirent);
   while (next_err == 0) {
     string entry_name(dirent.name);
@@ -201,7 +207,7 @@ void DirectoryRecord::entry(BoundPollingIterator *it,
   }
   if (current_kind == KIND_DIRECTORY) {
     if (dir == subdirectories.end()) {
-      shared_ptr<DirectoryRecord> subdir(new DirectoryRecord(this, entry_name));
+      shared_ptr<DirectoryRecord> subdir(new DirectoryRecord(this, string(entry_name)));
       subdirectories.emplace(entry_name, subdir);
       it->push_directory(subdir);
     } else {
@@ -223,7 +229,7 @@ bool DirectoryRecord::all_populated()
   return true;
 }
 
-DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, const string &name) :
+DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, string &&name) :
   parent{parent},
   name(move(name)),
   populated{false}

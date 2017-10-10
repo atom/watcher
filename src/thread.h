@@ -32,7 +32,7 @@ public:
   //   on this thread's out queue via `Thread::receive_all()`.
   // * If provided, `starter` allows subclasses to customize configuration that can be manipulated offline (while the
   //   thread is stopped). See `ThreadStarter` for details.
-  Thread(std::string name,
+  Thread(std::string &&name,
     uv_async_t *main_callback,
     std::unique_ptr<ThreadStarter> starter = std::unique_ptr<ThreadStarter>(new ThreadStarter()));
 
@@ -169,7 +169,7 @@ protected:
     const CommandHandler &operator[](CommandAction action) const { return handlers[action]; }
 
   private:
-    CommandHandler handlers[COMMAND_MAX + 1];
+    CommandHandler handlers[COMMAND_MAX + 1] = {nullptr};
   };
   static const DispatchTable command_handlers;
 
@@ -219,7 +219,7 @@ private:
   uv_async_t *main_callback;
 
   // Running thread handle.
-  uv_thread_t uv_handle;
+  uv_thread_t uv_handle{};
   std::function<void()> work_fn;
 
   // Store any `Messages` received between the receipt of a batch that causes the thread to begin shutting down and the

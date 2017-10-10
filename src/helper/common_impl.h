@@ -23,12 +23,12 @@ Str _path_join_impl(const Str &left, const Str &right, const typename Str::value
   return joined;
 }
 
-string path_join(const string &left, const string &right)
+inline string path_join(const string &left, const string &right)
 {
   return _path_join_impl<string>(left, right, DIRECTORY_SEPARATOR);
 }
 
-wstring wpath_join(const wstring &left, const wstring &right)
+inline wstring wpath_join(const wstring &left, const wstring &right)
 {
   return _path_join_impl<wstring>(left, right, W_DIRECTORY_SEPARATOR);
 }

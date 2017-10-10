@@ -16,15 +16,16 @@ public:
   static std::unique_ptr<WorkerPlatform> for_worker(WorkerThread *thread);
 
   WorkerPlatform() : Errable("platform"){};
-  virtual ~WorkerPlatform(){};
+
+  ~WorkerPlatform() override = default;
 
   virtual Result<> wake() = 0;
 
   virtual Result<> listen() = 0;
-  virtual Result<bool> handle_add_command(const CommandID command,
-    const ChannelID channel,
+  virtual Result<bool> handle_add_command(CommandID command,
+    ChannelID channel,
     const std::string &root_path) = 0;
-  virtual Result<bool> handle_remove_command(const CommandID command, const ChannelID channel) = 0;
+  virtual Result<bool> handle_remove_command(CommandID command, ChannelID channel) = 0;
 
   Result<> handle_commands()
   {
@@ -35,6 +36,10 @@ public:
     return ok_result();
   }
 
+  WorkerPlatform(const WorkerPlatform &) = delete;
+  WorkerPlatform(WorkerPlatform &&) = delete;
+  WorkerPlatform &operator=(const WorkerPlatform &) = delete;
+  WorkerPlatform &operator=(WorkerPlatform &&) = delete;
 protected:
   WorkerPlatform(WorkerThread *thread) : Errable("platform"), thread{thread}
   {
@@ -56,7 +61,7 @@ protected:
     return thread->emit_all(begin, end);
   }
 
-  WorkerThread *thread;
+  WorkerThread *thread{};
 };
 
 #endif

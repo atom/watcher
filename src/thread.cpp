@@ -23,7 +23,7 @@ using std::vector;
 
 void thread_callback_helper(void *arg)
 {
-  function<void()> *bound_fn = static_cast<std::function<void()> *>(arg);
+  auto *bound_fn = static_cast<std::function<void()> *>(arg);
   (*bound_fn)();
 }
 
@@ -42,8 +42,8 @@ Thread::DispatchTable::DispatchTable()
 
 const Thread::DispatchTable Thread::command_handlers;
 
-Thread::Thread(std::string name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
-  SyncErrable(name),
+Thread::Thread(std::string &&name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
+  SyncErrable(move(name)),
   state{State::STOPPED},
   starter{move(starter)},
   in(name + " input queue"),
@@ -59,12 +59,12 @@ Result<> Thread::run()
   int err;
 
   err = uv_thread_create(&uv_handle, thread_callback_helper, &work_fn);
-  if (err) {
+  if (err != 0) {
     report_uv_error(err);
     return health_err_result();
-  } else {
-    return ok_result();
   }
+
+  return ok_result();
 }
 
 Result<bool> Thread::send(Message &&message)
@@ -97,7 +97,9 @@ Result<bool> Thread::send(Message &&message)
     LOGGER << "Result: " << r0 << "." << endl;
     if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
       return out.enqueue(Message::ack(message, r0.propagate_as_void())).propagate(true);
-    } else if (r0.get_value() == TRIGGER_RUN) {
+    }
+
+    if (r0.get_value() == TRIGGER_RUN) {
       Result<> r1 = in.enqueue(move(message));
       if (r1.is_error()) return r1.propagate<bool>();
 
@@ -178,7 +180,7 @@ Result<> Thread::emit(Message &&message)
   if (qr.is_error()) return qr;
 
   int uv_err = uv_async_send(main_callback);
-  if (uv_err) {
+  if (uv_err != 0) {
     return error_result(uv_strerror(uv_err));
   }
 
@@ -214,7 +216,7 @@ Result<size_t> Thread::handle_commands()
 
   for (Message &message : *accepted) {
     const CommandPayload *command = message.as_command();
-    if (!command) {
+    if (command == nullptr) {
       LOGGER << "Received unexpected non-command message " << message << "." << endl;
       continue;
     }

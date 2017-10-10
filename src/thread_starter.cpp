@@ -6,7 +6,6 @@
 #include "message.h"
 #include "thread_starter.h"
 
-using std::move;
 using std::string;
 using std::unique_ptr;
 using std::vector;

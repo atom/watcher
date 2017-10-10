@@ -51,7 +51,7 @@ void MessageBuffer::renamed(ChannelID channel_id, std::string &&old_path, std::s
   messages.push_back(move(message));
 }
 
-void MessageBuffer::ack(CommandID command_id, ChannelID channel_id, bool success, const string &&msg)
+void MessageBuffer::ack(CommandID command_id, ChannelID channel_id, bool success, string &&msg)
 {
   Message message(AckPayload(command_id, channel_id, success, move(msg)));
 

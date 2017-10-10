@@ -5,8 +5,6 @@
 
 #include "message.h"
 
-using std::dec;
-using std::hex;
 using std::move;
 using std::ostream;
 using std::ostringstream;
@@ -40,11 +38,11 @@ bool kinds_are_different(EntryKind a, EntryKind b)
   return a != KIND_UNKNOWN && b != KIND_UNKNOWN && a != b;
 }
 
-FileSystemPayload::FileSystemPayload(const ChannelID channel_id,
-  const FileSystemAction action,
-  const EntryKind entry_kind,
-  const string &&old_path,
-  const string &&path) :
+FileSystemPayload::FileSystemPayload(ChannelID channel_id,
+  FileSystemAction action,
+  EntryKind entry_kind,
+  string &&old_path,
+  string &&path) :
   channel_id{channel_id},
   action{action},
   entry_kind{entry_kind},
@@ -54,7 +52,7 @@ FileSystemPayload::FileSystemPayload(const ChannelID channel_id,
   //
 }
 
-FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) :
+FileSystemPayload::FileSystemPayload(FileSystemPayload &&original) noexcept :
   channel_id{original.channel_id},
   action{original.action},
   entry_kind{original.entry_kind},
@@ -78,10 +76,10 @@ string FileSystemPayload::describe() const
   return builder.str();
 }
 
-CommandPayload::CommandPayload(const CommandAction action,
-  const CommandID id,
-  const std::string &&root,
-  const uint_fast32_t arg) :
+CommandPayload::CommandPayload(CommandAction action,
+  CommandID id,
+  std::string &&root,
+  uint_fast32_t arg) :
   id{id},
   action{action},
   root{move(root)},
@@ -90,7 +88,7 @@ CommandPayload::CommandPayload(const CommandAction action,
   //
 }
 
-CommandPayload::CommandPayload(CommandPayload &&original) :
+CommandPayload::CommandPayload(CommandPayload &&original) noexcept :
   id{original.id},
   action{original.action},
   root{move(original.root)},
@@ -119,7 +117,7 @@ string CommandPayload::describe() const
   return builder.str();
 }
 
-AckPayload::AckPayload(const CommandID key, const ChannelID channel_id, bool success, const string &&message) :
+AckPayload::AckPayload(CommandID key, ChannelID channel_id, bool success, string &&message) :
   key{key},
   channel_id{channel_id},
   success{success},
@@ -150,7 +148,7 @@ const AckPayload *Message::as_ack() const
   return kind == KIND_ACK ? &ack_payload : nullptr;
 }
 
-Message Message::ack(const Message &original, bool success, const string &&message)
+Message Message::ack(const Message &original, bool success, string &&message)
 {
   const CommandPayload *payload = original.as_command();
   assert(payload != nullptr);
@@ -162,27 +160,27 @@ Message Message::ack(const Message &original, const Result<> &result)
 {
   if (result.is_ok()) {
     return ack(original, true, "");
-  } else {
-    return ack(original, false, move(result.get_error()));
   }
+
+  return ack(original, false, string(result.get_error()));
 }
 
-Message::Message(FileSystemPayload &&p) : kind{KIND_FILESYSTEM}, filesystem_payload{move(p)}
+Message::Message(FileSystemPayload &&payload) : kind{KIND_FILESYSTEM}, filesystem_payload{move(payload)}
 {
   //
 }
 
-Message::Message(CommandPayload &&p) : kind{KIND_COMMAND}, command_payload{move(p)}
+Message::Message(CommandPayload &&payload) : kind{KIND_COMMAND}, command_payload{move(payload)}
 {
   //
 }
 
-Message::Message(AckPayload &&p) : kind{KIND_ACK}, ack_payload{move(p)}
+Message::Message(AckPayload &&payload) : kind{KIND_ACK}, ack_payload{move(payload)}
 {
   //
 }
 
-Message::Message(Message &&original) : kind{original.kind}, pending{true}
+Message::Message(Message &&original) noexcept : kind{original.kind}, pending{true}
 {
   switch (kind) {
     case KIND_FILESYSTEM: new (&filesystem_payload) FileSystemPayload(move(original.filesystem_payload)); break;

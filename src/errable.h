@@ -22,7 +22,10 @@
 class Errable
 {
 public:
-  Errable(std::string source);
+  explicit Errable(std::string &&source);
+  Errable(const Errable &) = delete;
+  Errable(Errable &&) = delete;
+  virtual ~Errable() = default;
 
   virtual bool is_healthy();
   virtual void report_error(std::string &&message);
@@ -48,6 +51,8 @@ public:
 
   const std::string &get_source() const { return source; }
 
+  Errable &operator=(const Errable &) = delete;
+  Errable &operator=(Errable &&) = delete;
 private:
   bool healthy;
   std::string source;
@@ -58,16 +63,20 @@ private:
 class SyncErrable : public Errable
 {
 public:
-  SyncErrable(std::string source);
-  ~SyncErrable();
+  explicit SyncErrable(std::string &&source);
+  SyncErrable(const SyncErrable &) = delete;
+  SyncErrable(SyncErrable &&) = delete;
+  ~SyncErrable() override;
 
   bool is_healthy() override;
   void report_error(std::string &&message) override;
   std::string get_error() override;
 
+  SyncErrable &operator=(const SyncErrable &) = delete;
+  SyncErrable &operator=(SyncErrable &&) = delete;
 private:
   bool lock_healthy;
-  uv_rwlock_t rwlock;
+  uv_rwlock_t rwlock{};
 };
 
 #endif

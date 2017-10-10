@@ -14,12 +14,16 @@ class EventHandler
 {
 public:
   EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache);
-  EventHandler(const EventHandler &) = delete;
-  EventHandler(EventHandler &&) = delete;
+  ~EventHandler() = default;
 
   void handle(std::string &event_path, FSEventStreamEventFlags flags);
+
   void flush();
 
+  EventHandler(const EventHandler &) = delete;
+  EventHandler(EventHandler &&) = delete;
+  EventHandler &operator=(const EventHandler &) = delete;
+  EventHandler &operator=(EventHandler &&) = delete;
 private:
   RecentFileCache &cache;
   ChannelMessageBuffer &message_buffer;

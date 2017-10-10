@@ -35,13 +35,13 @@ public:
   std::string path() const;
 
   // Perform a `scandir()` on this directories. If populated, emit deletion events for any entries that were found here
-  // before but are now missing. Store the discovered entries within the `iterator` as part of the iteration state.
-  void scan(BoundPollingIterator *iterator);
+  // before but are now missing. Store the discovered entries within `it` as part of the iteration state.
+  void scan(BoundPollingIterator *it);
 
   // Perform a single `lstat()` on an entry within this directory. If the DirectoryRecord is populated and the entry
   // has been created, deleted, or modified since the previous `DirectoryRecord::entry()` call, emit the appropriate
-  // events into the `iterator`'s buffer.
-  void entry(BoundPollingIterator *iterator,
+  // events into the `it`'s buffer.
+  void entry(BoundPollingIterator *it,
     const std::string &entry_name,
     const std::string &entry_path,
     EntryKind scan_kind);
@@ -55,12 +55,12 @@ public:
 
 private:
   // Construct a `DirectoryRecord` for a child entry.
-  DirectoryRecord(DirectoryRecord *parent, const std::string &name);
+  DirectoryRecord(DirectoryRecord *parent, std::string &&name);
 
-  // Use an `iterator` to emit deletion, creation, or modification events.
-  void entry_deleted(BoundPollingIterator *iterator, const std::string &entry_path, EntryKind kind);
-  void entry_created(BoundPollingIterator *iterator, const std::string &entry_path, EntryKind kind);
-  void entry_modified(BoundPollingIterator *iterator, const std::string &entry_path, EntryKind kind);
+  // Use an iterator to emit deletion, creation, or modification events.
+  void entry_deleted(BoundPollingIterator *it, const std::string &entry_path, EntryKind kind);
+  void entry_created(BoundPollingIterator *it, const std::string &entry_path, EntryKind kind);
+  void entry_modified(BoundPollingIterator *it, const std::string &entry_path, EntryKind kind);
 
   // The parent directory. May be `null` at the root `DirectoryRecord` of a subtree.
   DirectoryRecord *parent;

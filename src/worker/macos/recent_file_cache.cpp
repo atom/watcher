@@ -1,10 +1,9 @@
 #include "recent_file_cache.h"
 
 #include <chrono>
-#include <errno.h>
+#include <cerrno>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <queue>
 #include <sstream>
@@ -21,7 +20,6 @@ using std::chrono::steady_clock;
 using std::chrono::time_point;
 using std::endl;
 using std::move;
-using std::multimap;
 using std::ostream;
 using std::ostringstream;
 using std::queue;
@@ -35,9 +33,9 @@ static const size_t CACHE_WATERMARK = 4096;
 // Entries older than this duration will be purged once the cache grows beyond CACHE_WATERMARK entries.
 static const minutes CACHE_AGEOFF = minutes(5);
 
-shared_ptr<StatResult> StatResult::at(const string &path, bool file_hint, bool directory_hint)
+shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint)
 {
-  struct stat path_stat;
+  struct stat path_stat{};
 
   if (lstat(path.c_str(), &path_stat) != 0) {
     errno_t stat_errno = errno;
@@ -57,7 +55,7 @@ shared_ptr<StatResult> StatResult::at(const string &path, bool file_hint, bool d
     if (file_hint && !directory_hint) guessed_kind = KIND_FILE;
     if (!file_hint && directory_hint) guessed_kind = KIND_DIRECTORY;
 
-    return shared_ptr<StatResult>(new AbsentEntry(path, guessed_kind));
+    return shared_ptr<StatResult>(new AbsentEntry(move(path), guessed_kind));
   }
 
   // Derive the entry kind from the lstat() results.
@@ -69,7 +67,7 @@ shared_ptr<StatResult> StatResult::at(const string &path, bool file_hint, bool d
     entry_kind = KIND_DIRECTORY;
   }
 
-  return shared_ptr<StatResult>(new PresentEntry(path, entry_kind, path_stat.st_ino, path_stat.st_size));
+  return shared_ptr<StatResult>(new PresentEntry(move(path), entry_kind, path_stat.st_ino, path_stat.st_size));
 }
 
 bool StatResult::has_changed_from(const StatResult &other) const
@@ -98,8 +96,8 @@ ostream &operator<<(ostream &out, const StatResult &result)
   return out;
 }
 
-PresentEntry::PresentEntry(const std::string &path, EntryKind entry_kind, ino_t inode, off_t size) :
-  StatResult(path, entry_kind),
+PresentEntry::PresentEntry(std::string &&path, EntryKind entry_kind, ino_t inode, off_t size) :
+  StatResult(move(path), entry_kind),
   inode{inode},
   size{size},
   last_seen{steady_clock::now()}
@@ -117,8 +115,7 @@ bool PresentEntry::has_changed_from(const StatResult &other) const
   if (StatResult::has_changed_from(other)) return true;
   if (other.is_absent()) return true;
 
-  const PresentEntry &casted = static_cast<const PresentEntry &>(other);
-
+  const auto &casted = static_cast<const PresentEntry &>(other); // NOLINT
   return inode != casted.get_inode() || get_path() != casted.get_path();
 }
 
@@ -127,8 +124,7 @@ bool PresentEntry::could_be_rename_of(const StatResult &other) const
   if (!StatResult::could_be_rename_of(other)) return false;
   if (other.is_absent()) return false;
 
-  const PresentEntry &casted = static_cast<const PresentEntry &>(other);
-
+  const auto &casted = static_cast<const PresentEntry &>(other); // NOLINT
   return inode == casted.get_inode();
 }
 
@@ -186,7 +182,7 @@ string AbsentEntry::to_string() const
   return result.str();
 }
 
-void RecentFileCache::insert(shared_ptr<StatResult> stat_result)
+void RecentFileCache::insert(const shared_ptr<StatResult> &stat_result)
 {
   // Clear an existing entry at the same path if one exists
   auto maybe = by_path.find(stat_result->get_path());
@@ -224,10 +220,10 @@ shared_ptr<StatResult> RecentFileCache::at_path(const string &path, bool file_hi
     if (file_hint && !directory_hint) kind = KIND_FILE;
     if (!file_hint && directory_hint) kind = KIND_DIRECTORY;
 
-    return shared_ptr<StatResult>(new AbsentEntry(path, kind));
-  } else {
-    return maybe->second;
+    return shared_ptr<StatResult>(new AbsentEntry(string(path), kind));
   }
+
+  return maybe->second;
 }
 
 void RecentFileCache::prune()
@@ -269,7 +265,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     next_roots.pop();
 
     DIR *dir = opendir(current_root.c_str());
-    if (!dir) {
+    if (dir != nullptr) {
       errno_t opendir_errno = errno;
       LOGGER << "Unable to open directory " << root << ": " << opendir_errno << "." << endl;
       LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
@@ -278,7 +274,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
 
     errno = 0;
     dirent *entry = readdir(dir);
-    while (entry != NULL) {
+    while (entry != nullptr) {
       string entry_name(entry->d_name, entry->d_namlen);
 
       if (entry_name != "." && entry_name != "..") {
@@ -287,7 +283,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
         bool file_hint = (entry->d_type & DT_REG) == DT_REG;
         bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
 
-        shared_ptr<StatResult> r = StatResult::at(entry_path, file_hint, dir_hint);
+        shared_ptr<StatResult> r = StatResult::at(string(entry_path), file_hint, dir_hint);
         if (r->is_present()) {
           entries++;
           insert(r);
@@ -308,11 +304,11 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
       entry = readdir(dir);
     }
     errno_t readdir_errno = errno;
-    if (readdir_errno) {
+    if (readdir_errno != 0) {
       LOGGER << "Unable to read directory entry within " << root << ": " << readdir_errno << "." << endl;
     }
 
-    if (closedir(dir)) {
+    if (closedir(dir) != 0) {
       errno_t closedir_errno = errno;
       LOGGER << "Unable to close directory " << root << ": " << closedir_errno << "." << endl;
     }

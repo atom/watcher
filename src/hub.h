@@ -21,6 +21,7 @@ public:
 
   Hub(const Hub &) = delete;
   Hub(Hub &&) = delete;
+  ~Hub() = default;
 
   Hub &operator=(const Hub &) = delete;
   Hub &operator=(Hub &&) = delete;
@@ -98,16 +99,16 @@ private:
   Hub();
 
   Result<> send_command(Thread &thread,
-    const CommandAction action,
+    CommandAction action,
     std::unique_ptr<Nan::Callback> callback,
-    const std::string &&root = "",
+    std::string &&root = "",
     uint_fast32_t arg = NULL_CHANNEL_ID);
 
   void handle_events_from(Thread &thread);
 
   static Hub the_hub;
 
-  uv_async_t event_handler;
+  uv_async_t event_handler{};
 
   WorkerThread worker_thread;
   PollingThread polling_thread;

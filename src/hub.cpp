@@ -30,7 +30,7 @@ using v8::Object;
 using v8::String;
 using v8::Value;
 
-void handle_events_helper(uv_async_t *handle)
+void handle_events_helper(uv_async_t * /*handle*/)
 {
   Hub::get().handle_events();
 }
@@ -45,7 +45,7 @@ Hub::Hub() : worker_thread(&event_handler), polling_thread(&event_handler)
   next_channel_id = NULL_CHANNEL_ID + 1;
 
   err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
-  if (err) return;
+  if (err != 0) return;
 
   worker_thread.run();
 }
@@ -59,9 +59,9 @@ Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback,
 
   if (poll) {
     return send_command(polling_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
-  } else {
-    return send_command(worker_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
   }
+
+  return send_command(worker_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
 }
 
 Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
@@ -98,13 +98,13 @@ void Hub::collect_status(Status &status)
 }
 
 Result<> Hub::send_command(Thread &thread,
-  const CommandAction action,
+  CommandAction action,
   unique_ptr<Callback> callback,
-  const string &&root,
-  ChannelID channel_id)
+  string &&root,
+  uint_fast32_t arg)
 {
   CommandID command_id = next_command_id;
-  Message command(CommandPayload(action, command_id, move(root), channel_id));
+  Message command(CommandPayload(action, command_id, move(root), arg));
   pending_callbacks.emplace(command_id, move(callback));
   next_command_id++;
 
@@ -136,7 +136,7 @@ void Hub::handle_events_from(Thread &thread)
 
   for (Message &message : *accepted) {
     const AckPayload *ack = message.as_ack();
-    if (ack) {
+    if (ack != nullptr) {
       LOGGER << "Received ack message " << message << "." << endl;
 
       auto maybe_callback = pending_callbacks.find(ack->get_key());
@@ -166,7 +166,7 @@ void Hub::handle_events_from(Thread &thread)
     }
 
     const FileSystemPayload *fs = message.as_filesystem();
-    if (fs) {
+    if (fs != nullptr) {
       LOGGER << "Received filesystem event message " << message << "." << endl;
 
       ChannelID channel_id = fs->get_channel_id();
@@ -185,7 +185,7 @@ void Hub::handle_events_from(Thread &thread)
     }
 
     const CommandPayload *command = message.as_command();
-    if (command) {
+    if (command != nullptr) {
       LOGGER << "Received command message " << message << "." << endl;
 
       if (command->get_action() == COMMAND_DRAIN) {
@@ -224,8 +224,8 @@ void Hub::handle_events_from(Thread &thread)
     Local<Array> js_array = Nan::New<Array>(js_events.size());
 
     int index = 0;
-    for (auto et = js_events.begin(); et != js_events.end(); ++et) {
-      js_array->Set(index, *et);
+    for (auto &js_event : js_events) {
+      js_array->Set(index, js_event);
       index++;
     }
 

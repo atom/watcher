@@ -15,18 +15,21 @@ class WorkerPlatform;
 class WorkerThread : public Thread
 {
 public:
-  WorkerThread(uv_async_t *main_callback);
-
-  ~WorkerThread();
+  explicit WorkerThread(uv_async_t *main_callback);
+  ~WorkerThread() override;
 
   void collect_status(Status &status) override;
 
+  WorkerThread(const WorkerThread &) = delete;
+  WorkerThread(WorkerThread &&) = delete;
+  WorkerThread &operator=(const WorkerThread &) = delete;
+  WorkerThread &operator=(WorkerThread &&) = delete;
 private:
   Result<> wake() override;
 
   Result<> body() override;
 
-  Result<CommandOutcome> handle_add_command(const CommandPayload *command) override;
+  Result<CommandOutcome> handle_add_command(const CommandPayload *payload) override;
 
   Result<CommandOutcome> handle_remove_command(const CommandPayload *payload) override;
 
