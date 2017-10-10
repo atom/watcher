@@ -20,7 +20,6 @@ install:
 
 test_script:
 - npm run ci:appveyor
-- npm run lint
 - npm run format
 
 shallow_clone: true
