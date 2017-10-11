@@ -43,7 +43,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
     return ok_result();
   }
 
-  if ((event.mask & IN_DELETE) != IN_DELETE) {
+  if ((event.mask & IN_DELETE) == IN_DELETE) {
     // delete entry inside directory
     buffer.deleted(channel_id, move(path), kind);
     return ok_result();
