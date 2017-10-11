@@ -11,12 +11,8 @@ class MessageBuffer
 {
 public:
   MessageBuffer() = default;
-  MessageBuffer(const MessageBuffer &) = delete;
-  MessageBuffer(MessageBuffer &&) = delete;
-  ~MessageBuffer() = default;
 
-  MessageBuffer &operator=(const MessageBuffer &) = delete;
-  MessageBuffer &operator=(MessageBuffer &&) = delete;
+  ~MessageBuffer() = default;
 
   using iter = std::vector<Message>::iterator;
 
@@ -39,6 +35,11 @@ public:
   size_t size() { return messages.size(); }
 
   bool empty() { return messages.empty(); }
+
+  MessageBuffer(const MessageBuffer &) = delete;
+  MessageBuffer(MessageBuffer &&) = delete;
+  MessageBuffer &operator=(const MessageBuffer &) = delete;
+  MessageBuffer &operator=(MessageBuffer &&) = delete;
 
 private:
   std::vector<Message> messages;
