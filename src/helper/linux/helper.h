@@ -1,8 +1,8 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 
 #include <sstream>
 #include <string>
@@ -16,7 +16,7 @@ inline int _strerror_result(char *buffer, char *&out, int r)
   return r;
 }
 
-inline int _strerror_result(char *buffer, char *&out, char *r)
+inline int _strerror_result(char * /*buffer*/, char *&out, char *r)
 {
   // GNU strerror_r
   out = r;
@@ -37,9 +37,9 @@ Result<V> errno_result(const std::string &prefix, int errnum)
   // See https://linux.die.net/man/3/strerror_r for the different signatures.
   int result = _strerror_result(buffer, msg, strerror_r(errnum, buffer, BUFSIZE));
   if (result == EINVAL) {
-    strcpy(msg, "Not a valid error number");
+    strncpy(msg, "Not a valid error number", BUFSIZE);
   } else if (result == ERANGE) {
-    strcpy(msg, "Insuffient buffer size for error message");
+    strncpy(msg, "Insuffient buffer size for error message", BUFSIZE);
   } else if (result < 0) {
     return errno_result<V>(prefix);
   }

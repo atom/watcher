@@ -1,5 +1,4 @@
-#include <errno.h>
-#include <fcntl.h>
+#include <cerrno>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -17,33 +16,9 @@ const char WAKE = '!';
 Pipe::Pipe(string &&name) : SyncErrable(move(name)), read_fd{0}, write_fd{0}
 {
   int fds[2] = {0, 0};
-  int err = pipe(fds);
+  int err = pipe2(fds, O_CLOEXEC | O_NONBLOCK);
   if (err == -1) {
     Errable::report_error<>(errno_result<>("Unable to open pipe"));
-    return;
-  }
-
-  read_fd = fds[0];
-  err = fcntl(read_fd, F_SETFL, O_NONBLOCK);
-  if (err == -1) {
-    Errable::report_error<>(errno_result<>("Unable to set read fd to non-blocking mode"));
-    return;
-  }
-  err = fcntl(read_fd, F_SETFD, FD_CLOEXEC);
-  if (err == -1) {
-    Errable::report_error<>(errno_result<>("Unable to change read fd to close-on-exec mode"));
-    return;
-  }
-
-  write_fd = fds[1];
-  err = fcntl(write_fd, F_SETFL, O_NONBLOCK);
-  if (err == -1) {
-    Errable::report_error<>(errno_result<>("Unable to set write fd to non-blocking mode"));
-    return;
-  }
-  err = fcntl(write_fd, F_SETFD, FD_CLOEXEC);
-  if (err == -1) {
-    Errable::report_error<>(errno_result<>("Unable to change write fd to close-on-exec mode"));
     return;
   }
 }

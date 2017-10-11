@@ -11,10 +11,10 @@ class Pipe : public SyncErrable
 {
 public:
   // Construct a new Pipe identified in Result<> errors with a specified name.
-  Pipe(std::string &&name);
+  explicit Pipe(std::string &&name);
 
   // Deallocate and close() the underlying pipe file descriptor.
-  ~Pipe();
+  ~Pipe() override;
 
   // Write a byte to the pipe to inform readers that data is available.
   Result<> signal();
@@ -24,6 +24,11 @@ public:
 
   // Access the file descriptor that should be polled for data.
   int get_read_fd() const { return read_fd; }
+
+  Pipe(const Pipe &) = delete;
+  Pipe(Pipe &&) = delete;
+  Pipe &operator=(const Pipe &) = delete;
+  Pipe &operator=(Pipe &&) = delete;
 
 private:
   int read_fd;

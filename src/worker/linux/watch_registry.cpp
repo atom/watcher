@@ -1,5 +1,5 @@
+#include <cerrno>
 #include <dirent.h>
-#include <errno.h>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -33,22 +33,22 @@ static ostream &operator<<(ostream &out, const inotify_event *event)
   out << "wd=" << event->wd;
 
   out << " mask=( ";
-  if (event->mask & IN_ACCESS) out << "IN_ACCESS ";
-  if (event->mask & IN_ATTRIB) out << "IN_ATTRIB ";
-  if (event->mask & IN_CLOSE_WRITE) out << "IN_CLOSE_WRITE ";
-  if (event->mask & IN_CLOSE_NOWRITE) out << "IN_CLOSE_NOWRITE ";
-  if (event->mask & IN_CREATE) out << "IN_CREATE ";
-  if (event->mask & IN_DELETE) out << "IN_DELETE ";
-  if (event->mask & IN_DELETE_SELF) out << "IN_DELETE_SELF ";
-  if (event->mask & IN_MODIFY) out << "IN_MODIFY ";
-  if (event->mask & IN_MOVE_SELF) out << "IN_MOVE_SELF ";
-  if (event->mask & IN_MOVED_FROM) out << "IN_MOVED_FROM ";
-  if (event->mask & IN_MOVED_TO) out << "IN_MOVED_TO ";
-  if (event->mask & IN_OPEN) out << "IN_OPEN ";
-  if (event->mask & IN_IGNORED) out << "IN_IGNORED ";
-  if (event->mask & IN_Q_OVERFLOW) out << "IN_Q_OVERFLOW ";
-  if (event->mask & IN_UNMOUNT) out << "IN_UNMOUNT ";
-  if (event->mask & IN_ISDIR) out << "IN_ISDIR ";
+  if ((event->mask & IN_ACCESS) == IN_ACCESS) out << "IN_ACCESS ";
+  if ((event->mask & IN_ATTRIB) == IN_ATTRIB) out << "IN_ATTRIB ";
+  if ((event->mask & IN_CLOSE_WRITE) == IN_CLOSE_WRITE) out << "IN_CLOSE_WRITE ";
+  if ((event->mask & IN_CLOSE_NOWRITE) == IN_CLOSE_NOWRITE) out << "IN_CLOSE_NOWRITE ";
+  if ((event->mask & IN_CREATE) == IN_CREATE) out << "IN_CREATE ";
+  if ((event->mask & IN_DELETE) == IN_DELETE) out << "IN_DELETE ";
+  if ((event->mask & IN_DELETE_SELF) == IN_DELETE_SELF) out << "IN_DELETE_SELF ";
+  if ((event->mask & IN_MODIFY) == IN_MODIFY) out << "IN_MODIFY ";
+  if ((event->mask & IN_MOVE_SELF) == IN_MOVE_SELF) out << "IN_MOVE_SELF ";
+  if ((event->mask & IN_MOVED_FROM) == IN_MOVED_FROM) out << "IN_MOVED_FROM ";
+  if ((event->mask & IN_MOVED_TO) == IN_MOVED_TO) out << "IN_MOVED_TO ";
+  if ((event->mask & IN_OPEN) == IN_OPEN) out << "IN_OPEN ";
+  if ((event->mask & IN_IGNORED) == IN_IGNORED) out << "IN_IGNORED ";
+  if ((event->mask & IN_Q_OVERFLOW) == IN_Q_OVERFLOW) out << "IN_Q_OVERFLOW ";
+  if ((event->mask & IN_UNMOUNT) == IN_UNMOUNT) out << "IN_UNMOUNT ";
+  if ((event->mask & IN_ISDIR) == IN_ISDIR) out << "IN_ISDIR ";
   out << ") cookie=" << event->cookie;
   out << " len=" << event->len;
   if (event->len > 0) {
@@ -74,7 +74,7 @@ WatchRegistry::~WatchRegistry()
   }
 }
 
-Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
+Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recursive)
 {
   if (!is_healthy()) return health_err_result<>();
 
@@ -97,15 +97,14 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
 
   LOGGER << "Assigned watch descriptor " << wd << " at [" << root << "] on channel " << channel_id << "." << endl;
 
-  string root_dup(root);
-  shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, move(root_dup)));
+  shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, string(root)));
 
   by_wd.insert({wd, watched_dir});
   by_channel.insert({channel_id, watched_dir});
 
   if (recursive) {
     DIR *dir = opendir(root.c_str());
-    if (dir == NULL) {
+    if (dir == nullptr) {
       int open_errno = errno;
       if (open_errno != EACCES && open_errno != ENOENT && open_errno != ENOTDIR) {
         return errno_result("Unable to recurse into directory " + root, open_errno);
@@ -113,14 +112,16 @@ Result<> WatchRegistry::add(ChannelID channel_id, string root, bool recursive)
     } else {
       errno = 0;
       dirent *entry = readdir(dir);
-      while (entry != NULL) {
+      while (entry != nullptr) {
         string basename(entry->d_name);
 
         if (basename == "." || basename == "..") {
           entry = readdir(dir);
           continue;
         }
-        string subdir = root + "/" + basename;
+        string subdir(root);
+        subdir += "/";
+        subdir += basename;
 
 #ifndef _DIRENT_HAVE_D_TYPE
         if (entry->d_type == DT_DIR || entry->d_type == DT_UNKNOWN) {
@@ -211,7 +212,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEff
 
       LOGGER << "Received inotify event: " << event << "." << endl;
 
-      if (event->mask & IN_Q_OVERFLOW) {
+      if ((event->mask & IN_Q_OVERFLOW) == IN_Q_OVERFLOW) {
         LOGGER << "Event queue overflow. Some events have been missed." << endl;
         continue;
       }

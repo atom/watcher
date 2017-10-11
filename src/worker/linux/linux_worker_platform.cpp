@@ -45,11 +45,12 @@ public:
 
       if (result < 0) {
         return errno_result<>("Unable to poll");
-      } else if (result == 0) {
+      }
+      if (result == 0) {
         return error_result("Unexpected poll() timeout");
       }
 
-      if (to_poll[0].revents & (POLLIN | POLLERR)) {
+      if ((to_poll[0].revents & (POLLIN | POLLERR)) != 0u) {
         Result<> cr = pipe.consume();
         if (cr.is_error()) return cr;
 
@@ -57,7 +58,7 @@ public:
         if (hr.is_error()) return hr;
       }
 
-      if (to_poll[1].revents & (POLLIN | POLLERR)) {
+      if ((to_poll[1].revents & (POLLIN | POLLERR)) != 0u) {
         MessageBuffer messages;
         SideEffect side;
 
@@ -76,13 +77,13 @@ public:
   }
 
   // Recursively watch a directory tree.
-  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID /*command*/, ChannelID channel, const string &root_path) override
   {
     return registry.add(channel, string(root_path), true).propagate(true);
   }
 
   // Unwatch a directory tree.
-  Result<bool> handle_remove_command(CommandID command, ChannelID channel) override
+  Result<bool> handle_remove_command(CommandID /*command*/, ChannelID channel) override
   {
     return registry.remove(channel).propagate(true);
   }

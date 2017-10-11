@@ -17,10 +17,8 @@ class Cookie
 {
 public:
   Cookie(ChannelID channel_id, std::string &&from_path, EntryKind kind);
-  Cookie(Cookie &&other);
-  Cookie(const Cookie &other) = delete;
-  Cookie &operator=(Cookie &&cookie) = delete;
-  Cookie &operator=(const Cookie &other) = delete;
+  Cookie(Cookie &&other) noexcept;
+  ~Cookie() = default;
 
   const ChannelID &get_channel_id() const { return channel_id; }
 
@@ -28,6 +26,10 @@ public:
   std::string get_from_path() { return std::string(std::move(from_path)); }
 
   const EntryKind &get_kind() { return kind; }
+
+  Cookie(const Cookie &other) = delete;
+  Cookie &operator=(Cookie &&cookie) = delete;
+  Cookie &operator=(const Cookie &other) = delete;
 
 private:
   const ChannelID channel_id;
@@ -40,6 +42,9 @@ private:
 class CookieBatch
 {
 public:
+  CookieBatch() = default;
+  ~CookieBatch() = default;
+
   // Insert a new Cookie to eventually match an IN_MOVED_FROM event. If an existing Cookie already exists for this
   // cookie value, immediately age the old Cookie off and buffer a deletion event.
   void moved_from(MessageBuffer &messages,
@@ -56,6 +61,11 @@ public:
   void flush(MessageBuffer &messages);
 
   bool empty() const { return from_paths.empty(); }
+
+  CookieBatch(const CookieBatch &) = delete;
+  CookieBatch(CookieBatch &&) = delete;
+  CookieBatch &operator=(const CookieBatch &) = delete;
+  CookieBatch &operator=(CookieBatch &&) = delete;
 
 private:
   std::map<uint32_t, Cookie> from_paths;
@@ -76,12 +86,8 @@ public:
   // that arrive within the same notification cycle will be caught, but deletion events will be delivered with
   // no additional latency. The default of 2 correlates rename events across consecutive notification cycles but
   // no further.
-  CookieJar(unsigned int max_batches = 2);
-
-  CookieJar(const CookieJar &other) = delete;
-  CookieJar(CookieJar &&other) = delete;
-  CookieJar &operator=(const CookieJar &other) = delete;
-  CookieJar &operator=(CookieJar &&other) = delete;
+  explicit CookieJar(unsigned int max_batches = 2);
+  ~CookieJar() = default;
 
   // Observe an IN_MOVED_FROM event by adding a Cookie to the freshest CookieBatch.
   void moved_from(MessageBuffer &messages,
@@ -99,6 +105,11 @@ public:
   // Buffer deletion events for any Cookies that have not been matched within `max_batches` CookieBatches. Add a
   // fresh CookieBatch to capture the next cycle of rename events.
   void flush_oldest_batch(MessageBuffer &messages);
+
+  CookieJar(const CookieJar &other) = delete;
+  CookieJar(CookieJar &&other) = delete;
+  CookieJar &operator=(const CookieJar &other) = delete;
+  CookieJar &operator=(CookieJar &&other) = delete;
 
 private:
   std::deque<CookieBatch> batches;
