@@ -49,13 +49,11 @@ Result<> PollingThread::body()
       return ok_result();
     }
 
-    LOGGER << "Polling root directories." << endl;
     cycle();
 
     if (is_healthy()) {
       LOGGER << "Sleeping for " << poll_interval.count() << "ms." << endl;
       std::this_thread::sleep_for(poll_interval);
-      LOGGER << "Waking up." << endl;
     }
   }
 }
