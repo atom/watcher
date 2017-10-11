@@ -11,6 +11,7 @@ const shell = require('shell-quote')
 
 const BUILD_DIR = path.resolve(__dirname, '..', '..', 'build')
 const OUTPUT_FILE = path.join(BUILD_DIR, 'compile_commands.json')
+const NODE_GYP_BINARY = process.platform === 'win32' ? 'node-gyp.cmd' : 'node-gyp'
 
 class CompilationDatabase {
   constructor () {
@@ -45,7 +46,7 @@ async function runNodeGyp () {
   const db = new CompilationDatabase()
 
   return new Promise((resolve, reject) => {
-    const nodeGyp = spawn('node-gyp', process.argv.slice(2), {
+    const nodeGyp = spawn(NODE_GYP_BINARY, process.argv.slice(2), {
       env: Object.assign({}, process.env, {V: '1'}),
       stdio: [process.stdin, 'pipe', process.stderr]
     })
