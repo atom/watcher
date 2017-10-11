@@ -8,7 +8,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "../../helper/linux/helper.h"
@@ -22,7 +21,6 @@
 #include "watched_directory.h"
 
 using std::endl;
-using std::move;
 using std::ostream;
 using std::set;
 using std::shared_ptr;

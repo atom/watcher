@@ -3,11 +3,13 @@
 #include <memory>
 #include <string>
 #include <sys/types.h>
+#include <utility>
 
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "cookie_jar.h"
 
+using std::move;
 using std::string;
 using std::unique_ptr;
 
