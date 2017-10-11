@@ -184,10 +184,9 @@ Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPa
 Result<Thread::CommandOutcome> PollingThread::handle_remove_command(const CommandPayload *command)
 {
   const ChannelID &channel_id = command->get_channel_id();
-  LOGGER << "Removing poll root at channel " << channel_id << "." << endl;
+  LOGGER << "Removing poll roots at channel " << channel_id << "." << endl;
 
-  auto it = roots.find(command->get_channel_id());
-  if (it != roots.end()) roots.erase(it);
+  roots.erase(command->get_channel_id());
 
   // Ensure that we ack the ADD command even if the REMOVE command arrives before all of its splits populate.
   auto pending = pending_splits.find(channel_id);
