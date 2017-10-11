@@ -22,6 +22,9 @@ branches:
   - master
 
 before_install:
+- mkdir -p ${HOME}/bin
+- ln -s /usr/bin/clang-format-5.0 ${HOME}/bin/clang-format
+- ln -s /usr/bin/clang-tidy-5.0 ${HOME}/bin/clang-tidy
 - npm install -g npm@5.4.2
 
 script:
