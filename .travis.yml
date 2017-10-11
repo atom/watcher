@@ -6,10 +6,12 @@ dist: trusty
 
 addons:
   apt:
+    sources:
+    - llvm-toolchain-trusty-5.0
     packages:
-    - clang-3.9
-    - clang-format-3.9
-    - clang-tidy-3.9
+    - clang-5.0
+    - clang-format-5.0
+    - clang-tidy-5.0
     - build-essential
 
 git:
