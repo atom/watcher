@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string>
+#include <utility>
 #include <unistd.h>
 
 #include "../../errable.h"
@@ -8,11 +9,12 @@
 #include "../../result.h"
 #include "pipe.h"
 
+using std::move;
 using std::string;
 
 const char WAKE = '!';
 
-Pipe::Pipe(const string &name) : SyncErrable(name), read_fd{0}, write_fd{0}
+Pipe::Pipe(string &&name) : SyncErrable(move(name)), read_fd{0}, write_fd{0}
 {
   int fds[2] = {0, 0};
   int err = pipe(fds);

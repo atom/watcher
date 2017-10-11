@@ -11,7 +11,7 @@ class Pipe : public SyncErrable
 {
 public:
   // Construct a new Pipe identified in Result<> errors with a specified name.
-  Pipe(const std::string &name);
+  Pipe(std::string &&name);
 
   // Deallocate and close() the underlying pipe file descriptor.
   ~Pipe();
