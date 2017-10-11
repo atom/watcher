@@ -21,8 +21,6 @@ install:
 
 test_script:
 - npm run ci:appveyor
-- npm run format
-- git diff --exit-code -- src/ test/
 
 shallow_clone: true
 clone_depth: 5
