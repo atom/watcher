@@ -139,13 +139,13 @@ public:
     if (!schedr.get_value()) {
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
-      return emit(Message(CommandPayload(COMMAND_ADD, command, move(root_path), channel))).propagate(false);
+      return emit(Message(CommandPayload(COMMAND_ADD, command, string(root_path), channel))).propagate(false);
     }
 
     return ok_result(true);
   }
 
-  Result<bool> handle_remove_command(const CommandID command, const ChannelID channel) override
+  Result<bool> handle_remove_command(CommandID command, ChannelID channel) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
 
