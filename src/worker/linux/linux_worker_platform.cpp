@@ -1,6 +1,7 @@
 #include <memory>
 #include <poll.h>
 #include <string>
+#include <vector>
 
 #include "../../helper/linux/helper.h"
 #include "../../log.h"
@@ -15,6 +16,7 @@
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 // Platform-specific worker implementation for Linux systems.
 class LinuxWorkerPlatform : public WorkerPlatform
@@ -64,10 +66,16 @@ public:
 
         Result<> r = registry.consume(messages, jar, side);
 
+        vector<SideEffect::PollingRoot> poll;
+        r &= side.enact_in(&registry, poll);
+
+        for (auto &poll_root : poll) {
+          messages.add(Message(CommandPayload(COMMAND_ADD, NULL_COMMAND_ID, move(poll_root.second), poll_root.first)));
+        }
+
         if (!messages.empty()) {
           r &= emit_all(messages.begin(), messages.end());
         }
-        r &= side.enact_in(&registry);
 
         if (r.is_error()) return r;
       }
@@ -77,9 +85,25 @@ public:
   }
 
   // Recursively watch a directory tree.
-  Result<bool> handle_add_command(CommandID /*command*/, ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
   {
-    return registry.add(channel, string(root_path), true).propagate(true);
+    vector<string> poll;
+
+    Result<> r0 = registry.add(channel, string(root_path), true, poll);
+    if (r0.is_error()) return r0.propagate<bool>();
+
+    if (!poll.empty()) {
+      vector<Message> poll_messages;
+      poll_messages.reserve(poll.size());
+
+      for (string &poll_root : poll) {
+        poll_messages.emplace_back(CommandPayload(COMMAND_ADD, command, move(poll_root), channel, poll.size()));
+      }
+
+      return emit_all(poll_messages.begin(), poll_messages.end()).propagate(false);
+    }
+
+    return ok_result(true);
   }
 
   // Unwatch a directory tree.
