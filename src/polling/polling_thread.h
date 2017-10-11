@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <set>
+#include <utility>
 #include <uv.h>
 
 #include "../result.h"
@@ -56,7 +58,10 @@ private:
   std::chrono::milliseconds poll_interval;
   uint_fast32_t poll_throttle;
 
-  std::map<ChannelID, PolledRoot> roots;
+  std::multimap<ChannelID, PolledRoot> roots;
+
+  using PendingSplit = std::pair<CommandID, size_t>;
+  std::map<ChannelID, PendingSplit> pending_splits;
 };
 
 #endif
