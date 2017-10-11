@@ -1,11 +1,11 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include <string.h>
-#include <errno.h>
+#include <cerrno>
+#include <cstring>
 
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "../../result.h"
 
@@ -16,17 +16,17 @@ inline int _strerror_result(char *buffer, char *&out, int r)
   return r;
 }
 
-inline int _strerror_result(char *buffer, char *&out, char *r)
+inline int _strerror_result(char * /*buffer*/, char *&out, char *r)
 {
   // GNU strerror_r
   out = r;
   return 0;
 }
 
-template < class V = void* >
+template <class V = void *>
 Result<V> errno_result(const std::string &prefix);
 
-template < class V = void* >
+template <class V = void *>
 Result<V> errno_result(const std::string &prefix, int errnum)
 {
   const size_t BUFSIZE = 1024;
@@ -37,9 +37,9 @@ Result<V> errno_result(const std::string &prefix, int errnum)
   // See https://linux.die.net/man/3/strerror_r for the different signatures.
   int result = _strerror_result(buffer, msg, strerror_r(errnum, buffer, BUFSIZE));
   if (result == EINVAL) {
-    strcpy(msg, "Not a valid error number");
+    strncpy(msg, "Not a valid error number", BUFSIZE);
   } else if (result == ERANGE) {
-    strcpy(msg, "Insuffient buffer size for error message");
+    strncpy(msg, "Insuffient buffer size for error message", BUFSIZE);
   } else if (result < 0) {
     return errno_result<V>(prefix);
   }
@@ -49,7 +49,7 @@ Result<V> errno_result(const std::string &prefix, int errnum)
   return Result<V>::make_error(out.str());
 }
 
-template < class V >
+template <class V>
 Result<V> errno_result(const std::string &prefix)
 {
   return errno_result(prefix, errno);

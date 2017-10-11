@@ -1,34 +1,34 @@
 #ifndef WATCHER_REGISTRY_H
 #define WATCHER_REGISTRY_H
 
-#include <string>
 #include <memory>
+#include <string>
+#include <sys/inotify.h>
 #include <unordered_map>
 #include <vector>
-#include <sys/inotify.h>
 
 #include "../../errable.h"
-#include "../../result.h"
 #include "../../message_buffer.h"
+#include "../../result.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 #include "watched_directory.h"
 
 // Manage the set of open inotify watch descriptors.
-class WatchRegistry : public Errable {
+class WatchRegistry : public Errable
+{
 public:
-
   // Initialize inotify. Enter an error state if inotify initialization fails.
   WatchRegistry();
 
   // Stop inotify and release all kernel resources associated with it.
-  ~WatchRegistry();
+  ~WatchRegistry() override;
 
   // Begin watching a root path. If `recursive` is `true`, recursively watch all
   // subdirectories as well.
   //
   // `root` must name a directory if `recursive` is `true`.
-  Result<> add(ChannelID channel_id, std::string root, bool recursive);
+  Result<> add(ChannelID channel_id, const std::string &root, bool recursive);
 
   // Uninstall inotify watchers used to deliver events on a specified channel.
   Result<> remove(ChannelID channel_id);
@@ -41,6 +41,11 @@ public:
   // Return the file descriptor that should be polled to wake up when inotify events are
   // available.
   int get_read_fd() { return inotify_fd; }
+
+  WatchRegistry(const WatchRegistry &) = delete;
+  WatchRegistry(WatchRegistry &&) = delete;
+  WatchRegistry &operator=(const WatchRegistry &) = delete;
+  WatchRegistry &operator=(WatchRegistry &&) = delete;
 
 private:
   int inotify_fd;

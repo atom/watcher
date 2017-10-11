@@ -1,15 +1,15 @@
-#include <string>
 #include <memory>
 #include <poll.h>
+#include <string>
 
+#include "../../helper/linux/helper.h"
+#include "../../log.h"
+#include "../../message.h"
+#include "../../result.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
-#include "../../message.h"
-#include "../../log.h"
-#include "../../result.h"
-#include "../../helper/linux/helper.h"
-#include "pipe.h"
 #include "cookie_jar.h"
+#include "pipe.h"
 #include "side_effect.h"
 #include "watch_registry.h"
 
@@ -17,20 +17,17 @@ using std::string;
 using std::unique_ptr;
 
 // Platform-specific worker implementation for Linux systems.
-class LinuxWorkerPlatform : public WorkerPlatform {
+class LinuxWorkerPlatform : public WorkerPlatform
+{
 public:
   LinuxWorkerPlatform(WorkerThread *thread) :
     WorkerPlatform(thread),
-    pipe("worker pipe")
-  {
-    //
-  };
+    pipe("worker pipe"){
+      //
+    };
 
   // Inform the listen() loop that one or more commands are waiting from the main thread.
-  Result<> wake() override
-  {
-    return pipe.signal();
-  }
+  Result<> wake() override { return pipe.signal(); }
 
   // Main event loop. Use poll(2) to wait on I/O from either the Pipe or inotify events.
   Result<> listen() override
@@ -48,11 +45,12 @@ public:
 
       if (result < 0) {
         return errno_result<>("Unable to poll");
-      } else if (result == 0) {
+      }
+      if (result == 0) {
         return error_result("Unexpected poll() timeout");
       }
 
-      if (to_poll[0].revents & (POLLIN | POLLERR)) {
+      if ((to_poll[0].revents & (POLLIN | POLLERR)) != 0u) {
         Result<> cr = pipe.consume();
         if (cr.is_error()) return cr;
 
@@ -60,7 +58,7 @@ public:
         if (hr.is_error()) return hr;
       }
 
-      if (to_poll[1].revents & (POLLIN | POLLERR)) {
+      if ((to_poll[1].revents & (POLLIN | POLLERR)) != 0u) {
         MessageBuffer messages;
         SideEffect side;
 
@@ -79,18 +77,13 @@ public:
   }
 
   // Recursively watch a directory tree.
-  Result<bool> handle_add_command(
-    const CommandID command,
-    const ChannelID channel,
-    const string &root_path) override
+  Result<bool> handle_add_command(CommandID /*command*/, ChannelID channel, const string &root_path) override
   {
-    return registry.add(channel, move(root_path), true).propagate(true);
+    return registry.add(channel, string(root_path), true).propagate(true);
   }
 
   // Unwatch a directory tree.
-  Result<bool> handle_remove_command(
-    const CommandID command,
-    const ChannelID channel) override
+  Result<bool> handle_remove_command(CommandID /*command*/, ChannelID channel) override
   {
     return registry.remove(channel).propagate(true);
   }

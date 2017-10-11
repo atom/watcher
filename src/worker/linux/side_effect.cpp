@@ -1,14 +1,14 @@
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "../../message.h"
 #include "../../result.h"
-#include "watch_registry.h"
 #include "side_effect.h"
+#include "watch_registry.h"
 
-using std::string;
 using std::move;
+using std::string;
 
 void SideEffect::track_subdirectory(string subdir, ChannelID channel_id)
 {

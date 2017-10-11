@@ -1,31 +1,30 @@
 #include "event_handler.h"
 
-#include <string>
-#include <vector>
-#include <utility>
-#include <memory>
-#include <iostream>
-#include <iomanip>
-#include <errno.h>
-#include <sys/stat.h>
 #include <CoreServices/CoreServices.h>
+#include <cerrno>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <sys/stat.h>
+#include <utility>
 
+#include "../../log.h"
+#include "../../message.h"
 #include "flags.h"
 #include "recent_file_cache.h"
 #include "rename_buffer.h"
-#include "../../message.h"
-#include "../../log.h"
 
-using std::vector;
-using std::string;
-using std::shared_ptr;
-using std::move;
-using std::ostream;
-using std::hex;
 using std::dec;
 using std::endl;
+using std::hex;
+using std::move;
+using std::ostream;
+using std::shared_ptr;
+using std::string;
 
-class EventFunctor {
+class EventFunctor
+{
 public:
   EventFunctor(EventHandler &handler, string &event_path, FSEventStreamEventFlags flags) :
     message_buffer{handler.message_buffer},
@@ -90,20 +89,15 @@ private:
     logline << endl;
 
     logline << "  interpreted as"
-      << " file=" << flag_file
-      << " directory=" << flag_directory
-      << " created=" << flag_created
-      << " deleted=" << flag_deleted
-      << " modified=" << flag_modified
-      << " renamed=" << flag_renamed
-      << endl;
+            << " file=" << flag_file << " directory=" << flag_directory << " created=" << flag_created
+            << " deleted=" << flag_deleted << " modified=" << flag_modified << " renamed=" << flag_renamed << endl;
   }
 
   // Check the recently-seen entry cache for this entry.
   void collect_info()
   {
     former = cache.at_path(event_path, flag_file, flag_directory);
-    current = StatResult::at(event_path, flag_file, flag_directory);
+    current = StatResult::at(string(event_path), flag_file, flag_directory);
 
     cache.insert(current);
   }

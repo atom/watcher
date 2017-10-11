@@ -1,15 +1,16 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include <string>
-#include <utility>
+#include <cstdint>
 #include <iostream>
 #include <memory>
-#include <cstdint>
+#include <string>
+#include <utility>
 
 #include "result.h"
 
-enum FileSystemAction {
+enum FileSystemAction
+{
   ACTION_CREATED = 0,
   ACTION_DELETED = 1,
   ACTION_MODIFIED = 2,
@@ -18,7 +19,8 @@ enum FileSystemAction {
 
 std::ostream &operator<<(std::ostream &out, FileSystemAction action);
 
-enum EntryKind {
+enum EntryKind
+{
   KIND_FILE = 0,
   KIND_DIRECTORY = 1,
   KIND_UNKNOWN = 2
@@ -28,23 +30,22 @@ std::ostream &operator<<(std::ostream &out, EntryKind kind);
 
 bool kinds_are_different(EntryKind a, EntryKind b);
 
-typedef std::pair<std::string, EntryKind> Entry;
+using Entry = std::pair<std::string, EntryKind>;
 
-typedef uint_fast32_t ChannelID;
+using ChannelID = uint_fast32_t;
 
 const ChannelID NULL_CHANNEL_ID = 0;
 
-class FileSystemPayload {
+class FileSystemPayload
+{
 public:
-  FileSystemPayload(
-    const ChannelID channel_id,
-    const FileSystemAction action,
-    const EntryKind entry_kind,
-    const std::string &&old_path,
-    const std::string &&path
-  );
-  FileSystemPayload(FileSystemPayload &&original);
-  ~FileSystemPayload() {};
+  FileSystemPayload(ChannelID channel_id,
+    FileSystemAction action,
+    EntryKind entry_kind,
+    std::string &&old_path,
+    std::string &&path);
+  FileSystemPayload(FileSystemPayload &&original) noexcept;
+  ~FileSystemPayload() = default;
 
   FileSystemPayload(const FileSystemPayload &original) = delete;
   FileSystemPayload &operator=(const FileSystemPayload &original) = delete;
@@ -57,15 +58,17 @@ public:
   const std::string &get_path() const { return path; }
 
   std::string describe() const;
+
 private:
   const ChannelID channel_id;
   const FileSystemAction action;
   const EntryKind entry_kind;
-  const std::string old_path;
-  const std::string path;
+  std::string old_path;
+  std::string path;
 };
 
-enum CommandAction {
+enum CommandAction
+{
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_LOG_FILE,
@@ -79,20 +82,19 @@ enum CommandAction {
   COMMAND_MAX = COMMAND_DRAIN
 };
 
-typedef uint_fast32_t CommandID;
+using CommandID = uint_fast32_t;
 
 const CommandID NULL_COMMAND_ID = 0;
 
-class CommandPayload {
+class CommandPayload
+{
 public:
-  CommandPayload(
-    const CommandAction action,
-    const CommandID id = NULL_COMMAND_ID,
-    const std::string &&root = "",
-    const uint_fast32_t arg = NULL_CHANNEL_ID
-  );
-  CommandPayload(CommandPayload &&original);
-  ~CommandPayload() {};
+  CommandPayload(CommandAction action,
+    CommandID id = NULL_COMMAND_ID,
+    std::string &&root = "",
+    uint_fast32_t arg = NULL_CHANNEL_ID);
+  CommandPayload(CommandPayload &&original) noexcept;
+  ~CommandPayload() = default;
 
   CommandPayload(const CommandPayload &original) = delete;
   CommandPayload &operator=(const CommandPayload &original) = delete;
@@ -105,18 +107,20 @@ public:
   const ChannelID &get_channel_id() const { return arg; }
 
   std::string describe() const;
+
 private:
   const CommandID id;
   const CommandAction action;
-  const std::string root;
+  std::string root;
   const uint_fast32_t arg;
 };
 
-class AckPayload {
+class AckPayload
+{
 public:
-  AckPayload(const CommandID key, const ChannelID channel_id, bool success, const std::string &&message);
+  AckPayload(CommandID key, ChannelID channel_id, bool success, std::string &&message);
   AckPayload(AckPayload &&original) = default;
-  ~AckPayload() {};
+  ~AckPayload() = default;
 
   AckPayload(const AckPayload &original) = delete;
   AckPayload &operator=(const AckPayload &original) = delete;
@@ -128,40 +132,44 @@ public:
   const std::string &get_message() const { return message; }
 
   std::string describe() const;
+
 private:
   const CommandID key;
   const ChannelID channel_id;
   const bool success;
-  const std::string message;
+  std::string message;
 };
 
-enum MessageKind {
+enum MessageKind
+{
   KIND_FILESYSTEM,
   KIND_COMMAND,
   KIND_ACK
 };
 
-class Message {
+class Message
+{
 public:
-  static Message ack(const Message &original, bool success, const std::string &&message = "");
+  static Message ack(const Message &original, bool success, std::string &&message = "");
 
   static Message ack(const Message &original, const Result<> &result);
 
-  explicit Message(FileSystemPayload &&e);
-  explicit Message(CommandPayload &&e);
-  explicit Message(AckPayload &&e);
-  Message(Message&& original);
+  explicit Message(FileSystemPayload &&payload);
+  explicit Message(CommandPayload &&payload);
+  explicit Message(AckPayload &&payload);
+  Message(Message &&original) noexcept;
   ~Message();
 
-  Message(const Message&) = delete;
-  Message &operator=(const Message&) = delete;
-  Message &operator=(Message&&) = delete;
+  Message(const Message &) = delete;
+  Message &operator=(const Message &) = delete;
+  Message &operator=(Message &&) = delete;
 
-  const FileSystemPayload* as_filesystem() const;
-  const CommandPayload* as_command() const;
-  const AckPayload* as_ack() const;
+  const FileSystemPayload *as_filesystem() const;
+  const CommandPayload *as_command() const;
+  const AckPayload *as_ack() const;
 
   std::string describe() const;
+
 private:
   MessageKind kind;
   union
@@ -169,13 +177,13 @@ private:
     FileSystemPayload filesystem_payload;
     CommandPayload command_payload;
     AckPayload ack_payload;
-    bool pending;
+    bool pending{false};
   };
 };
 
-std::ostream& operator<<(std::ostream& stream, const FileSystemPayload& e);
-std::ostream& operator<<(std::ostream& stream, const CommandPayload& e);
-std::ostream& operator<<(std::ostream& stream, const AckPayload& e);
-std::ostream& operator<<(std::ostream& stream, const Message& e);
+std::ostream &operator<<(std::ostream &stream, const FileSystemPayload &e);
+std::ostream &operator<<(std::ostream &stream, const CommandPayload &e);
+std::ostream &operator<<(std::ostream &stream, const AckPayload &e);
+std::ostream &operator<<(std::ostream &stream, const Message &e);
 
 #endif

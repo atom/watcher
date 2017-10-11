@@ -9,11 +9,9 @@ static const FSEventStreamEventFlags CREATE_FLAGS = kFSEventStreamEventFlagItemC
 
 static const FSEventStreamEventFlags DELETED_FLAGS = kFSEventStreamEventFlagItemRemoved;
 
-static const FSEventStreamEventFlags MODIFY_FLAGS = kFSEventStreamEventFlagItemInodeMetaMod |
-  kFSEventStreamEventFlagItemFinderInfoMod |
-  kFSEventStreamEventFlagItemChangeOwner |
-  kFSEventStreamEventFlagItemXattrMod |
-  kFSEventStreamEventFlagItemModified;
+static const FSEventStreamEventFlags MODIFY_FLAGS = kFSEventStreamEventFlagItemInodeMetaMod
+  | kFSEventStreamEventFlagItemFinderInfoMod | kFSEventStreamEventFlagItemChangeOwner
+  | kFSEventStreamEventFlagItemXattrMod | kFSEventStreamEventFlagItemModified;
 
 static const FSEventStreamEventFlags RENAME_FLAGS = kFSEventStreamEventFlagItemRenamed;
 

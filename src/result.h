@@ -1,10 +1,10 @@
 #ifndef RESULT_H
 #define RESULT_H
 
-#include <utility>
-#include <string>
-#include <iostream>
 #include <cassert>
+#include <iostream>
+#include <string>
+#include <utility>
 
 #include "log.h"
 
@@ -66,30 +66,19 @@
 //   return ok_result(foo + 10);
 // }
 // ```
-template< class V = void* >
-class Result {
+template <class V = void *>
+class Result
+{
 public:
-  static Result<V> make_ok(V &&value)
-  {
-    return Result<V>(std::move(value));
-  }
+  static Result<V> make_ok(V &&value) { return Result<V>(std::forward<V>(value)); }
 
-  static Result<V> make_error(std::string &&message)
-  {
-    return Result<V>(std::move(message), true);
-  }
+  static Result<V> make_error(std::string &&message) { return Result<V>(std::move(message), true); }
 
-  Result(Result<V> &&original) : state{original.state}, pending{false}
-  {
-    assign(std::move(original));
-  }
+  Result(Result<V> &&original) noexcept : state{original.state}, pending{false} { assign(std::move(original)); }
 
-  ~Result()
-  {
-    clear();
-  }
+  ~Result() { clear(); }
 
-  Result<V> &operator=(Result<V>&& original)
+  Result<V> &operator=(Result<V> &&original) noexcept
   {
     clear();
     assign(std::move(original));
@@ -98,15 +87,9 @@ public:
 
   Result<V> &operator=(const Result<V> &original) = delete;
 
-  bool is_ok() const
-  {
-    return state == RESULT_OK;
-  }
+  bool is_ok() const { return state == RESULT_OK; }
 
-  bool is_error() const
-  {
-    return state == RESULT_ERROR;
-  }
+  bool is_error() const { return state == RESULT_ERROR; }
 
   V &get_value()
   {
@@ -114,27 +97,27 @@ public:
     return value;
   }
 
-  const std::string& get_error() const
+  const std::string &get_error() const
   {
     assert(state == RESULT_ERROR);
     return error;
   }
 
-  template < class U = void* >
+  template <class U = void *>
   Result<U> propagate(const std::string &prefix = "") const
   {
     assert(state == RESULT_ERROR);
     return Result<U>::make_error(prefix + get_error());
   }
 
-  template < class U >
+  template <class U>
   Result<U> propagate(U &&value, const std::string &prefix = "") const
   {
     if (state == RESULT_ERROR) {
       return propagate<U>(prefix);
     }
 
-    return Result<U>::make_ok(std::move(value));
+    return Result<U>::make_ok(std::forward<U>(value));
   }
 
   Result<> propagate_as_void() const
@@ -164,7 +147,7 @@ private:
     //
   }
 
-  Result(std::string &&error, bool ignored) : state{RESULT_ERROR}, error{std::move(error)}
+  Result(std::string &&error, bool /*ignored*/) : state{RESULT_ERROR}, error{std::move(error)}
   {
     //
   }
@@ -172,15 +155,9 @@ private:
   Result(const Result<V> &original) : state{original.state}, pending{false}
   {
     switch (state) {
-      case RESULT_OK:
-        new (&value) V(original.value);
-        break;
-      case RESULT_ERROR:
-        new (&error) std::string(original.error);
-        break;
-      default:
-        LOGGER << "Invalid result state " << state << " in Result::Result(Result&)" << std::endl;
-        break;
+      case RESULT_OK: new (&value) V(original.value); break;
+      case RESULT_ERROR: new (&error) std::string(original.error); break;
+      default: LOGGER << "Invalid result state " << state << " in Result::Result(Result&)" << std::endl; break;
     }
   }
 
@@ -189,64 +166,52 @@ private:
     state = original.state;
 
     switch (state) {
-      case RESULT_OK:
-        new (&value) V(std::move(original.value));
-        break;
-      case RESULT_ERROR:
-        new (&error) std::string(std::move(original.error));
-        break;
-      default:
-        LOGGER << "Invalid result state " << state << " in Result::assign(Result&&)." << std::endl;
-        break;
+      case RESULT_OK: new (&value) V(std::move(original.value)); break;
+      case RESULT_ERROR: new (&error) std::string(std::move(original.error)); break;
+      default: LOGGER << "Invalid result state " << state << " in Result::assign(Result&&)." << std::endl; break;
     }
   }
 
   void clear()
   {
     switch (state) {
-      case RESULT_OK:
-        value.~V();
-        break;
-      case RESULT_ERROR:
-        error.~basic_string();
-        break;
-      default:
-        LOGGER << "Invalid result state " << state << " in Result::clear()." << std::endl;
-        break;
+      case RESULT_OK: value.~V(); break;
+      case RESULT_ERROR: error.~basic_string(); break;
+      default: LOGGER << "Invalid result state " << state << " in Result::clear()." << std::endl; break;
     }
   }
 
-  enum {
+  enum
+  {
     RESULT_OK = 0,
     RESULT_ERROR
   } state;
 
-  union {
+  union
+  {
     V value;
     std::string error;
-    bool pending;
+    bool pending{false};
   };
-
-  friend Result<void*> ok_result();
 };
 
-template < class V >
+template <class V>
 Result<V> ok_result(V &&value)
 {
-  return Result<V>::make_ok(std::move(value));
+  return Result<V>::make_ok(std::forward<V>(value));
 }
 
-inline Result<void*> ok_result()
+inline Result<void *> ok_result()
 {
-  return Result<void*>::make_ok(nullptr);
+  return Result<void *>::make_ok(nullptr);
 }
 
-inline Result<void*> error_result(std::string &&message)
+inline Result<void *> error_result(std::string &&message)
 {
-  return Result<void*>::make_error(std::move(message));
+  return Result<void *>::make_error(std::move(message));
 }
 
-template < class V >
+template <class V>
 std::ostream &operator<<(std::ostream &out, const Result<V> &result)
 {
   if (result.is_error()) {

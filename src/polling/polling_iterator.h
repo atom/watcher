@@ -1,12 +1,12 @@
 #ifndef POLLING_ITERATOR
 #define POLLING_ITERATOR
 
-#include <memory>
-#include <utility>
-#include <string>
-#include <stack>
-#include <queue>
 #include <iostream>
+#include <memory>
+#include <queue>
+#include <stack>
+#include <string>
+#include <utility>
 #include <uv.h>
 
 #include "../message.h"
@@ -18,14 +18,15 @@ class DirectoryRecord;
 // large filesystems, then resume after a pause.
 //
 // `BoundPollingIterator` does most of the actual work, but stores all of its persistent state here.
-class PollingIterator {
+class PollingIterator
+{
 public:
   // Create an iterator poised to begin at a root `DirectoryRecord`.
-  explicit PollingIterator(std::shared_ptr<DirectoryRecord> root);
+  explicit PollingIterator(const std::shared_ptr<DirectoryRecord> &root);
 
   PollingIterator(const PollingIterator &) = delete;
   PollingIterator(PollingIterator &&) = delete;
-  ~PollingIterator();
+  ~PollingIterator() = default;
   PollingIterator &operator=(const PollingIterator &) = delete;
   PollingIterator &operator=(PollingIterator &&) = delete;
 
@@ -51,10 +52,11 @@ private:
   std::queue<std::shared_ptr<DirectoryRecord>> directories;
 
   // Phases of traversal.
-  enum {
-    SCAN, // Scan the current `DirectoryRecord` to populate `entries`,
-    ENTRIES, // Compare the next entry to an up-to-date `lstat()` result to see if an entry has changed.
-    RESET // Loop back to the root directory.
+  enum
+  {
+    SCAN,  // Scan the current `DirectoryRecord` to populate `entries`,
+    ENTRIES,  // Compare the next entry to an up-to-date `lstat()` result to see if an entry has changed.
+    RESET  // Loop back to the root directory.
   } phase;
 
   friend class BoundPollingIterator;
@@ -81,7 +83,8 @@ private:
 // Bind a `PollingIterator` to a `ChannelMessageBuffer` that should be used to emit any discovered events.
 //
 // `PollingIterator` stores all of the persistent state, but `BoundPollingIterator` performs most of the work.
-class BoundPollingIterator {
+class BoundPollingIterator
+{
 public:
   // Bind an existing `PollingIterator` containing persistent polling state with a `ChannelMessageBuffer` that
   // determines where events emitted by this polling cycle should be sent.
@@ -89,15 +92,15 @@ public:
 
   BoundPollingIterator(const BoundPollingIterator &) = delete;
   BoundPollingIterator(BoundPollingIterator &&) = delete;
-  ~BoundPollingIterator();
+  ~BoundPollingIterator() = default;
   BoundPollingIterator &operator=(const BoundPollingIterator &) = delete;
   BoundPollingIterator &operator=(BoundPollingIterator &&) = delete;
 
   // Called from `DirectoryRecord::scan()` to make note of an entry within the current directory.
-  void push_entry(const std::string &&entry, EntryKind kind) { iterator.entries.emplace_back(std::move(entry), kind); }
+  void push_entry(std::string &&entry, EntryKind kind) { iterator.entries.emplace_back(std::move(entry), kind); }
 
   // Called from `DirectoryRecord::entry()` when a subdirectory is encountered to enqueue it for traversal.
-  void push_directory(std::shared_ptr<DirectoryRecord> subdirectory) { iterator.directories.push(subdirectory); }
+  void push_directory(const std::shared_ptr<DirectoryRecord> &subdirectory) { iterator.directories.push(subdirectory); }
 
   // Access the message buffer to emit events from other classes.
   ChannelMessageBuffer &get_buffer() { return buffer; }
@@ -108,6 +111,7 @@ public:
   //
   // Return the number of operations actually performed.
   size_t advance(size_t throttle_allocation);
+
 private:
   // Scan the current directory with `DirectoryRecord::scan()`, populating our iterator's `entries` map. Leave the
   // iterator ready to advance through the discovered entries.

@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <uv.h>
 
@@ -7,98 +7,84 @@
 
 #include <iomanip>
 
+using std::cerr;
+using std::cout;
+using std::dec;
 using std::endl;
-using std::ostream;
 using std::ofstream;
+using std::ostream;
+using std::setw;
 using std::string;
 using std::to_string;
-using std::dec;
-using std::setw;
-using std::cout;
-using std::cerr;
 
-class NullLogger : public Logger {
+class NullLogger : public Logger
+{
 public:
-  NullLogger()
-  {
-    //
-  }
+  NullLogger() = default;
 
-  virtual Logger* prefix(const char *file, int line) override
-  {
-    return this;
-  }
+  Logger *prefix(const char * /*file*/, int /*line*/) override { return this; }
 
-  virtual ostream& stream() override
-  {
-    return unopened;
-  }
+  ostream &stream() override { return unopened; }
 
 private:
   ofstream unopened;
 };
 
-class FileLogger : public Logger {
+class FileLogger : public Logger
+{
 public:
   FileLogger(const char *filename) : log_stream{filename, std::ios::out | std::ios::app}
   {
-    prefix(__FILE__, __LINE__);
+    FileLogger::prefix(__FILE__, __LINE__);
     log_stream << "FileLogger opened." << endl;
   }
 
-  virtual Logger* prefix(const char *file, int line) override
+  Logger *prefix(const char *file, int line) override
   {
     log_stream << "[" << setw(15) << file << ":" << setw(3) << dec << line << "] ";
     return this;
   }
 
-  virtual ostream& stream() override
-  {
-    return log_stream;
-  }
+  ostream &stream() override { return log_stream; }
 
 private:
   ofstream log_stream;
 };
 
-class StderrLogger : public Logger {
+class StderrLogger : public Logger
+{
 public:
   StderrLogger()
   {
-    prefix(__FILE__, __LINE__);
+    StderrLogger::prefix(__FILE__, __LINE__);
     cerr << "StderrLogger opened." << endl;
   }
 
-  virtual Logger* prefix(const char *file, int line) override
+  Logger *prefix(const char *file, int line) override
   {
     cerr << "[" << setw(15) << file << ":" << setw(3) << dec << line << "] ";
     return this;
   }
 
-  virtual ostream& stream() override
-  {
-    return cerr;
-  }
+  ostream &stream() override { return cerr; }
 };
 
-class StdoutLogger : public Logger {
+class StdoutLogger : public Logger
+{
 public:
   StdoutLogger()
   {
-    prefix(__FILE__, __LINE__);
+    StdoutLogger::prefix(__FILE__, __LINE__);
     cout << "StdoutLogger opened." << endl;
   }
 
-  virtual Logger* prefix(const char *file, int line) override
+  Logger *prefix(const char *file, int line) override
   {
     cout << "[" << setw(15) << file << ":" << setw(3) << dec << line << "] ";
     return this;
   }
 
-  virtual ostream& stream() override
-  {
-    return cout;
-  }
+  ostream &stream() override { return cout; }
 };
 
 static uv_key_t current_logger_key;
@@ -110,14 +96,14 @@ static void make_key()
   uv_key_create(&current_logger_key);
 }
 
-Logger* Logger::current()
+Logger *Logger::current()
 {
   uv_once(&make_key_once, &make_key);
 
-  Logger* logger = (Logger*) uv_key_get(&current_logger_key);
+  auto *logger = static_cast<Logger *>(uv_key_get(&current_logger_key));
 
   if (logger == nullptr) {
-    uv_key_set(&current_logger_key, (void*) &the_null_logger);
+    uv_key_set(&current_logger_key, static_cast<void *>(&the_null_logger));
     logger = &the_null_logger;
   }
 
@@ -131,7 +117,7 @@ static void replace_logger(const Logger *new_logger)
     delete prior;
   }
 
-  uv_key_set(&current_logger_key, (void*) new_logger);
+  uv_key_set(&current_logger_key, (void *) new_logger);
 }
 
 void Logger::to_file(const char *filename)
@@ -156,7 +142,7 @@ void Logger::disable()
 
 string plural(long quantity, const string &singular_form, const string &plural_form)
 {
-  string result("");
+  string result;
   result += to_string(quantity);
   result += " ";
 

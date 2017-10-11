@@ -2,19 +2,19 @@
 #define THREAD_H
 
 #include <atomic>
-#include <string>
-#include <memory>
-#include <utility>
 #include <functional>
-#include <vector>
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <utility>
 #include <uv.h>
+#include <vector>
 
 #include "errable.h"
-#include "result.h"
-#include "queue.h"
 #include "message.h"
+#include "queue.h"
+#include "result.h"
 #include "status.h"
 #include "thread_starter.h"
 
@@ -22,7 +22,8 @@
 //
 // For the most part, public methods are intended to be executed from the main thread. Protected and private methods
 // are meant to be called from the thread itself.
-class Thread : public SyncErrable {
+class Thread : public SyncErrable
+{
 public:
   // Construct a stopped Thread.
   //
@@ -31,11 +32,9 @@ public:
   //   on this thread's out queue via `Thread::receive_all()`.
   // * If provided, `starter` allows subclasses to customize configuration that can be manipulated offline (while the
   //   thread is stopped). See `ThreadStarter` for details.
-  Thread(
-    std::string name,
+  Thread(std::string &&name,
     uv_async_t *main_callback,
-    std::unique_ptr<ThreadStarter> starter = std::unique_ptr<ThreadStarter>(new ThreadStarter())
-  );
+    std::unique_ptr<ThreadStarter> starter = std::unique_ptr<ThreadStarter>(new ThreadStarter()));
 
   // Start the thread.
   //
@@ -60,7 +59,7 @@ public:
   // Accept any and all `Messages` that have been emitted by this thread since the last `Thread::receive_all()` call.
   // The output queue is emptied after this call returns. If no `Messages` are waiting, a null pointer is returned
   // instead.
-  Result< std::unique_ptr<std::vector<Message>> > receive_all();
+  Result<std::unique_ptr<std::vector<Message>>> receive_all();
 
   // Re-send any `Messages` that were sent between the acceptance of the message batch that caused the thread to
   // stop and the transition of the thread to the `STOPPING` phase. Note that this may cause the thread to immediately
@@ -99,18 +98,20 @@ protected:
   Result<> emit_all(InputIt begin, InputIt end);
 
   // Possible follow-on actions to be taken as a result of a received `Command`.
-  enum CommandOutcome {
-    NOTHING, // No action. Use this when the ack will be delivered asynchronously.
-    ACK, // Buffer an ack message corresponding to this Command to acknowledge receipt.
-    TRIGGER_STOP, // Prompt the thread to begin shutting down after it finishes this message batch.
-    PREVENT_STOP // Cancel the most recent TRIGGER_STOP received before this message within the batch.
+  enum CommandOutcome
+  {
+    NOTHING,  // No action. Use this when the ack will be delivered asynchronously.
+    ACK,  // Buffer an ack message corresponding to this Command to acknowledge receipt.
+    TRIGGER_STOP,  // Prompt the thread to begin shutting down after it finishes this message batch.
+    PREVENT_STOP  // Cancel the most recent TRIGGER_STOP received before this message within the batch.
   };
 
   // Possible follow-on actions to be taken as the result of a `CommandPayload` delivered to this thread while it's
   // `STOPPED`.
-  enum OfflineCommandOutcome {
-    OFFLINE_ACK, // Synchronously produce an ack for this `Command` and return `true` from the send method.
-    TRIGGER_RUN // Enqueue this message and start the thread to consume it.
+  enum OfflineCommandOutcome
+  {
+    OFFLINE_ACK,  // Synchronously produce an ack for this `Command` and return `true` from the send method.
+    TRIGGER_RUN  // Enqueue this message and start the thread to consume it.
   };
 
   // Process any messages sent to this thread from the main thread. Return the number of messages processed.
@@ -160,13 +161,15 @@ protected:
   virtual Result<OfflineCommandOutcome> handle_offline_command(const CommandPayload *payload);
 
   // Method dispatch table for command actions.
-  using CommandHandler = Result<CommandOutcome> (Thread::*)(const CommandPayload*);
-  class DispatchTable {
+  using CommandHandler = Result<CommandOutcome> (Thread::*)(const CommandPayload *);
+  class DispatchTable
+  {
   public:
     DispatchTable();
     const CommandHandler &operator[](CommandAction action) const { return handlers[action]; }
+
   private:
-    CommandHandler handlers[COMMAND_MAX + 1];
+    CommandHandler handlers[COMMAND_MAX + 1] = {nullptr};
   };
   static const DispatchTable command_handlers;
 
@@ -193,11 +196,12 @@ protected:
 
 private:
   // Phases of a thread's lifecycle.
-  enum State {
-    STOPPED, // The thread is not running.
-    STARTING, // The thread's start has been requested, but it has not launched yet.
-    RUNNING, // The thread is running.
-    STOPPING // The thread has processed a batch of messages that requested a stop.
+  enum State
+  {
+    STOPPED,  // The thread is not running.
+    STARTING,  // The thread's start has been requested, but it has not launched yet.
+    RUNNING,  // The thread is running.
+    STOPPING  // The thread has processed a batch of messages that requested a stop.
   };
 
   // The currently active phase.
@@ -215,7 +219,7 @@ private:
   uv_async_t *main_callback;
 
   // Running thread handle.
-  uv_thread_t uv_handle;
+  uv_thread_t uv_handle{};
   std::function<void()> work_fn;
 
   // Store any `Messages` received between the receipt of a batch that causes the thread to begin shutting down and the

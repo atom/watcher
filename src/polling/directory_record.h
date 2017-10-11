@@ -1,10 +1,10 @@
 #ifndef DIRECTORY_RECORD_H
 #define DIRECTORY_RECORD_H
 
-#include <map>
-#include <string>
-#include <memory>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <string>
 #include <uv.h>
 
 #include "../message.h"
@@ -13,7 +13,8 @@ class BoundPollingIterator;
 
 // Remembered stat() results from the previous time a polling cycle visited a subdirectory of a `PolledRoot`. Contains
 // a recursive substructure that mirrors the last-known state of the filesystem tree.
-class DirectoryRecord {
+class DirectoryRecord
+{
 public:
   // Create a new, unpopulated directory with no parent. `prefix` should be a fully qualified path to the directory
   // tree.
@@ -34,18 +35,16 @@ public:
   std::string path() const;
 
   // Perform a `scandir()` on this directories. If populated, emit deletion events for any entries that were found here
-  // before but are now missing. Store the discovered entries within the `iterator` as part of the iteration state.
-  void scan(BoundPollingIterator *iterator);
+  // before but are now missing. Store the discovered entries within `it` as part of the iteration state.
+  void scan(BoundPollingIterator *it);
 
   // Perform a single `lstat()` on an entry within this directory. If the DirectoryRecord is populated and the entry
   // has been created, deleted, or modified since the previous `DirectoryRecord::entry()` call, emit the appropriate
-  // events into the `iterator`'s buffer.
-  void entry(
-    BoundPollingIterator *iterator,
+  // events into the `it`'s buffer.
+  void entry(BoundPollingIterator *it,
     const std::string &entry_name,
     const std::string &entry_path,
-    EntryKind scan_kind
-  );
+    EntryKind scan_kind);
 
   // Note that this `DirectoryResult` has had an initial `scan()` and set of `entry()` calls completed. Subsequent
   // calls should emit actual events.
@@ -53,14 +52,15 @@ public:
 
   // Return true if all `DirectoryResults` beneath this one have been populated by an initial scan.
   bool all_populated();
+
 private:
   // Construct a `DirectoryRecord` for a child entry.
-  DirectoryRecord(DirectoryRecord *parent, const std::string &name);
+  DirectoryRecord(DirectoryRecord *parent, std::string &&name);
 
-  // Use an `iterator` to emit deletion, creation, or modification events.
-  void entry_deleted(BoundPollingIterator *iterator, const std::string &entry_path, EntryKind kind);
-  void entry_created(BoundPollingIterator *iterator, const std::string &entry_path, EntryKind kind);
-  void entry_modified(BoundPollingIterator *iterator, const std::string &entry_path, EntryKind kind);
+  // Use an iterator to emit deletion, creation, or modification events.
+  void entry_deleted(BoundPollingIterator *it, const std::string &entry_path, EntryKind kind);
+  void entry_created(BoundPollingIterator *it, const std::string &entry_path, EntryKind kind);
+  void entry_modified(BoundPollingIterator *it, const std::string &entry_path, EntryKind kind);
 
   // The parent directory. May be `null` at the root `DirectoryRecord` of a subtree.
   DirectoryRecord *parent;
@@ -83,9 +83,8 @@ private:
   // For great logging.
   friend std::ostream &operator<<(std::ostream &out, const DirectoryRecord &record)
   {
-    out << "DirectoryRecord{" << record.name
-      << " entries=" << record.entries.size()
-      << " subdirectories=" << record.subdirectories.size();
+    out << "DirectoryRecord{" << record.name << " entries=" << record.entries.size()
+        << " subdirectories=" << record.subdirectories.size();
     if (record.populated) out << " populated";
     return out << "}";
   }

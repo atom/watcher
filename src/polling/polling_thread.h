@@ -1,14 +1,14 @@
 #ifndef POLLING_THREAD_H
 #define POLLING_THREAD_H
 
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <map>
 #include <uv.h>
 
-#include "../thread.h"
-#include "../status.h"
 #include "../result.h"
+#include "../status.h"
+#include "../thread.h"
 #include "polled_root.h"
 
 const std::chrono::milliseconds DEFAULT_POLL_INTERVAL = std::chrono::milliseconds(100);
@@ -21,12 +21,18 @@ const uint_fast32_t DEFAULT_POLL_THROTTLE = 1000;
 // It has a configurable "throttle" which roughly corresponds to the number of filesystem calls performed within each
 // polling cycle. The throttle is distributed among polled roots so that small directories won't be starved by large
 // ones.
-class PollingThread : public Thread {
+class PollingThread : public Thread
+{
 public:
-  PollingThread(uv_async_t *main_callback);
-  ~PollingThread();
+  explicit PollingThread(uv_async_t *main_callback);
+  PollingThread(const PollingThread &) = delete;
+  PollingThread(PollingThread &&) = delete;
+  ~PollingThread() override = default;
 
   void collect_status(Status &status) override;
+
+  PollingThread &operator=(const PollingThread &) = delete;
+  PollingThread &operator=(PollingThread &&) = delete;
 
 private:
   Result<> body() override;
@@ -39,13 +45,13 @@ private:
 
   Result<CommandOutcome> handle_add_command(const CommandPayload *command) override;
 
-  Result<CommandOutcome> handle_remove_command(const CommandPayload *payload) override;
+  Result<CommandOutcome> handle_remove_command(const CommandPayload *command) override;
 
   // Configure the sleep interval.
-  Result<CommandOutcome> handle_polling_interval_command(const CommandPayload *payload) override;
+  Result<CommandOutcome> handle_polling_interval_command(const CommandPayload *command) override;
 
   // Configure the number of system calls to perform during each `cycle()`.
-  Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *payload) override;
+  Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *command) override;
 
   std::chrono::milliseconds poll_interval;
   uint_fast32_t poll_throttle;

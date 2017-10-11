@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -eu
+cd "$(dirname $0)/.."
+
+COMPILATION_DB=build/compile_commands.json
+
+if ! type clang-tidy 2>/dev/null 1>&2; then
+  printf "clang-tidy must be installed for 'npm run lint:cpp' to work.\n" >&2
+  exit 1
+fi
+
+if [ ! -f "${COMPILATION_DB}" ]; then
+  printf "Generating compilation command database.\n"
+  node script/helper/gen-compilation-db rebuild
+fi
+
+clang-tidy \
+  -p "${COMPILATION_DB}" \
+  -quiet \
+  "-header-filter=^\.\./src/*" \
+  $(find src -type f -name '*.cpp')

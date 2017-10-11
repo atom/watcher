@@ -1,21 +1,19 @@
 #include <memory>
-#include <string>
-#include <stack>
 #include <queue>
-#include <set>
+#include <stack>
+#include <string>
 
 #include "../helper/common.h"
-#include "../message_buffer.h"
 #include "../log.h"
+#include "../message_buffer.h"
 #include "directory_record.h"
 #include "polling_iterator.h"
 
-using std::string;
-using std::shared_ptr;
-using std::set;
 using std::endl;
+using std::shared_ptr;
+using std::string;
 
-PollingIterator::PollingIterator(shared_ptr<DirectoryRecord> root) :
+PollingIterator::PollingIterator(const shared_ptr<DirectoryRecord> &root) :
   root(root),
   current(root),
   current_path(root->path()),
@@ -24,19 +22,9 @@ PollingIterator::PollingIterator(shared_ptr<DirectoryRecord> root) :
   //
 }
 
-PollingIterator::~PollingIterator()
-{
-  //
-}
-
 BoundPollingIterator::BoundPollingIterator(PollingIterator &iterator, ChannelMessageBuffer &buffer) :
   buffer{buffer},
   iterator{iterator}
-{
-  //
-}
-
-BoundPollingIterator::~BoundPollingIterator()
 {
   //
 }

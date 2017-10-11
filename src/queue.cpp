@@ -1,27 +1,25 @@
 #include <iterator>
-#include <vector>
-#include <utility>
 #include <string>
+#include <utility>
 #include <uv.h>
+#include <vector>
 
-#include "queue.h"
-#include "message.h"
 #include "lock.h"
+#include "message.h"
+#include "queue.h"
 #include "result.h"
 
 using std::move;
-using std::vector;
-using std::back_inserter;
-using std::copy;
-using std::unique_ptr;
 using std::string;
+using std::unique_ptr;
+using std::vector;
 
-Queue::Queue(string name) : Errable(name), active{new vector<Message>}
+Queue::Queue(string &&name) : Errable(move(name)), active{new vector<Message>}
 {
   int err;
 
   err = uv_mutex_init(&mutex);
-  if (err) {
+  if (err != 0) {
     report_uv_error(err);
   }
 }
@@ -40,9 +38,9 @@ Result<> Queue::enqueue(Message &&message)
   return ok_result();
 }
 
-Result< unique_ptr<vector<Message>> > Queue::accept_all()
+Result<unique_ptr<vector<Message>>> Queue::accept_all()
 {
-  if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
+  if (!is_healthy()) return health_err_result<unique_ptr<vector<Message>>>();
 
   Lock lock = {mutex};
 

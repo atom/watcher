@@ -1,7 +1,6 @@
 {
     "targets": [{
         "target_name": "watcher",
-
         "sources": [
             "src/binding.cpp",
             "src/hub.cpp",
@@ -66,6 +65,27 @@
                 ]
             }]
         ],
+        "configurations": {
+            "Debug": {
+                "msvs_settings": {
+                    "VCCLCompilerTool": {
+                        "ExceptionHandling": "2",
+                        "WarningLevel": "4",
+                        "DebugInformationFormat": "3",
+                        "Optimization": "0"
+                    }
+                }
+            },
+            "Release": {
+                "msvs_settings": {
+                    "VCCLCompilerTool": {
+                        "ExceptionHandling": "2",
+                        "WarningLevel": "3",
+                        "Optimization": "3"
+                    }
+                }
+            }
+        }
     }],
     "target_defaults": {
         "cflags_cc": [

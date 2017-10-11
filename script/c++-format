@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+cd "$(dirname $0)/.."
+
+if ! type clang-format 2>/dev/null 1>&2; then
+  printf "clang-format must be installed for 'npm run format:cpp' to work.\n" >&2
+  exit 1
+fi
+
+exec clang-format -style=file -i $(find src -type f \( -name '*.cpp' -or -name '*.h' \))

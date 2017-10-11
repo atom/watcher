@@ -1,29 +1,29 @@
-#include <string>
-#include <memory>
 #include <functional>
-#include <vector>
-#include <utility>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <utility>
 #include <uv.h>
+#include <vector>
 
-#include "thread.h"
+#include "log.h"
 #include "message.h"
 #include "result.h"
-#include "log.h"
+#include "thread.h"
 
-using std::string;
+using std::bind;
+using std::endl;
 using std::function;
+using std::move;
+using std::ostream;
+using std::ostringstream;
+using std::string;
 using std::unique_ptr;
 using std::vector;
-using std::bind;
-using std::move;
-using std::ostringstream;
-using std::ostream;
-using std::endl;
 
 void thread_callback_helper(void *arg)
 {
-  function<void()> *bound_fn = static_cast<std::function<void()>*>(arg);
+  auto *bound_fn = static_cast<std::function<void()> *>(arg);
   (*bound_fn)();
 }
 
@@ -42,17 +42,16 @@ Thread::DispatchTable::DispatchTable()
 
 const Thread::DispatchTable Thread::command_handlers;
 
-Thread::Thread(std::string name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
-  SyncErrable(name),
+Thread::Thread(std::string &&name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
+  SyncErrable(move(name)),
   state{State::STOPPED},
   starter{move(starter)},
   in(name + " input queue"),
   out(name + " output queue"),
   main_callback{main_callback},
-  work_fn{bind(&Thread::start, this)}
-{
-  //
-};
+  work_fn{bind(&Thread::start, this)} {
+    //
+  };
 
 Result<> Thread::run()
 {
@@ -60,12 +59,12 @@ Result<> Thread::run()
   int err;
 
   err = uv_thread_create(&uv_handle, thread_callback_helper, &work_fn);
-  if (err) {
+  if (err != 0) {
     report_uv_error(err);
     return health_err_result();
-  } else {
-    return ok_result();
   }
+
+  return ok_result();
 }
 
 Result<bool> Thread::send(Message &&message)
@@ -97,10 +96,10 @@ Result<bool> Thread::send(Message &&message)
     Result<OfflineCommandOutcome> r0 = handle_offline_command(command);
     LOGGER << "Result: " << r0 << "." << endl;
     if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
-      return out.enqueue(
-        Message::ack(message, r0.propagate_as_void())
-      ).propagate(true);
-    } else if (r0.get_value() == TRIGGER_RUN) {
+      return out.enqueue(Message::ack(message, r0.propagate_as_void())).propagate(true);
+    }
+
+    if (r0.get_value() == TRIGGER_RUN) {
       Result<> r1 = in.enqueue(move(message));
       if (r1.is_error()) return r1.propagate<bool>();
 
@@ -118,9 +117,9 @@ Result<bool> Thread::send(Message &&message)
   return ok_result(false);
 }
 
-Result< unique_ptr<vector<Message>> > Thread::receive_all()
+Result<unique_ptr<vector<Message>>> Thread::receive_all()
 {
-  if (!is_healthy()) return health_err_result< unique_ptr<vector<Message>> >();
+  if (!is_healthy()) return health_err_result<unique_ptr<vector<Message>>>();
 
   return out.accept_all();
 }
@@ -181,7 +180,7 @@ Result<> Thread::emit(Message &&message)
   if (qr.is_error()) return qr;
 
   int uv_err = uv_async_send(main_callback);
-  if (uv_err) {
+  if (uv_err != 0) {
     return error_result(uv_strerror(uv_err));
   }
 
@@ -191,10 +190,8 @@ Result<> Thread::emit(Message &&message)
 Result<Thread::OfflineCommandOutcome> Thread::handle_offline_command(const CommandPayload *payload)
 {
   CommandAction action = payload->get_action();
-  if (
-    action == COMMAND_LOG_FILE || action == COMMAND_LOG_STDOUT || action == COMMAND_LOG_STDERR ||
-    action == COMMAND_LOG_DISABLE
-  ) {
+  if (action == COMMAND_LOG_FILE || action == COMMAND_LOG_STDOUT || action == COMMAND_LOG_STDERR
+    || action == COMMAND_LOG_DISABLE) {
     starter->set_logging(payload);
   }
 
@@ -203,7 +200,7 @@ Result<Thread::OfflineCommandOutcome> Thread::handle_offline_command(const Comma
 
 Result<size_t> Thread::handle_commands()
 {
-  Result< unique_ptr<vector<Message>> > pr = in.accept_all();
+  Result<unique_ptr<vector<Message>>> pr = in.accept_all();
   if (pr.is_error()) {
     return pr.propagate<size_t>();
   }
@@ -219,7 +216,7 @@ Result<size_t> Thread::handle_commands()
 
   for (Message &message : *accepted) {
     const CommandPayload *command = message.as_command();
-    if (!command) {
+    if (command == nullptr) {
       LOGGER << "Received unexpected non-command message " << message << "." << endl;
       continue;
     }
@@ -256,7 +253,7 @@ Result<size_t> Thread::handle_commands()
     mark_stopping();
 
     // Move any messages enqueued since we picked up this batch of commands into the dead letter office.
-    Result< unique_ptr<vector<Message>> > dr = in.accept_all();
+    Result<unique_ptr<vector<Message>>> dr = in.accept_all();
     if (dr.is_error()) dr.propagate<size_t>();
 
     dead_letter_office = move(dr.get_value());
@@ -326,7 +323,8 @@ Result<Thread::CommandOutcome> Thread::handle_unknown_command(const CommandPaylo
   return ok_result(ACK);
 }
 
-string Thread::state_name() {
+string Thread::state_name()
+{
   switch (state.load()) {
     case STOPPED: return "stopped";
     case STARTING: return "starting";
