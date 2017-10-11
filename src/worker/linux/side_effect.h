@@ -19,11 +19,13 @@ public:
   SideEffect() = default;
   ~SideEffect() = default;
 
+  using PollingRoot = std::pair<ChannelID, std::string>;
+
   // Recursively watch a newly created subdirectory.
   void track_subdirectory(std::string subdir, ChannelID channel_id);
 
   // Perform all enqueued actions.
-  Result<> enact_in(WatchRegistry *registry);
+  Result<> enact_in(WatchRegistry *registry, std::vector<PollingRoot> &poll);
 
   SideEffect(const SideEffect &other) = delete;
   SideEffect(SideEffect &&other) = delete;
