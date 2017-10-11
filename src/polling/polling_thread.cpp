@@ -168,12 +168,14 @@ Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPa
     return ok_result(NOTHING);
   }
 
-  pending_splits.emplace(std::piecewise_construct,
-    std::forward_as_tuple(command->get_channel_id()),
-    std::forward_as_tuple(command->get_id(), command->get_split_count()));
+  if (command->get_id() != NULL_COMMAND_ID) {
+    pending_splits.emplace(std::piecewise_construct,
+      std::forward_as_tuple(command->get_channel_id()),
+      std::forward_as_tuple(command->get_id(), command->get_split_count()));
 
-  if (command->get_split_count() == 0u) {
-    return ok_result(ACK);
+    if (command->get_split_count() == 0u) {
+      return ok_result(ACK);
+    }
   }
 
   return ok_result(NOTHING);
