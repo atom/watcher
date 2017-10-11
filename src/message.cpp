@@ -76,11 +76,16 @@ string FileSystemPayload::describe() const
   return builder.str();
 }
 
-CommandPayload::CommandPayload(CommandAction action, CommandID id, std::string &&root, uint_fast32_t arg) :
+CommandPayload::CommandPayload(CommandAction action,
+  CommandID id,
+  std::string &&root,
+  uint_fast32_t arg,
+  size_t split_count) :
   id{id},
   action{action},
   root{move(root)},
-  arg{arg}
+  arg{arg},
+  split_count{split_count}
 {
   //
 }
@@ -89,7 +94,8 @@ CommandPayload::CommandPayload(CommandPayload &&original) noexcept :
   id{original.id},
   action{original.action},
   root{move(original.root)},
-  arg{original.arg}
+  arg{original.arg},
+  split_count{original.split_count}
 {
   //
 }
@@ -108,6 +114,10 @@ string CommandPayload::describe() const
     case COMMAND_POLLING_THROTTLE: builder << "polling throttle " << arg; break;
     case COMMAND_DRAIN: builder << "drain"; break;
     default: builder << "!!action=" << action; break;
+  }
+
+  if (split_count > 1) {
+    builder << " split x" << split_count;
   }
 
   builder << "]";

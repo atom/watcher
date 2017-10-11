@@ -92,7 +92,8 @@ public:
   CommandPayload(CommandAction action,
     CommandID id = NULL_COMMAND_ID,
     std::string &&root = "",
-    uint_fast32_t arg = NULL_CHANNEL_ID);
+    uint_fast32_t arg = NULL_CHANNEL_ID,
+    size_t split_count = 1);
   CommandPayload(CommandPayload &&original) noexcept;
   ~CommandPayload() = default;
 
@@ -105,6 +106,7 @@ public:
   const std::string &get_root() const { return root; }
   const uint_fast32_t &get_arg() const { return arg; }
   const ChannelID &get_channel_id() const { return arg; }
+  const size_t &get_split_count() const { return split_count; }
 
   std::string describe() const;
 
@@ -113,6 +115,7 @@ private:
   const CommandAction action;
   std::string root;
   const uint_fast32_t arg;
+  const size_t split_count;
 };
 
 class AckPayload
