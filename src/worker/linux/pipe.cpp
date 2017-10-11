@@ -21,6 +21,9 @@ Pipe::Pipe(string &&name) : SyncErrable(move(name)), read_fd{0}, write_fd{0}
     Errable::report_error<>(errno_result<>("Unable to open pipe"));
     return;
   }
+
+  read_fd = fds[0];
+  write_fd = fds[1];
 }
 
 Pipe::~Pipe()
