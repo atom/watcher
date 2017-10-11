@@ -28,6 +28,8 @@ public:
 
   void reserve(size_t capacity) { messages.reserve(capacity); }
 
+  void add(Message &&message) { messages.emplace_back(std::move(message)); }
+
   MessageBuffer::iter begin() { return messages.begin(); }
 
   MessageBuffer::iter end() { return messages.end(); }
