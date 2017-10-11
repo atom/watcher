@@ -75,7 +75,9 @@ Result<> PollingThread::cycle()
 
     size_t progress = root.advance(buffer, allotment);
     remaining -= progress;
-    LOGGER << root << " consumed " << plural(progress, "throttle slot") << "." << endl;
+    if (progress != allotment) {
+      LOGGER << root << " only consumed " << plural(progress, "throttle slot") << "." << endl;
+    }
 
     roots_left--;
   }
