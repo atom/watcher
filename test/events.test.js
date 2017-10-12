@@ -2,7 +2,7 @@ const fs = require('fs-extra')
 
 const {Fixture} = require('./helper');
 
-[false, true].forEach(poll => {
+[false].forEach(poll => {
   describe(`events with poll = ${poll}`, function () {
     let fixture, errors, events
 
@@ -195,7 +195,7 @@ const {Fixture} = require('./helper');
       })
     }
 
-    it('correlates rapid file rename events', async function () {
+    it.stress(300, 'correlates rapid file rename events', async function () {
       const oldPath0 = fixture.watchPath('old-file-0.txt')
       const oldPath1 = fixture.watchPath('old-file-1.txt')
       const oldPath2 = fixture.watchPath('old-file-2.txt')
