@@ -1,11 +1,11 @@
 #include <chrono>
 #include <cstdint>
 #include <map>
-#include <vector>
 #include <string>
 #include <thread>
 #include <utility>
 #include <uv.h>
+#include <vector>
 
 #include "../log.h"
 #include "../message_buffer.h"
@@ -18,8 +18,8 @@
 using std::endl;
 using std::move;
 using std::string;
-using std::vector;
 using std::to_string;
+using std::vector;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
   Thread("polling thread", main_callback),
