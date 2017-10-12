@@ -27,7 +27,7 @@ public:
   const std::string &get_path() const;
   EntryKind get_entry_kind() const;
 
-  virtual std::string to_string() const = 0;
+  virtual std::string to_string(bool verbose = false) const = 0;
 
 protected:
   StatResult(std::string &&path, EntryKind entry_kind) : path{std::move(path)}, entry_kind{entry_kind} {};
@@ -53,7 +53,7 @@ public:
   off_t get_size() const;
   const std::chrono::time_point<std::chrono::steady_clock> &get_last_seen() const;
 
-  std::string to_string() const override;
+  std::string to_string(bool verbose = false) const override;
 
 private:
   ino_t inode;
@@ -71,7 +71,7 @@ public:
   bool has_changed_from(const StatResult &other) const override;
   bool could_be_rename_of(const StatResult &other) const override;
 
-  std::string to_string() const override;
+  std::string to_string(bool verbose = false) const override;
 };
 
 class RecentFileCache

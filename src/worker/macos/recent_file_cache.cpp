@@ -2,6 +2,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -49,7 +50,7 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
     // Log any other errno that we see.
     if (stat_errno != ENOENT && stat_errno != EACCES && stat_errno != ELOOP && stat_errno != ENAMETOOLONG
       && stat_errno != ENOTDIR) {
-      LOGGER << "lstat(" << path << ") failed with errno " << stat_errno << "." << endl;
+      LOGGER << "lstat(" << path << ") failed: " << strerror(stat_errno) << "." << endl;
     }
 
     EntryKind guessed_kind = KIND_UNKNOWN;
@@ -93,7 +94,7 @@ EntryKind StatResult::get_entry_kind() const
 
 ostream &operator<<(ostream &out, const StatResult &result)
 {
-  out << result.to_string();
+  out << result.to_string(true);
   return out;
 }
 
@@ -144,11 +145,13 @@ const time_point<steady_clock> &PresentEntry::get_last_seen() const
   return last_seen;
 }
 
-string PresentEntry::to_string() const
+string PresentEntry::to_string(bool verbose) const
 {
   ostringstream result;
 
-  result << "[present " << get_entry_kind() << " (" << get_path() << ") inode " << inode << " size " << size << "]";
+  result << "[present " << get_entry_kind();
+  if (verbose) result << " (" << get_path() << ")";
+  result << " inode=" << inode << " size=" << size << "]";
 
   return result.str();
 }
@@ -174,11 +177,13 @@ bool AbsentEntry::could_be_rename_of(const StatResult &other) const
   return true;
 }
 
-string AbsentEntry::to_string() const
+string AbsentEntry::to_string(bool verbose) const
 {
   ostringstream result;
 
-  result << "[absent " << get_entry_kind() << " (" << get_path() << ")]";
+  result << "[absent " << get_entry_kind();
+  if (verbose) result << " (" << get_path() << ")";
+  result << "]";
 
   return result.str();
 }
@@ -268,7 +273,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     DIR *dir = opendir(current_root.c_str());
     if (dir != nullptr) {
       errno_t opendir_errno = errno;
-      LOGGER << "Unable to open directory " << root << ": " << opendir_errno << "." << endl;
+      LOGGER << "Unable to open directory " << root << ": " << strerror(opendir_errno) << "." << endl;
       LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
       return;
     }
@@ -306,12 +311,12 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     }
     errno_t readdir_errno = errno;
     if (readdir_errno != 0) {
-      LOGGER << "Unable to read directory entry within " << root << ": " << readdir_errno << "." << endl;
+      LOGGER << "Unable to read directory entry within " << root << ": " << strerror(readdir_errno) << "." << endl;
     }
 
     if (closedir(dir) != 0) {
       errno_t closedir_errno = errno;
-      LOGGER << "Unable to close directory " << root << ": " << closedir_errno << "." << endl;
+      LOGGER << "Unable to close directory " << root << ": " << strerror(closedir_errno) << "." << endl;
     }
   }
 

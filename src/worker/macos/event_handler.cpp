@@ -43,10 +43,8 @@ public:
 
   void operator()()
   {
-    report();
     collect_info();
-
-    LOGGER << "Former: " << *former << " Current: " << *current << endl;
+    report();
 
     if (emit_if_unambiguous()) return;
     if (emit_if_rename()) return;
@@ -59,9 +57,8 @@ private:
   void report()
   {
     ostream &logline = LOGGER;
-    logline << "Native event received at [" << event_path << "]:" << endl;
+    logline << "Event at [" << event_path << "] flags " << hex << flags << dec << "[";
 
-    logline << "  event flags " << hex << flags << dec << " =";
     if ((flags & kFSEventStreamEventFlagMustScanSubDirs) != 0) logline << " MustScanSubDirs";
     if ((flags & kFSEventStreamEventFlagUserDropped) != 0) logline << " UserDropped";
     if ((flags & kFSEventStreamEventFlagKernelDropped) != 0) logline << " KernelDropped";
@@ -86,14 +83,11 @@ private:
     if ((flags & kFSEventStreamEventFlagOwnEvent) != 0) logline << " OwnEvent";
     if ((flags & kFSEventStreamEventFlagItemIsHardlink) != 0) logline << " ItemIsHardlink";
     if ((flags & kFSEventStreamEventFlagItemIsLastHardlink) != 0) logline << " ItemIsLastHardlink";
-    logline << endl;
 
-    logline << "  interpreted as"
-            << " file=" << flag_file << " directory=" << flag_directory << " created=" << flag_created
-            << " deleted=" << flag_deleted << " modified=" << flag_modified << " renamed=" << flag_renamed << endl;
+    logline << "] former=" << former->to_string(false) << " current=" << current->to_string(false) << endl;
   }
 
-  // Check the recently-seen entry cache for this entry.
+  // Check and update the recently-seen entry cache for this entry.
   void collect_info()
   {
     former = cache.at_path(event_path, flag_file, flag_directory);
@@ -106,14 +100,11 @@ private:
   bool emit_if_unambiguous()
   {
     if (flag_created && !(flag_deleted || flag_modified || flag_renamed)) {
-      LOGGER << "Unambiguous creation." << endl;
       message_buffer.created(move(event_path), current->get_entry_kind());
       return true;
     }
 
     if (flag_deleted && !(flag_created || flag_modified || flag_renamed)) {
-      LOGGER << "Unambiguous deletion." << endl;
-
       EntryKind former_kind = KIND_UNKNOWN;
       if (current->get_entry_kind() != KIND_UNKNOWN) {
         former_kind = current->get_entry_kind();
@@ -126,7 +117,6 @@ private:
     }
 
     if (flag_modified && !(flag_created || flag_deleted || flag_renamed)) {
-      LOGGER << "Unambiguous modification." << endl;
       message_buffer.modified(move(event_path), current->get_entry_kind());
       return true;
     }
@@ -152,8 +142,6 @@ private:
   {
     if (current->is_present()) return false;
 
-    LOGGER << "Entry is no longer present." << endl;
-
     if (former->is_present() && kinds_are_different(former->get_entry_kind(), current->get_entry_kind())) {
       // Entry was last seen as a directory, but the latest event has it flagged as a file (or vice versa).
       // The directory must have been deleted.
@@ -173,8 +161,6 @@ private:
   bool emit_if_present()
   {
     if (current->is_absent()) return false;
-
-    LOGGER << "Entry is still present." << endl;
 
     if (former->is_present()) {
       // This is *not* the first time an event at this path has been seen.

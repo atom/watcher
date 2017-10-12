@@ -19,9 +19,9 @@ public:
     entry{std::move(original.entry)},
     current{original.current} {};
 
-  RenameBufferEntry(const RenameBufferEntry &) = delete;
   ~RenameBufferEntry() = default;
 
+  RenameBufferEntry(const RenameBufferEntry &) = delete;
   RenameBufferEntry &operator=(const RenameBufferEntry &) = delete;
   RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
 
