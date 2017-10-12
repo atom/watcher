@@ -15,9 +15,7 @@
 class RenameBufferEntry
 {
 public:
-  RenameBufferEntry(RenameBufferEntry &&original) noexcept :
-    entry{std::move(original.entry)},
-    current{original.current} {};
+  RenameBufferEntry(RenameBufferEntry &&original) noexcept;
 
   ~RenameBufferEntry() = default;
 
@@ -26,10 +24,10 @@ public:
   RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
 
 private:
-  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) : entry{std::move(entry)}, current{current} {};
-
+  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current);
   std::shared_ptr<PresentEntry> entry;
   bool current;
+  size_t age;
 
   friend class RenameBuffer;
 };
@@ -38,7 +36,8 @@ class RenameBuffer
 {
 public:
   // Create a new buffer with a reference to the ChannelMessageBuffer it should use to enqueue messages.
-  RenameBuffer(ChannelMessageBuffer &message_buffer) : message_buffer{message_buffer} {};
+  RenameBuffer(ChannelMessageBuffer &message_buffer);
+
   ~RenameBuffer() = default;
 
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,

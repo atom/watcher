@@ -5,6 +5,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <utility>
+#include <vector>
 
 #include "../../log.h"
 #include "event_handler.h"
@@ -16,6 +17,21 @@ using std::ostream;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
+using std::vector;
+
+RenameBufferEntry::RenameBufferEntry(RenameBufferEntry &&original) noexcept :
+  entry(move(original.entry)),
+  current{original.current},
+  age{original.age}
+{}
+
+RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) :
+  entry{std::move(entry)},
+  current{current},
+  age{0}
+{}
+
+RenameBuffer::RenameBuffer(ChannelMessageBuffer &message_buffer) : message_buffer{message_buffer} {}
 
 void RenameBuffer::observe_entry(const shared_ptr<StatResult> &former, const shared_ptr<StatResult> &current)
 {
@@ -89,16 +105,26 @@ void RenameBuffer::observe_present_entry(const shared_ptr<PresentEntry> &present
 
 void RenameBuffer::flush_unmatched()
 {
+  vector<ino_t> to_erase;
   for (auto &it : observed_by_inode) {
     RenameBufferEntry &existing = it.second;
     shared_ptr<PresentEntry> entry = existing.entry;
+
+    if (existing.age == 0u) {
+      existing.age++;
+      continue;
+    }
 
     if (existing.current) {
       message_buffer.created(string(entry->get_path()), entry->get_entry_kind());
     } else {
       message_buffer.deleted(string(entry->get_path()), entry->get_entry_kind());
     }
+
+    to_erase.push_back(it.first);
   }
 
-  observed_by_inode.clear();
+  for (ino_t &ino : to_erase) {
+    observed_by_inode.erase(ino);
+  }
 }
