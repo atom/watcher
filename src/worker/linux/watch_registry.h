@@ -24,11 +24,12 @@ public:
   // Stop inotify and release all kernel resources associated with it.
   ~WatchRegistry() override;
 
-  // Begin watching a root path. If `recursive` is `true`, recursively watch all
-  // subdirectories as well.
+  // Begin watching a root path. If `recursive` is `true`, recursively watch all subdirectories as well. If inotify
+  // watch descriptors are exhausted before the entire directory tree can be watched, the unsuccessfully watched roots
+  // will be accumulated into the `poll` vector.
   //
   // `root` must name a directory if `recursive` is `true`.
-  Result<> add(ChannelID channel_id, const std::string &root, bool recursive);
+  Result<> add(ChannelID channel_id, const std::string &root, bool recursive, std::vector<std::string> &poll);
 
   // Uninstall inotify watchers used to deliver events on a specified channel.
   Result<> remove(ChannelID channel_id);

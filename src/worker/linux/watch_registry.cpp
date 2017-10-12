@@ -25,6 +25,7 @@ using std::ostream;
 using std::set;
 using std::shared_ptr;
 using std::string;
+using std::vector;
 
 static ostream &operator<<(ostream &out, const inotify_event *event)
 {
@@ -72,7 +73,7 @@ WatchRegistry::~WatchRegistry()
   }
 }
 
-Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recursive)
+Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recursive, vector<string> &poll)
 {
   if (!is_healthy()) return health_err_result<>();
 
@@ -86,6 +87,17 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
     int watch_errno = errno;
 
     if (watch_errno == ENOTDIR) {
+      return ok_result();
+    }
+
+    if (watch_errno == ENOENT || watch_errno == EACCES) {
+      LOGGER << "Directory " << root << " is no longer accessible. Ignoring." << endl;
+      return ok_result();
+    }
+
+    if (watch_errno == ENOSPC) {
+      LOGGER << "Falling back to polling for directory " << root << "." << endl;
+      poll.push_back(root);
       return ok_result();
     }
 
@@ -129,7 +141,7 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
           }
         }
 #else
-        Result<> add_r = add(channel_id, subdir, true);
+        Result<> add_r = add(channel_id, subdir, true, poll);
         if (add_r.is_error()) {
           LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
         }
