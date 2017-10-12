@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <string>
 #include <thread>
 #include <utility>
@@ -17,6 +18,7 @@
 using std::endl;
 using std::move;
 using std::string;
+using std::vector;
 using std::to_string;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
@@ -83,6 +85,7 @@ Result<> PollingThread::cycle()
   }
 
   // Ack any commands whose roots are now fully populated.
+  vector<ChannelID> to_erase;
   for (auto &split : pending_splits) {
     const ChannelID &channel_id = split.first;
     const PendingSplit &pending_split = split.second;
@@ -95,8 +98,11 @@ Result<> PollingThread::cycle()
 
     if (populated_roots >= pending_split.second) {
       buffer.ack(pending_split.first, channel_id, true, "");
-      pending_splits.erase(channel_id);
+      to_erase.push_back(channel_id);
     }
+  }
+  for (ChannelID &channel_id : to_erase) {
+    pending_splits.erase(channel_id);
   }
 
   return emit_all(buffer.begin(), buffer.end());
