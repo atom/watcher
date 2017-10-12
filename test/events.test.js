@@ -290,7 +290,7 @@ const {Fixture} = require('./helper');
       await fs.rmdir(reusedPath)
       await fs.writeFile(reusedPath, 'IMMA FILE NOW, SURPRIIIISE\n')
 
-      await until('deletion and creation events arrive', orderedEventsMatching(
+      await until('deletion and creation events arrive', allEventsMatching(
         {action: 'deleted', path: reusedPath},
         {action: 'created', kind: 'file', path: reusedPath}
       ))
@@ -394,7 +394,7 @@ const {Fixture} = require('./helper');
       await fs.unlink(reusedPath)
       await fs.mkdir(reusedPath)
 
-      await until('delete and create events arrive', orderedEventsMatching(
+      await until('delete and create events arrive', allEventsMatching(
         {action: 'deleted', path: reusedPath},
         {action: 'created', kind: 'directory', path: reusedPath}
       ))
@@ -449,7 +449,7 @@ const {Fixture} = require('./helper');
           {action: 'created', kind: 'directory', path: reusedPath}
         ))
       } else {
-        await until('rename and create events arrive', orderedEventsMatching(
+        await until('rename and create events arrive', allEventsMatching(
           {action: 'renamed', kind: 'file', oldPath: reusedPath, path: newFilePath},
           {action: 'created', kind: 'directory', path: reusedPath}
         ))
@@ -481,7 +481,7 @@ const {Fixture} = require('./helper');
           {action: 'created', kind: 'directory', path: reusedPath}
         ))
       } else {
-        await until('rename events arrive', orderedEventsMatching(
+        await until('rename events arrive', allEventsMatching(
           {action: 'renamed', kind: 'file', oldPath: reusedPath, path: newFilePath},
           {action: 'renamed', kind: 'directory', oldPath: oldDirPath, path: reusedPath}
         ))
