@@ -156,6 +156,7 @@ public:
     if (event_stream == nullptr) {
       string msg("Unable to create event stream for watch root: ");
       msg += root_path;
+      CFRelease(watch_roots);
       CFRelease(watch_root);
 
       return Result<bool>::make_error(move(msg));
