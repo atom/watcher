@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <memory>
+#include <set>
 #include <string>
 #include <sys/stat.h>
 #include <utility>
@@ -14,6 +15,7 @@
 using std::endl;
 using std::move;
 using std::ostream;
+using std::set;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
@@ -103,15 +105,33 @@ void RenameBuffer::observe_present_entry(const shared_ptr<PresentEntry> &present
   }
 }
 
-void RenameBuffer::flush_unmatched()
+set<RenameBuffer::Key> RenameBuffer::flush_unmatched()
 {
-  vector<ino_t> to_erase;
+  set<Key> all;
+  all.reserve(observed_by_inode.size());
+
   for (auto &it : observed_by_inode) {
+    all.insert(it.first);
+  }
+
+  return flush_unmatched(all);
+}
+
+set<RenameBuffer::Key> RenameBuffer::flush_unmatched(const set<Key> &keys)
+{
+  set<Key> aged;
+  vector<Key> to_erase;
+
+  for (auto &it : observed_by_inode) {
+    const Key &key = it.first;
+    if (keys.count(key) == 0) continue;
+
     RenameBufferEntry &existing = it.second;
     shared_ptr<PresentEntry> entry = existing.entry;
 
     if (existing.age == 0u) {
       existing.age++;
+      aged.insert(key);
       continue;
     }
 
@@ -120,11 +140,12 @@ void RenameBuffer::flush_unmatched()
     } else {
       message_buffer.deleted(string(entry->get_path()), entry->get_entry_kind());
     }
-
-    to_erase.push_back(it.first);
+    to_erase.push_back(key);
   }
 
-  for (ino_t &ino : to_erase) {
-    observed_by_inode.erase(ino);
+  for (Key &key : to_erase) {
+    observed_by_inode.erase(key);
   }
+
+  return to_erase;
 }
