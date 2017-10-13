@@ -195,6 +195,7 @@ public:
     for (size_t i = 0; i < num_events; i++) {
       handler.handle(string(paths[i]), event_flags[i]);
     }
+    cache.apply();
 
     set<RenameBuffer::Key> out = rename_buffer.flush_unmatched(message_buffer);
     if (!out.empty()) {

@@ -188,37 +188,19 @@ string AbsentEntry::to_string(bool verbose) const
   return result.str();
 }
 
-void RecentFileCache::insert(const shared_ptr<StatResult> &stat_result)
+shared_ptr<StatResult> RecentFileCache::current_at_path(const string &path, bool file_hint, bool directory_hint)
 {
-  // Clear an existing entry at the same path if one exists
-  auto maybe = by_path.find(stat_result->get_path());
-  if (maybe != by_path.end()) {
-    shared_ptr<PresentEntry> existing = maybe->second;
-
-    auto range = by_timestamp.equal_range(existing->get_last_seen());
-    auto to_erase = by_timestamp.end();
-    for (auto it = range.first; it != range.second; ++it) {
-      if (it->second == existing) {
-        to_erase = it;
-      }
-    }
-    if (to_erase != by_timestamp.end()) {
-      by_timestamp.erase(to_erase);
-    }
-
-    by_path.erase(maybe);
+  auto maybe_pending = pending.find(path);
+  if (maybe_pending != pending.end()) {
+    return maybe_pending->second;
   }
 
-  // Add the new result if it's a PresentEntry
-  if (stat_result->is_present()) {
-    shared_ptr<PresentEntry> present = static_pointer_cast<PresentEntry>(stat_result);
-
-    by_path.insert({present->get_path(), present});
-    by_timestamp.insert({present->get_last_seen(), present});
-  }
+  shared_ptr<StatResult> stat_result = StatResult::at(string(path), file_hint, directory_hint);
+  pending.emplace(path, stat_result);
+  return stat_result;
 }
 
-shared_ptr<StatResult> RecentFileCache::at_path(const string &path, bool file_hint, bool directory_hint)
+shared_ptr<StatResult> RecentFileCache::former_at_path(const string &path, bool file_hint, bool directory_hint)
 {
   auto maybe = by_path.find(path);
   if (maybe == by_path.end()) {
@@ -230,6 +212,39 @@ shared_ptr<StatResult> RecentFileCache::at_path(const string &path, bool file_hi
   }
 
   return maybe->second;
+}
+
+void RecentFileCache::apply()
+{
+  for (auto &pair : pending) {
+    // Clear an existing entry at the same path if one exists
+    auto maybe = by_path.find(pair.second->get_path());
+    if (maybe != by_path.end()) {
+      shared_ptr<PresentEntry> existing = maybe->second;
+
+      auto range = by_timestamp.equal_range(existing->get_last_seen());
+      auto to_erase = by_timestamp.end();
+      for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == existing) {
+          to_erase = it;
+        }
+      }
+      if (to_erase != by_timestamp.end()) {
+        by_timestamp.erase(to_erase);
+      }
+
+      by_path.erase(maybe);
+    }
+
+    // Add the new result if it's a PresentEntry
+    if (pair.second->is_present()) {
+      shared_ptr<PresentEntry> present = static_pointer_cast<PresentEntry>(pair.second);
+
+      by_path.emplace(present->get_path(), present);
+      by_timestamp.emplace(present->get_last_seen(), present);
+    }
+  }
+  pending.clear();
 }
 
 void RecentFileCache::prune()
@@ -289,14 +304,10 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
         bool file_hint = (entry->d_type & DT_REG) == DT_REG;
         bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
 
-        shared_ptr<StatResult> r = StatResult::at(string(entry_path), file_hint, dir_hint);
+        shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint);
         if (r->is_present()) {
           entries++;
-          insert(r);
-
-          if (r->get_entry_kind() == KIND_DIRECTORY) {
-            next_roots.push(entry_path);
-          }
+          if (r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
         }
 
         count++;
@@ -319,6 +330,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
       LOGGER << "Unable to close directory " << root << ": " << strerror(closedir_errno) << "." << endl;
     }
   }
+  apply();
 
   LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
 }

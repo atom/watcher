@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <string>
 #include <sys/stat.h>
@@ -18,6 +19,7 @@
 using std::dec;
 using std::endl;
 using std::hex;
+using std::map;
 using std::move;
 using std::ostream;
 using std::shared_ptr;
@@ -90,10 +92,8 @@ private:
   // Check and update the recently-seen entry cache for this entry.
   void collect_info()
   {
-    former = cache.at_path(event_path, flag_file, flag_directory);
-    current = StatResult::at(string(event_path), flag_file, flag_directory);
-
-    cache.insert(current);
+    former = cache.former_at_path(event_path, flag_file, flag_directory);
+    current = cache.current_at_path(event_path, flag_file, flag_directory);
   }
 
   // Emit messages for events that have unambiguous flags.
