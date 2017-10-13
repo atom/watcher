@@ -57,7 +57,7 @@ private:
   void report()
   {
     ostream &logline = LOGGER;
-    logline << "Event at [" << event_path << "] flags " << hex << flags << dec << "[";
+    logline << "Event at [" << event_path << "] flags " << hex << flags << dec << " [";
 
     if ((flags & kFSEventStreamEventFlagMustScanSubDirs) != 0) logline << " MustScanSubDirs";
     if ((flags & kFSEventStreamEventFlagUserDropped) != 0) logline << " UserDropped";
