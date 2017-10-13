@@ -19,4 +19,6 @@ const FSEventStreamEventFlags IS_FILE = kFSEventStreamEventFlagItemIsFile;
 
 const FSEventStreamEventFlags IS_DIRECTORY = kFSEventStreamEventFlagItemIsDir;
 
+const CFTimeInterval RENAME_TIMEOUT = 0.05;
+
 #endif
