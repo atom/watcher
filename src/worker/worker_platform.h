@@ -29,9 +29,7 @@ public:
   {
     if (!is_healthy()) return health_err_result();
 
-    Result<size_t> cr = thread->handle_commands();
-    if (cr.is_error()) return cr.propagate();
-    return ok_result();
+    return thread->handle_commands().propagate_as_void();
   }
 
   WorkerPlatform(const WorkerPlatform &) = delete;
