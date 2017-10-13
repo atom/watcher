@@ -86,7 +86,7 @@ private:
     if ((flags & kFSEventStreamEventFlagItemIsHardlink) != 0) logline << " ItemIsHardlink";
     if ((flags & kFSEventStreamEventFlagItemIsLastHardlink) != 0) logline << " ItemIsLastHardlink";
 
-    logline << "] former=" << former->to_string(false) << " current=" << current->to_string(false) << endl;
+    logline << " ] former=" << former->to_string(false) << " current=" << current->to_string(false) << endl;
   }
 
   // Check and update the recently-seen entry cache for this entry.
