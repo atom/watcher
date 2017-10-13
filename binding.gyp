@@ -29,6 +29,7 @@
             ["OS=='mac'", {
                 "sources": [
                     "src/helper/common_posix.cpp",
+                    "src/helper/macos/helper.cpp",
                     "src/worker/macos/macos_worker_platform.cpp",
                     "src/worker/macos/recent_file_cache.cpp",
                     "src/worker/macos/event_handler.cpp",
