@@ -142,18 +142,21 @@ private:
   {
     if (current->is_present()) return false;
 
-    if (former->is_present() && kinds_are_different(former->get_entry_kind(), current->get_entry_kind())) {
+    if (former->is_present() && kinds_are_different(former->get_entry_kind(), current->get_entry_kind()) && flag_deleted
+      && flag_created) {
       // Entry was last seen as a directory, but the latest event has it flagged as a file (or vice versa).
       // The directory must have been deleted.
       message_buffer.deleted(string(former->get_path()), former->get_entry_kind());
       message_buffer.created(string(current->get_path()), current->get_entry_kind());
-    } else {
-      // Entry has not been seen before, so we must have missed its creation event.
+    } else if (former->is_absent() && flag_created) {
+      // Entry has not been seen before, so this must be its creation event.
       message_buffer.created(string(current->get_path()), current->get_entry_kind());
     }
 
     // It isn't there now, so it must have been deleted.
-    message_buffer.deleted(string(current->get_path()), current->get_entry_kind());
+    if (flag_deleted) {
+      message_buffer.deleted(string(current->get_path()), current->get_entry_kind());
+    }
     return true;
   }
 
@@ -164,24 +167,24 @@ private:
 
     if (former->is_present()) {
       // This is *not* the first time an event at this path has been seen.
-      if (flag_deleted) {
+      if (flag_deleted && flag_created) {
         // Rapid creation and deletion. There may be a lost modification event just before deletion or just after
         // recreation.
         message_buffer.deleted(string(former->get_path()), former->get_entry_kind());
         message_buffer.created(string(current->get_path()), current->get_entry_kind());
-      } else {
+      } else if (flag_modified) {
         // Modification of an existing entry.
         message_buffer.modified(string(current->get_path()), current->get_entry_kind());
       }
     } else {
       // This *is* the first time an event has been seen at this path.
-      if (flag_deleted) {
+      if (flag_deleted && flag_created) {
         // The only way for the deletion flag to be set on an entry we haven't seen before is for the entry to
         // be rapidly created, deleted, and created again.
         message_buffer.created(string(former->get_path()), former->get_entry_kind());
         message_buffer.deleted(string(former->get_path()), former->get_entry_kind());
         message_buffer.created(string(current->get_path()), current->get_entry_kind());
-      } else {
+      } else if (flag_created) {
         // Otherwise, it must have been created. This may conceal a separate modification event just after
         // the entry's creation.
         message_buffer.created(string(current->get_path()), current->get_entry_kind());
