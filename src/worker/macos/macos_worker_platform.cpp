@@ -238,7 +238,8 @@ public:
 
   FnRegistryAction timer_triggered(set<RenameBuffer::Key> keys, ChannelID channel_id, CFRunLoopTimerRef timer)
   {
-    LOGGER << "Expiring " << keys.size() << " rename entries on channel " << channel_id << "." << endl;
+    LOGGER << "Expiring " << plural(keys.size(), "rename entry", "rename entries") << " on channel " << channel_id
+           << "." << endl;
 
     MessageBuffer buffer;
     ChannelMessageBuffer message_buffer(buffer, channel_id);
