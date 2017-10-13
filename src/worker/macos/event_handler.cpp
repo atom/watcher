@@ -26,11 +26,11 @@ using std::string;
 class EventFunctor
 {
 public:
-  EventFunctor(EventHandler &handler, string &event_path, FSEventStreamEventFlags flags) :
+  EventFunctor(EventHandler &handler, string &&event_path, FSEventStreamEventFlags flags) :
     message_buffer{handler.message_buffer},
     cache{handler.cache},
     rename_buffer{handler.rename_buffer},
-    event_path{event_path},
+    event_path{move(event_path)},
     flags{flags}
   {
     flag_created = (flags & CREATE_FLAGS) != 0;
@@ -130,7 +130,7 @@ private:
   bool emit_if_rename()
   {
     if (flag_renamed) {
-      rename_buffer.observe_entry(former, current);
+      rename_buffer.observe_entry(message_buffer, former, current);
       return true;
     }
 
@@ -195,7 +195,7 @@ private:
   RecentFileCache &cache;
   RenameBuffer &rename_buffer;
 
-  string &event_path;
+  string event_path;
   FSEventStreamEventFlags flags;
 
   bool flag_created;
@@ -209,21 +209,16 @@ private:
   shared_ptr<StatResult> current;
 };
 
-EventHandler::EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache) :
+EventHandler::EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache, RenameBuffer &rename_buffer) :
   cache{cache},
   message_buffer{message_buffer},
-  rename_buffer(message_buffer)
+  rename_buffer{rename_buffer}
 {
   //
 }
 
-void EventHandler::handle(string &event_path, FSEventStreamEventFlags flags)
+void EventHandler::handle(string &&event_path, FSEventStreamEventFlags flags)
 {
-  EventFunctor callable(*this, event_path, flags);
+  EventFunctor callable(*this, move(event_path), flags);
   callable();
-}
-
-void EventHandler::flush()
-{
-  rename_buffer.flush_unmatched();
 }

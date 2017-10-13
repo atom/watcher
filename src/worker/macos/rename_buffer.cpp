@@ -33,9 +33,9 @@ RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool c
   age{0}
 {}
 
-RenameBuffer::RenameBuffer(ChannelMessageBuffer &message_buffer) : message_buffer{message_buffer} {}
-
-void RenameBuffer::observe_entry(const shared_ptr<StatResult> &former, const shared_ptr<StatResult> &current)
+void RenameBuffer::observe_entry(ChannelMessageBuffer &message_buffer,
+  const shared_ptr<StatResult> &former,
+  const shared_ptr<StatResult> &current)
 {
   if (!former->has_changed_from(*current)) {
     // The entry is still there with the same inode.
@@ -45,16 +45,18 @@ void RenameBuffer::observe_entry(const shared_ptr<StatResult> &former, const sha
 
   if (former->is_present()) {
     shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
-    observe_present_entry(former_present, false);
+    observe_present_entry(message_buffer, former_present, false);
   }
 
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
-    observe_present_entry(current_present, true);
+    observe_present_entry(message_buffer, current_present, true);
   }
 }
 
-void RenameBuffer::observe_present_entry(const shared_ptr<PresentEntry> &present, bool current)
+void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
+  const shared_ptr<PresentEntry> &present,
+  bool current)
 {
   ostream &logline = LOGGER << "Rename ";
 
@@ -105,19 +107,18 @@ void RenameBuffer::observe_present_entry(const shared_ptr<PresentEntry> &present
   }
 }
 
-set<RenameBuffer::Key> RenameBuffer::flush_unmatched()
+set<RenameBuffer::Key> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer)
 {
   set<Key> all;
-  all.reserve(observed_by_inode.size());
 
   for (auto &it : observed_by_inode) {
     all.insert(it.first);
   }
 
-  return flush_unmatched(all);
+  return flush_unmatched(message_buffer, all);
 }
 
-set<RenameBuffer::Key> RenameBuffer::flush_unmatched(const set<Key> &keys)
+set<RenameBuffer::Key> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer, const set<Key> &keys)
 {
   set<Key> aged;
   vector<Key> to_erase;
@@ -147,5 +148,5 @@ set<RenameBuffer::Key> RenameBuffer::flush_unmatched(const set<Key> &keys)
     observed_by_inode.erase(key);
   }
 
-  return to_erase;
+  return aged;
 }

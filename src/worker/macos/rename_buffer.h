@@ -37,8 +37,8 @@ private:
 class RenameBuffer
 {
 public:
-  // Create a new buffer with a reference to the ChannelMessageBuffer it should use to enqueue messages.
-  RenameBuffer(ChannelMessageBuffer &message_buffer);
+  // Create an empty buffer.
+  RenameBuffer() = default;
 
   ~RenameBuffer() = default;
 
@@ -46,17 +46,19 @@ public:
 
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
   // based on the previous and currently observed state of the entry at that path.
-  void observe_entry(const std::shared_ptr<StatResult> &former, const std::shared_ptr<StatResult> &current);
+  void observe_entry(ChannelMessageBuffer &message_buffer,
+    const std::shared_ptr<StatResult> &former,
+    const std::shared_ptr<StatResult> &current);
 
   // Enqueue creation and removal events for any buffer entries that have remained unpaired through two consecutive
   // event batches.
   //
   // Return the collection of unpaired Keys that were created during this run.
-  std::set<Key> flush_unmatched();
+  std::set<Key> flush_unmatched(ChannelMessageBuffer &message_buffer);
 
   // Enqueue creation and removal events for buffer entries that map to any of the listed keys. Return the collection
   // of unpaired Keys that were aged, but not processed, during this run.
-  std::set<Key> flush_unmatched(const std::set<Key> &keys);
+  std::set<Key> flush_unmatched(ChannelMessageBuffer &message_buffer, const std::set<Key> &keys);
 
   RenameBuffer(const RenameBuffer &) = delete;
   RenameBuffer(RenameBuffer &&) = delete;
@@ -64,9 +66,9 @@ public:
   RenameBuffer &operator=(RenameBuffer &&) = delete;
 
 private:
-  void observe_present_entry(const std::shared_ptr<PresentEntry> &present, bool current);
-
-  ChannelMessageBuffer &message_buffer;
+  void observe_present_entry(ChannelMessageBuffer &message_buffer,
+    const std::shared_ptr<PresentEntry> &present,
+    bool current);
 
   std::unordered_map<Key, RenameBufferEntry> observed_by_inode;
 };
