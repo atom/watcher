@@ -49,6 +49,12 @@ class EventMatcher {
       return specIndex >= specs.length
     }
   }
+
+  noEvents (...specs) {
+    return this.events.every(event => {
+      return specs.every(spec => !specMatches(spec, event))
+    })
+  }
 }
 
 module.exports = {EventMatcher}
