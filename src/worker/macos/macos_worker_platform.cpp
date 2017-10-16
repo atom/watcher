@@ -171,11 +171,11 @@ public:
   }
 
   FnRegistryAction fs_event_triggered(ChannelID channel_id,
-    ConstFSEventStreamRef ref,
+    ConstFSEventStreamRef /*ref*/,
     size_t num_events,
     void *event_paths,
     const FSEventStreamEventFlags *event_flags,
-    const FSEventStreamEventId *event_ids)
+    const FSEventStreamEventId * /*event_ids*/)
   {
     auto **paths = reinterpret_cast<char **>(event_paths);
     MessageBuffer buffer;
