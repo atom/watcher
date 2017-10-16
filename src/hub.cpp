@@ -59,10 +59,10 @@ Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback,
 
   if (poll) {
     return send_command(
-      polling_thread, CommandPayloadBuilder().add(channel_id, move(root), true, 1), move(ack_callback));
+      polling_thread, CommandPayloadBuilder::add(channel_id, move(root), true, 1), move(ack_callback));
   }
 
-  return send_command(worker_thread, CommandPayloadBuilder().add(channel_id, move(root), true, 1), move(ack_callback));
+  return send_command(worker_thread, CommandPayloadBuilder::add(channel_id, move(root), true, 1), move(ack_callback));
 }
 
 Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
@@ -71,8 +71,8 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
   shared_ptr<AllCallback> all = AllCallback::create(move(ack_callback));
 
   Result<> r = ok_result();
-  r &= send_command(worker_thread, CommandPayloadBuilder().remove(channel_id), all->create_callback());
-  r &= send_command(polling_thread, CommandPayloadBuilder().remove(channel_id), all->create_callback());
+  r &= send_command(worker_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback());
+  r &= send_command(polling_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback());
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {
@@ -98,7 +98,7 @@ void Hub::collect_status(Status &status)
   polling_thread.collect_status(status);
 }
 
-Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &builder, std::unique_ptr<Nan::Callback> callback)
+Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<Nan::Callback> callback)
 {
   CommandID command_id = next_command_id;
   builder.set_id(command_id);

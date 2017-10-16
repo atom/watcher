@@ -37,53 +37,53 @@ public:
   Result<> use_worker_log_file(std::string &&worker_log_file, std::unique_ptr<Nan::Callback> callback)
   {
     return send_command(
-      worker_thread, CommandPayloadBuilder().log_to_file(std::move(worker_log_file)), std::move(callback));
+      worker_thread, CommandPayloadBuilder::log_to_file(std::move(worker_log_file)), std::move(callback));
   }
 
   Result<> use_worker_log_stderr(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(worker_thread, CommandPayloadBuilder().log_to_stderr(), std::move(callback));
+    return send_command(worker_thread, CommandPayloadBuilder::log_to_stderr(), std::move(callback));
   }
 
   Result<> use_worker_log_stdout(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(worker_thread, CommandPayloadBuilder().log_to_stdout(), std::move(callback));
+    return send_command(worker_thread, CommandPayloadBuilder::log_to_stdout(), std::move(callback));
   }
 
   Result<> disable_worker_log(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(worker_thread, CommandPayloadBuilder().log_to_stderr(), std::move(callback));
+    return send_command(worker_thread, CommandPayloadBuilder::log_to_stderr(), std::move(callback));
   }
 
   Result<> use_polling_log_file(std::string &&polling_log_file, std::unique_ptr<Nan::Callback> callback)
   {
     return send_command(
-      polling_thread, CommandPayloadBuilder().log_to_file(std::move(polling_log_file)), std::move(callback));
+      polling_thread, CommandPayloadBuilder::log_to_file(std::move(polling_log_file)), std::move(callback));
   }
 
   Result<> use_polling_log_stderr(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(polling_thread, CommandPayloadBuilder().log_to_stderr(), std::move(callback));
+    return send_command(polling_thread, CommandPayloadBuilder::log_to_stderr(), std::move(callback));
   }
 
   Result<> use_polling_log_stdout(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(polling_thread, CommandPayloadBuilder().log_to_stdout(), std::move(callback));
+    return send_command(polling_thread, CommandPayloadBuilder::log_to_stdout(), std::move(callback));
   }
 
   Result<> disable_polling_log(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(polling_thread, CommandPayloadBuilder().log_disable(), std::move(callback));
+    return send_command(polling_thread, CommandPayloadBuilder::log_disable(), std::move(callback));
   }
 
   Result<> set_polling_interval(uint_fast32_t interval, std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(polling_thread, CommandPayloadBuilder().polling_interval(interval), std::move(callback));
+    return send_command(polling_thread, CommandPayloadBuilder::polling_interval(interval), std::move(callback));
   }
 
   Result<> set_polling_throttle(uint_fast32_t throttle, std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(polling_thread, CommandPayloadBuilder().polling_throttle(throttle), std::move(callback));
+    return send_command(polling_thread, CommandPayloadBuilder::polling_throttle(throttle), std::move(callback));
   }
 
   Result<> watch(std::string &&root,
@@ -100,7 +100,7 @@ public:
 private:
   Hub();
 
-  Result<> send_command(Thread &thread, CommandPayloadBuilder &builder, std::unique_ptr<Nan::Callback> callback);
+  Result<> send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<Nan::Callback> callback);
 
   void handle_events_from(Thread &thread);
 

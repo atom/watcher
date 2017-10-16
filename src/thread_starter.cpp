@@ -10,7 +10,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-ThreadStarter::ThreadStarter() : logging(new CommandPayload(CommandPayloadBuilder().log_disable().build()))
+ThreadStarter::ThreadStarter() : logging(new CommandPayload(CommandPayloadBuilder::log_disable().build()))
 {
   //
 }

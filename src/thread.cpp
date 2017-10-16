@@ -262,7 +262,7 @@ Result<size_t> Thread::handle_commands()
     if (dead_letter_office) {
       LOGGER << plural(dead_letter_office->size(), "message") << " are now waiting in the dead letter office." << endl;
 
-      emit(Message(CommandPayloadBuilder().drain().build()));
+      emit(Message(CommandPayloadBuilder::drain().build()));
     }
   }
 

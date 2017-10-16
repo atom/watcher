@@ -170,71 +170,60 @@ static_assert(sizeof(CommandPayload) <= sizeof(FileSystemPayload), "CommandPaylo
 class CommandPayloadBuilder
 {
 public:
-  CommandPayloadBuilder() : id{NULL_COMMAND_ID}, action{COMMAND_MIN}, arg{0}, recursive{false}, split_count{1} {}
+  static CommandPayloadBuilder add(ChannelID channel_id, std::string &&root, bool recursive, size_t split_count)
+  {
+    return CommandPayloadBuilder(COMMAND_ADD, std::move(root), channel_id, recursive, split_count);
+  }
+
+  static CommandPayloadBuilder remove(ChannelID channel_id)
+  {
+    return CommandPayloadBuilder(COMMAND_REMOVE, "", channel_id, false, 1);
+  }
+
+  static CommandPayloadBuilder log_to_file(std::string &&log_file)
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_FILE, std::move(log_file), NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder log_to_stderr()
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_STDERR, "", NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder log_to_stdout()
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_STDOUT, "", NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder log_disable()
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_DISABLE, "", NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder polling_interval(const uint_fast32_t &interval)
+  {
+    return CommandPayloadBuilder(COMMAND_POLLING_INTERVAL, "", interval, false, 1);
+  }
+
+  static CommandPayloadBuilder polling_throttle(const uint_fast32_t &throttle)
+  {
+    return CommandPayloadBuilder(COMMAND_POLLING_THROTTLE, "", throttle, false, 1);
+  }
+
+  static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
+
+  CommandPayloadBuilder(CommandPayloadBuilder &&original) :
+    id{original.id},
+    action{original.action},
+    root{std::move(original.root)},
+    arg{original.arg},
+    recursive{original.recursive},
+    split_count{original.split_count}
+  {
+    //
+  }
 
   ~CommandPayloadBuilder() = default;
-
-  CommandPayloadBuilder &add(ChannelID channel_id, std::string &&root, bool recursive, size_t split_count)
-  {
-    this->action = COMMAND_ADD;
-    this->arg = channel_id;
-    this->root = move(root);
-    this->recursive = recursive;
-    this->split_count = split_count;
-    return *this;
-  }
-
-  CommandPayloadBuilder &remove(ChannelID channel_id)
-  {
-    this->action = COMMAND_REMOVE;
-    this->arg = channel_id;
-    return *this;
-  }
-
-  CommandPayloadBuilder &log_to_file(std::string &&log_file)
-  {
-    this->action = COMMAND_LOG_FILE;
-    this->root = std::move(log_file);
-    return *this;
-  }
-
-  CommandPayloadBuilder &log_to_stderr()
-  {
-    this->action = COMMAND_LOG_STDERR;
-    return *this;
-  }
-
-  CommandPayloadBuilder &log_to_stdout()
-  {
-    this->action = COMMAND_LOG_STDOUT;
-    return *this;
-  }
-
-  CommandPayloadBuilder &log_disable()
-  {
-    this->action = COMMAND_LOG_DISABLE;
-    return *this;
-  }
-
-  CommandPayloadBuilder &polling_interval(const uint_fast32_t &interval)
-  {
-    this->action = COMMAND_POLLING_INTERVAL;
-    this->arg = interval;
-    return *this;
-  }
-
-  CommandPayloadBuilder &polling_throttle(const uint_fast32_t &throttle)
-  {
-    this->action = COMMAND_POLLING_THROTTLE;
-    this->arg = throttle;
-    return *this;
-  }
-
-  CommandPayloadBuilder &drain()
-  {
-    this->action = COMMAND_DRAIN;
-    return *this;
-  }
 
   CommandPayloadBuilder &set_id(CommandID id)
   {
@@ -249,11 +238,23 @@ public:
   }
 
   CommandPayloadBuilder(const CommandPayloadBuilder &) = delete;
-  CommandPayloadBuilder(CommandPayloadBuilder &&) = delete;
   CommandPayloadBuilder &operator=(const CommandPayloadBuilder &) = delete;
   CommandPayloadBuilder &operator=(CommandPayloadBuilder &&) = delete;
 
 private:
+  CommandPayloadBuilder(CommandAction action,
+    std::string &&root,
+    uint_fast32_t arg,
+    bool recursive,
+    size_t split_count) :
+    id{NULL_COMMAND_ID},
+    action{action},
+    root{std::move(root)},
+    arg{arg},
+    recursive{recursive},
+    split_count{split_count}
+  {}
+
   CommandID id;
   CommandAction action;
   std::string root;

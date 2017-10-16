@@ -136,7 +136,7 @@ public:
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
       // Emit an Add command for the polling thread to pick up
-      emit(Message(CommandPayloadBuilder().add(channel_id, string(root_path), true, 1).set_id(command_id).build()));
+      emit(Message(CommandPayloadBuilder::add(channel_id, string(root_path), true, 1).set_id(command_id).build()));
       return ok_result(false);
     }
     event_streams.emplace(channel_id, move(event_stream));
