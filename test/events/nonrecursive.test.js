@@ -50,7 +50,7 @@ const {EventMatcher} = require('./matcher');
       ))
     })
 
-    it('ignores events for entries within a subdirectory', async function () {
+    it('ignores events for entries within a subdirectory ^linux ^windows', async function () {
       const flagFile = fixture.watchPath('file0.txt')
       const file1Path = fixture.watchPath('subdir-0', 'file1.txt')
       const file2Path = fixture.watchPath('subdir-0', 'file2.txt')
