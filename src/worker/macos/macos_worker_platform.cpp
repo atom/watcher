@@ -243,6 +243,7 @@ public:
 
     shared_ptr<set<RenameBuffer::Key>> next = rename_buffer.flush_unmatched(message_buffer, keys);
     assert(next->empty());
+    keys.reset();
 
     Result<> er = emit_all(message_buffer.begin(), message_buffer.end());
     if (er.is_error()) LOGGER << "Unable to emit flushed rename event messages: " << er << "." << endl;
