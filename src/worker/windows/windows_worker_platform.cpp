@@ -13,6 +13,7 @@
 #include "../../lock.h"
 #include "../../log.h"
 #include "../../message.h"
+#include "../../message_buffer.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
 #include "subscription.h"
@@ -139,7 +140,7 @@ public:
     if (!schedr.get_value()) {
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
-      return emit(Message(CommandPayloadBuilder::add(channel, string(root_path), true, 1).build()));
+      return emit(Message(CommandPayloadBuilder::add(channel, string(root_path), true, 1).build())).propagate(false);
     }
 
     return ok_result(true);
@@ -218,7 +219,8 @@ public:
     }
 
     // Process received events.
-    vector<Message> messages;
+    MessageBuffer buffer;
+    ChannelMessageBuffer messages(buffer, channel);
     bool old_path_seen = false;
     string old_path;
 
@@ -238,9 +240,7 @@ public:
 
     if (!messages.empty()) {
       Result<> er = emit_all(messages.begin(), messages.end());
-      if (er.is_error()) {
-        LOGGER << "Unable to emit messages: " << er << "." << endl;
-      }
+      if (er.is_error()) LOGGER << "Unable to emit messages: " << er << "." << endl;
     }
 
     return next.propagate_as_void();
@@ -249,7 +249,7 @@ public:
 private:
   Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info,
     Subscription *sub,
-    vector<Message> &messages,
+    ChannelMessageBuffer &messages,
     bool &old_path_seen,
     string &old_path)
   {
@@ -276,27 +276,9 @@ private:
     string &path = u8r.get_value();
 
     switch (info->Action) {
-      case FILE_ACTION_ADDED: {
-        FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
-        Message message(move(payload));
-
-        LOGGER << "Emitting filesystem message " << message << "." << endl;
-        messages.push_back(move(message));
-      } break;
-      case FILE_ACTION_MODIFIED: {
-        FileSystemPayload payload(channel, ACTION_MODIFIED, kind, "", move(path));
-        Message message(move(payload));
-
-        LOGGER << "Emitting filesystem message " << message << "." << endl;
-        messages.push_back(move(message));
-      } break;
-      case FILE_ACTION_REMOVED: {
-        FileSystemPayload payload(channel, ACTION_DELETED, kind, "", move(path));
-        Message message(move(payload));
-
-        LOGGER << "Emitting filesystem message " << message << "." << endl;
-        messages.push_back(move(message));
-      } break;
+      case FILE_ACTION_ADDED: messages.created(move(path), kind); break;
+      case FILE_ACTION_MODIFIED: messages.modified(move(path), kind); break;
+      case FILE_ACTION_REMOVED: messages.deleted(move(path), kind); break;
       case FILE_ACTION_RENAMED_OLD_NAME:
         old_path_seen = true;
         old_path = move(path);
@@ -304,24 +286,11 @@ private:
       case FILE_ACTION_RENAMED_NEW_NAME:
         if (old_path_seen) {
           // Old name received first
-          {
-            FileSystemPayload payload(channel, ACTION_RENAMED, kind, move(old_path), move(path));
-            Message message(move(payload));
-
-            LOGGER << "Emitting filesystem message " << message << "." << endl;
-            messages.push_back(move(message));
-          }
-
+          messages.renamed(move(old_path), move(path), kind);
           old_path_seen = false;
         } else {
           // No old name. Treat it as a creation
-          {
-            FileSystemPayload payload(channel, ACTION_CREATED, kind, "", move(path));
-            Message message(move(payload));
-
-            LOGGER << "Emitting filesystem message " << message << "." << endl;
-            messages.push_back(move(message));
-          }
+          messages.created(move(path), kind);
         }
         break;
       default: {
