@@ -44,11 +44,6 @@ public:
 
   ~MacOSWorkerPlatform() override = default;
 
-  MacOSWorkerPlatform(const MacOSWorkerPlatform &) = delete;
-  MacOSWorkerPlatform(MacOSWorkerPlatform &&) = delete;
-  MacOSWorkerPlatform &operator=(const MacOSWorkerPlatform &) = delete;
-  MacOSWorkerPlatform &operator=(MacOSWorkerPlatform &&) = delete;
-
   Result<> wake() override
   {
     if (!is_healthy()) return health_err_result();
@@ -253,6 +248,11 @@ public:
 
     return FN_DISPOSE;
   }
+
+  MacOSWorkerPlatform(const MacOSWorkerPlatform &) = delete;
+  MacOSWorkerPlatform(MacOSWorkerPlatform &&) = delete;
+  MacOSWorkerPlatform &operator=(const MacOSWorkerPlatform &) = delete;
+  MacOSWorkerPlatform &operator=(MacOSWorkerPlatform &&) = delete;
 
 private:
   SourceFnRegistry source_registry;
