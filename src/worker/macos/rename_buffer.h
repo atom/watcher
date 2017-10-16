@@ -54,11 +54,12 @@ public:
   // event batches.
   //
   // Return the collection of unpaired Keys that were created during this run.
-  std::set<Key> flush_unmatched(ChannelMessageBuffer &message_buffer);
+  std::shared_ptr<std::set<Key>> flush_unmatched(ChannelMessageBuffer &message_buffer);
 
   // Enqueue creation and removal events for buffer entries that map to any of the listed keys. Return the collection
   // of unpaired Keys that were aged, but not processed, during this run.
-  std::set<Key> flush_unmatched(ChannelMessageBuffer &message_buffer, const std::set<Key> &keys);
+  std::shared_ptr<std::set<Key>> flush_unmatched(ChannelMessageBuffer &message_buffer,
+    const std::shared_ptr<std::set<Key>> &keys);
 
   RenameBuffer(const RenameBuffer &) = delete;
   RenameBuffer(RenameBuffer &&) = delete;

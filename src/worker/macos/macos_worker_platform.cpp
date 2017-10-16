@@ -33,6 +33,7 @@ using std::placeholders::_3;
 using std::placeholders::_4;
 using std::placeholders::_5;
 using std::set;
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
@@ -190,10 +191,10 @@ public:
     }
     cache.apply();
 
-    set<RenameBuffer::Key> out = rename_buffer.flush_unmatched(message_buffer);
-    if (!out.empty()) {
-      LOGGER << "Scheduling expiration of " << out.size() << " unpaired rename entries on channel " << channel_id << "."
-             << endl;
+    shared_ptr<set<RenameBuffer::Key>> out = rename_buffer.flush_unmatched(message_buffer);
+    if (!out->empty()) {
+      LOGGER << "Scheduling expiration of " << out->size() << " unpaired rename entries on channel " << channel_id
+             << "." << endl;
       CFAbsoluteTime fire_time = CFAbsoluteTimeGetCurrent() + RENAME_TIMEOUT;
 
       CFRunLoopTimerContext timer_context{
@@ -230,16 +231,18 @@ public:
     return FN_KEEP;
   }
 
-  FnRegistryAction timer_triggered(set<RenameBuffer::Key> keys, ChannelID channel_id, CFRunLoopTimerRef timer)
+  FnRegistryAction timer_triggered(shared_ptr<set<RenameBuffer::Key>> keys,
+    ChannelID channel_id,
+    CFRunLoopTimerRef timer)
   {
-    LOGGER << "Expiring " << plural(keys.size(), "rename entry", "rename entries") << " on channel " << channel_id
+    LOGGER << "Expiring " << plural(keys->size(), "rename entry", "rename entries") << " on channel " << channel_id
            << "." << endl;
 
     MessageBuffer buffer;
     ChannelMessageBuffer message_buffer(buffer, channel_id);
 
-    set<RenameBuffer::Key> next = rename_buffer.flush_unmatched(message_buffer, keys);
-    assert(next.empty());
+    shared_ptr<set<RenameBuffer::Key>> next = rename_buffer.flush_unmatched(message_buffer, keys);
+    assert(next->empty());
 
     Result<> er = emit_all(message_buffer.begin(), message_buffer.end());
     if (er.is_error()) LOGGER << "Unable to emit flushed rename event messages: " << er << "." << endl;

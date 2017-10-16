@@ -107,32 +107,33 @@ void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
   }
 }
 
-set<RenameBuffer::Key> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer)
+shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer)
 {
-  set<Key> all;
+  shared_ptr<set<Key>> all(new set<Key>);
 
   for (auto &it : observed_by_inode) {
-    all.insert(it.first);
+    all->insert(it.first);
   }
 
   return flush_unmatched(message_buffer, all);
 }
 
-set<RenameBuffer::Key> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer, const set<Key> &keys)
+shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer,
+  const shared_ptr<set<Key>> &keys)
 {
-  set<Key> aged;
+  shared_ptr<set<Key>> aged(new set<Key>);
   vector<Key> to_erase;
 
   for (auto &it : observed_by_inode) {
     const Key &key = it.first;
-    if (keys.count(key) == 0) continue;
+    if (keys->count(key) == 0) continue;
 
     RenameBufferEntry &existing = it.second;
     shared_ptr<PresentEntry> entry = existing.entry;
 
     if (existing.age == 0u) {
       existing.age++;
-      aged.insert(key);
+      aged->insert(key);
       continue;
     }
 
