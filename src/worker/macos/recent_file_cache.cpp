@@ -196,7 +196,9 @@ shared_ptr<StatResult> RecentFileCache::current_at_path(const string &path, bool
   }
 
   shared_ptr<StatResult> stat_result = StatResult::at(string(path), file_hint, directory_hint);
-  pending.emplace(path, stat_result);
+  if (stat_result->is_present()) {
+    pending.emplace(path, static_pointer_cast<PresentEntry>(stat_result));
+  }
   return stat_result;
 }
 
@@ -217,8 +219,10 @@ shared_ptr<StatResult> RecentFileCache::former_at_path(const string &path, bool 
 void RecentFileCache::apply()
 {
   for (auto &pair : pending) {
+    shared_ptr<PresentEntry> &present = pair.second;
+
     // Clear an existing entry at the same path if one exists
-    auto maybe = by_path.find(pair.second->get_path());
+    auto maybe = by_path.find(present->get_path());
     if (maybe != by_path.end()) {
       shared_ptr<PresentEntry> existing = maybe->second;
 
@@ -236,13 +240,9 @@ void RecentFileCache::apply()
       by_path.erase(maybe);
     }
 
-    // Add the new result if it's a PresentEntry
-    if (pair.second->is_present()) {
-      shared_ptr<PresentEntry> present = static_pointer_cast<PresentEntry>(pair.second);
-
-      by_path.emplace(present->get_path(), present);
-      by_timestamp.emplace(present->get_last_seen(), present);
-    }
+    // Add the new PresentEntry
+    by_path.emplace(present->get_path(), present);
+    by_timestamp.emplace(present->get_last_seen(), present);
   }
   pending.clear();
 }

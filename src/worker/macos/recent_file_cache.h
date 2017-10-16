@@ -116,7 +116,7 @@ public:
   void prepopulate(const std::string &root, size_t max);
 
 private:
-  std::map<std::string, std::shared_ptr<StatResult>> pending;
+  std::map<std::string, std::shared_ptr<PresentEntry>> pending;
 
   std::unordered_map<std::string, std::shared_ptr<PresentEntry>> by_path;
 
