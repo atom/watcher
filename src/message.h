@@ -212,7 +212,7 @@ public:
 
   static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
 
-  CommandPayloadBuilder(CommandPayloadBuilder &&original) :
+  CommandPayloadBuilder(CommandPayloadBuilder &&original) noexcept :
     id{original.id},
     action{original.action},
     root{std::move(original.root)},
