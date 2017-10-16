@@ -4,7 +4,6 @@
 #include <cerrno>
 #include <iomanip>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <string>
 #include <sys/stat.h>
@@ -19,7 +18,6 @@
 using std::dec;
 using std::endl;
 using std::hex;
-using std::map;
 using std::move;
 using std::ostream;
 using std::shared_ptr;

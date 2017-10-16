@@ -6,11 +6,6 @@
 #include "../../log.h"
 #include "helper.h"
 
-using std::dec;
-using std::endl;
-using std::hex;
-using std::move;
-
 void SourceFnRegistry::callback(void *info)
 {
   auto entry = reinterpret_cast<Entry *>(info);

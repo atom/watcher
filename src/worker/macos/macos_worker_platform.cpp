@@ -24,8 +24,6 @@
 
 using std::bind;
 using std::endl;
-using std::function;
-using std::make_pair;
 using std::move;
 using std::ostream;
 using std::ostringstream;
