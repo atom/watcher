@@ -14,7 +14,7 @@ public:
 
   explicit RefHolder(T ref) : ref{ref} {};
 
-  RefHolder(RefHolder<T> &&original) : ref{original.ref} { original.ref = nullptr; };
+  RefHolder(RefHolder<T> &&original) noexcept : ref{original.ref} { original.ref = nullptr; };
 
   ~RefHolder() { clear(); }
 
