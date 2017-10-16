@@ -60,7 +60,7 @@ public:
 
   static FileSystemPayload renamed(ChannelID channel_id,
     std::string &&old_path,
-    std::string &path,
+    std::string &&path,
     const EntryKind &kind)
   {
     return FileSystemPayload(channel_id, ACTION_RENAMED, kind, std::move(old_path), std::move(path));
@@ -122,13 +122,9 @@ const CommandID NULL_COMMAND_ID = 0;
 class CommandPayload
 {
 public:
-  CommandPayload(CommandAction action,
-    CommandID id = NULL_COMMAND_ID,
-    std::string &&root = "",
-    uint_fast32_t arg = NULL_CHANNEL_ID,
-    size_t split_count = 1);
-
   CommandPayload(CommandPayload &&original) noexcept;
+
+  explicit CommandPayload(const CommandPayload &original);
 
   ~CommandPayload() = default;
 
@@ -142,23 +138,129 @@ public:
 
   const ChannelID &get_channel_id() const { return arg; }
 
+  const bool &get_recursive() const { return recursive; }
+
   const size_t &get_split_count() const { return split_count; }
 
   std::string describe() const;
 
-  CommandPayload(const CommandPayload &original) = delete;
   CommandPayload &operator=(const CommandPayload &original) = delete;
   CommandPayload &operator=(CommandPayload &&original) = delete;
 
 private:
+  CommandPayload(CommandAction action,
+    CommandID id,
+    std::string &&root,
+    uint_fast32_t arg,
+    bool recursive,
+    size_t split_count);
+
   const CommandID id;
   const CommandAction action;
   std::string root;
   const uint_fast32_t arg;
+  bool recursive;
   const size_t split_count;
+
+  friend class CommandPayloadBuilder;
 };
 
 static_assert(sizeof(CommandPayload) <= sizeof(FileSystemPayload), "CommandPayload is larger than FileSystemPayload");
+
+class CommandPayloadBuilder
+{
+public:
+  CommandPayloadBuilder() : id{NULL_COMMAND_ID}, action{COMMAND_MIN}, arg{0}, recursive{false}, split_count{1} {}
+
+  ~CommandPayloadBuilder() = default;
+
+  CommandPayloadBuilder &add(ChannelID channel_id, std::string &&root, bool recursive, size_t split_count)
+  {
+    this->action = COMMAND_ADD;
+    this->arg = channel_id;
+    this->root = move(root);
+    this->recursive = recursive;
+    this->split_count = split_count;
+    return *this;
+  }
+
+  CommandPayloadBuilder &remove(ChannelID channel_id)
+  {
+    this->action = COMMAND_REMOVE;
+    this->arg = channel_id;
+    return *this;
+  }
+
+  CommandPayloadBuilder &log_to_file(std::string &&log_file)
+  {
+    this->action = COMMAND_LOG_FILE;
+    this->root = std::move(log_file);
+    return *this;
+  }
+
+  CommandPayloadBuilder &log_to_stderr()
+  {
+    this->action = COMMAND_LOG_STDERR;
+    return *this;
+  }
+
+  CommandPayloadBuilder &log_to_stdout()
+  {
+    this->action = COMMAND_LOG_STDOUT;
+    return *this;
+  }
+
+  CommandPayloadBuilder &log_disable()
+  {
+    this->action = COMMAND_LOG_DISABLE;
+    return *this;
+  }
+
+  CommandPayloadBuilder &polling_interval(const uint_fast32_t &interval)
+  {
+    this->action = COMMAND_POLLING_INTERVAL;
+    this->arg = interval;
+    return *this;
+  }
+
+  CommandPayloadBuilder &polling_throttle(const uint_fast32_t &throttle)
+  {
+    this->action = COMMAND_POLLING_THROTTLE;
+    this->arg = throttle;
+    return *this;
+  }
+
+  CommandPayloadBuilder &drain()
+  {
+    this->action = COMMAND_DRAIN;
+    return *this;
+  }
+
+  CommandPayloadBuilder &set_id(CommandID id)
+  {
+    this->id = id;
+    return *this;
+  }
+
+  CommandPayload build()
+  {
+    assert(action >= COMMAND_MIN && action <= COMMAND_MAX);
+    return CommandPayload(action, id, std::move(root), arg, recursive, split_count);
+  }
+
+  CommandPayloadBuilder(const CommandPayloadBuilder &) = delete;
+  CommandPayloadBuilder(CommandPayloadBuilder &&) = delete;
+  CommandPayloadBuilder &operator=(const CommandPayloadBuilder &) = delete;
+  CommandPayloadBuilder &operator=(CommandPayloadBuilder &&) = delete;
+
+private:
+  CommandID id;
+  CommandAction action;
+  std::string root;
+  uint_fast32_t arg;
+  bool recursive;
+  size_t split_count;
+};
 
 class AckPayload
 {

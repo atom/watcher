@@ -70,7 +70,7 @@ public:
         r &= side.enact_in(&registry, poll);
 
         for (auto &poll_root : poll) {
-          messages.add(Message(CommandPayload(COMMAND_ADD, NULL_COMMAND_ID, move(poll_root.second), poll_root.first)));
+          messages.add(Message(CommandPayloadBuilder().add(poll_root.first, move(poll_root.second)).build()));
         }
 
         if (!messages.empty()) {
@@ -97,7 +97,7 @@ public:
       poll_messages.reserve(poll.size());
 
       for (string &poll_root : poll) {
-        poll_messages.emplace_back(CommandPayload(COMMAND_ADD, command, move(poll_root), channel, poll.size()));
+        poll_messages.emplace_back(CommandPayloadBuilder().add(channel, move(poll_root), true, poll.size()));
       }
 
       return emit_all(poll_messages.begin(), poll_messages.end()).propagate(false);
