@@ -3,20 +3,22 @@
 
 #include <CoreServices/CoreServices.h>
 
-static const CFAbsoluteTime LATENCY = 0;
+const CFAbsoluteTime LATENCY = 0;
 
-static const FSEventStreamEventFlags CREATE_FLAGS = kFSEventStreamEventFlagItemCreated;
+const FSEventStreamEventFlags CREATE_FLAGS = kFSEventStreamEventFlagItemCreated;
 
-static const FSEventStreamEventFlags DELETED_FLAGS = kFSEventStreamEventFlagItemRemoved;
+const FSEventStreamEventFlags DELETED_FLAGS = kFSEventStreamEventFlagItemRemoved;
 
-static const FSEventStreamEventFlags MODIFY_FLAGS = kFSEventStreamEventFlagItemInodeMetaMod
+const FSEventStreamEventFlags MODIFY_FLAGS = kFSEventStreamEventFlagItemInodeMetaMod
   | kFSEventStreamEventFlagItemFinderInfoMod | kFSEventStreamEventFlagItemChangeOwner
   | kFSEventStreamEventFlagItemXattrMod | kFSEventStreamEventFlagItemModified;
 
-static const FSEventStreamEventFlags RENAME_FLAGS = kFSEventStreamEventFlagItemRenamed;
+const FSEventStreamEventFlags RENAME_FLAGS = kFSEventStreamEventFlagItemRenamed;
 
-static const FSEventStreamEventFlags IS_FILE = kFSEventStreamEventFlagItemIsFile;
+const FSEventStreamEventFlags IS_FILE = kFSEventStreamEventFlagItemIsFile;
 
-static const FSEventStreamEventFlags IS_DIRECTORY = kFSEventStreamEventFlagItemIsDir;
+const FSEventStreamEventFlags IS_DIRECTORY = kFSEventStreamEventFlagItemIsDir;
+
+const CFTimeInterval RENAME_TIMEOUT = 0.05;
 
 #endif

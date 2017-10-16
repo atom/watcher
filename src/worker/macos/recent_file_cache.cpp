@@ -2,6 +2,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -49,7 +50,7 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
     // Log any other errno that we see.
     if (stat_errno != ENOENT && stat_errno != EACCES && stat_errno != ELOOP && stat_errno != ENAMETOOLONG
       && stat_errno != ENOTDIR) {
-      LOGGER << "lstat(" << path << ") failed with errno " << stat_errno << "." << endl;
+      LOGGER << "lstat(" << path << ") failed: " << strerror(stat_errno) << "." << endl;
     }
 
     EntryKind guessed_kind = KIND_UNKNOWN;
@@ -93,7 +94,7 @@ EntryKind StatResult::get_entry_kind() const
 
 ostream &operator<<(ostream &out, const StatResult &result)
 {
-  out << result.to_string();
+  out << result.to_string(true);
   return out;
 }
 
@@ -144,11 +145,13 @@ const time_point<steady_clock> &PresentEntry::get_last_seen() const
   return last_seen;
 }
 
-string PresentEntry::to_string() const
+string PresentEntry::to_string(bool verbose) const
 {
   ostringstream result;
 
-  result << "[present " << get_entry_kind() << " (" << get_path() << ") inode " << inode << " size " << size << "]";
+  result << "[present " << get_entry_kind();
+  if (verbose) result << " (" << get_path() << ")";
+  result << " inode=" << inode << " size=" << size << "]";
 
   return result.str();
 }
@@ -174,46 +177,32 @@ bool AbsentEntry::could_be_rename_of(const StatResult &other) const
   return true;
 }
 
-string AbsentEntry::to_string() const
+string AbsentEntry::to_string(bool verbose) const
 {
   ostringstream result;
 
-  result << "[absent " << get_entry_kind() << " (" << get_path() << ")]";
+  result << "[absent " << get_entry_kind();
+  if (verbose) result << " (" << get_path() << ")";
+  result << "]";
 
   return result.str();
 }
 
-void RecentFileCache::insert(const shared_ptr<StatResult> &stat_result)
+shared_ptr<StatResult> RecentFileCache::current_at_path(const string &path, bool file_hint, bool directory_hint)
 {
-  // Clear an existing entry at the same path if one exists
-  auto maybe = by_path.find(stat_result->get_path());
-  if (maybe != by_path.end()) {
-    shared_ptr<PresentEntry> existing = maybe->second;
-
-    auto range = by_timestamp.equal_range(existing->get_last_seen());
-    auto to_erase = by_timestamp.end();
-    for (auto it = range.first; it != range.second; ++it) {
-      if (it->second == existing) {
-        to_erase = it;
-      }
-    }
-    if (to_erase != by_timestamp.end()) {
-      by_timestamp.erase(to_erase);
-    }
-
-    by_path.erase(maybe);
+  auto maybe_pending = pending.find(path);
+  if (maybe_pending != pending.end()) {
+    return maybe_pending->second;
   }
 
-  // Add the new result if it's a PresentEntry
+  shared_ptr<StatResult> stat_result = StatResult::at(string(path), file_hint, directory_hint);
   if (stat_result->is_present()) {
-    shared_ptr<PresentEntry> present = static_pointer_cast<PresentEntry>(stat_result);
-
-    by_path.insert({present->get_path(), present});
-    by_timestamp.insert({present->get_last_seen(), present});
+    pending.emplace(path, static_pointer_cast<PresentEntry>(stat_result));
   }
+  return stat_result;
 }
 
-shared_ptr<StatResult> RecentFileCache::at_path(const string &path, bool file_hint, bool directory_hint)
+shared_ptr<StatResult> RecentFileCache::former_at_path(const string &path, bool file_hint, bool directory_hint)
 {
   auto maybe = by_path.find(path);
   if (maybe == by_path.end()) {
@@ -225,6 +214,37 @@ shared_ptr<StatResult> RecentFileCache::at_path(const string &path, bool file_hi
   }
 
   return maybe->second;
+}
+
+void RecentFileCache::apply()
+{
+  for (auto &pair : pending) {
+    shared_ptr<PresentEntry> &present = pair.second;
+
+    // Clear an existing entry at the same path if one exists
+    auto maybe = by_path.find(present->get_path());
+    if (maybe != by_path.end()) {
+      shared_ptr<PresentEntry> existing = maybe->second;
+
+      auto range = by_timestamp.equal_range(existing->get_last_seen());
+      auto to_erase = by_timestamp.end();
+      for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == existing) {
+          to_erase = it;
+        }
+      }
+      if (to_erase != by_timestamp.end()) {
+        by_timestamp.erase(to_erase);
+      }
+
+      by_path.erase(maybe);
+    }
+
+    // Add the new PresentEntry
+    by_path.emplace(present->get_path(), present);
+    by_timestamp.emplace(present->get_last_seen(), present);
+  }
+  pending.clear();
 }
 
 void RecentFileCache::prune()
@@ -268,7 +288,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     DIR *dir = opendir(current_root.c_str());
     if (dir != nullptr) {
       errno_t opendir_errno = errno;
-      LOGGER << "Unable to open directory " << root << ": " << opendir_errno << "." << endl;
+      LOGGER << "Unable to open directory " << root << ": " << strerror(opendir_errno) << "." << endl;
       LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
       return;
     }
@@ -284,14 +304,10 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
         bool file_hint = (entry->d_type & DT_REG) == DT_REG;
         bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
 
-        shared_ptr<StatResult> r = StatResult::at(string(entry_path), file_hint, dir_hint);
+        shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint);
         if (r->is_present()) {
           entries++;
-          insert(r);
-
-          if (r->get_entry_kind() == KIND_DIRECTORY) {
-            next_roots.push(entry_path);
-          }
+          if (r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
         }
 
         count++;
@@ -306,14 +322,15 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     }
     errno_t readdir_errno = errno;
     if (readdir_errno != 0) {
-      LOGGER << "Unable to read directory entry within " << root << ": " << readdir_errno << "." << endl;
+      LOGGER << "Unable to read directory entry within " << root << ": " << strerror(readdir_errno) << "." << endl;
     }
 
     if (closedir(dir) != 0) {
       errno_t closedir_errno = errno;
-      LOGGER << "Unable to close directory " << root << ": " << closedir_errno << "." << endl;
+      LOGGER << "Unable to close directory " << root << ": " << strerror(closedir_errno) << "." << endl;
     }
   }
+  apply();
 
   LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
 }

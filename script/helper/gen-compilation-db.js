@@ -9,9 +9,11 @@ const readline = require('readline')
 const {spawn} = require('child_process')
 const shell = require('shell-quote')
 
-const BUILD_DIR = path.resolve(__dirname, '..', '..', 'build')
+const BASE_DIR = path.resolve(__dirname, '..', '..')
+const BUILD_DIR = path.resolve(BASE_DIR, 'build')
 const OUTPUT_FILE = path.join(BUILD_DIR, 'compile_commands.json')
 const NODE_GYP_BINARY = process.platform === 'win32' ? 'node-gyp.cmd' : 'node-gyp'
+const VERBOSE = process.env.V === '1'
 
 class CompilationDatabase {
   constructor () {
@@ -30,11 +32,13 @@ class CompilationDatabase {
     }
     const sourceFile = sourceFiles[0]
 
-    this.entries.push({
+    const entry = {
       directory: BUILD_DIR,
       command: line.trim(),
       file: path.resolve(BUILD_DIR, sourceFile)
-    })
+    }
+    this.entries.push(entry)
+    return entry
   }
 
   write () {
@@ -54,8 +58,13 @@ async function runNodeGyp () {
 
     lineReader.on('line', line => {
       if (/-DNODE_GYP_MODULE_NAME=/.test(line)) {
-        db.addEntryForCompilation(line)
-        process.stdout.write(`BUILD COMMAND:${line}\n`)
+        const entry = db.addEntryForCompilation(line)
+        if (VERBOSE) {
+          process.stdout.write(`build command [${line}]\n`)
+        } else {
+          const relPath = path.relative(BASE_DIR, entry.file)
+          process.stdout.write(` building ${relPath}\n`)
+        }
       } else {
         process.stdout.write(`${line}\n`)
       }

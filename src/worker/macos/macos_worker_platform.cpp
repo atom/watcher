@@ -1,13 +1,16 @@
 #include <CoreServices/CoreServices.h>
 #include <cerrno>
+#include <functional>
 #include <map>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <unordered_map>
 #include <utility>
 
+#include "../../helper/macos/helper.h"
 #include "../../log.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
@@ -17,69 +20,41 @@
 #include "event_handler.h"
 #include "flags.h"
 #include "recent_file_cache.h"
+#include "rename_buffer.h"
 
+using std::bind;
 using std::endl;
-using std::make_pair;
 using std::move;
 using std::ostream;
 using std::ostringstream;
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
+using std::placeholders::_4;
+using std::placeholders::_5;
+using std::set;
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
 
-class MacOSWorkerPlatform;
-
-static void command_perform_helper(void *info);
-
-static void event_stream_helper(ConstFSEventStreamRef event_stream,
-  void *info,
-  size_t num_events,
-  void *event_paths,
-  const FSEventStreamEventFlags *event_flags,
-  const FSEventStreamEventId *event_ids);
-
-struct Subscription
-{
-  MacOSWorkerPlatform *platform;
-  ChannelID channel;
-  FSEventStreamRef event_stream;
-
-  Subscription(MacOSWorkerPlatform *platform, ChannelID channel) :
-    platform{platform},
-    channel{channel},
-    event_stream{nullptr}
-  {
-    //
-  }
-};
-
 class MacOSWorkerPlatform : public WorkerPlatform
 {
 public:
-  MacOSWorkerPlatform(WorkerThread *thread) :
-    WorkerPlatform(thread),
-    run_loop{nullptr},
-    command_source{nullptr} {
-      //
-    };
+  MacOSWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread){};
 
-  ~MacOSWorkerPlatform() override
-  {
-    if (command_source != nullptr) CFRelease(command_source);
-    if (run_loop != nullptr) CFRelease(run_loop);
-  }
-
-  MacOSWorkerPlatform(const MacOSWorkerPlatform &) = delete;
-  MacOSWorkerPlatform(MacOSWorkerPlatform &&) = delete;
-  MacOSWorkerPlatform &operator=(const MacOSWorkerPlatform &) = delete;
-  MacOSWorkerPlatform &operator=(MacOSWorkerPlatform &&) = delete;
+  ~MacOSWorkerPlatform() override = default;
 
   Result<> wake() override
   {
     if (!is_healthy()) return health_err_result();
 
-    CFRunLoopSourceSignal(command_source);
-    CFRunLoopWakeUp(run_loop);
+    if (command_source.empty() || run_loop.empty()) {
+      return ok_result();
+    }
+
+    CFRunLoopSourceSignal(command_source.get());
+    CFRunLoopWakeUp(run_loop.get());
 
     return ok_result();
   }
@@ -88,12 +63,11 @@ public:
   {
     if (!is_healthy()) return health_err_result();
 
-    run_loop = CFRunLoopGetCurrent();
-    CFRetain(run_loop);
+    run_loop.set_from_get(CFRunLoopGetCurrent());
 
-    CFRunLoopSourceContext command_context = {
+    CFRunLoopSourceContext command_context{
       0,  // version
-      this,  // info
+      source_registry.create_info(bind(&MacOSWorkerPlatform::source_triggered, this)),  // info
       nullptr,  // retain
       nullptr,  // release
       nullptr,  // copyDescription
@@ -101,112 +75,104 @@ public:
       nullptr,  // hash
       nullptr,  // schedule
       nullptr,  // cancel
-      command_perform_helper  // perform
+      SourceFnRegistry::callback  // perform
     };
-    command_source = CFRunLoopSourceCreate(kCFAllocatorDefault, 1, &command_context);
-    CFRunLoopAddSource(run_loop, command_source, kCFRunLoopDefaultMode);
+    command_source.set_from_create(CFRunLoopSourceCreate(kCFAllocatorDefault, 1, &command_context));
+    CFRunLoopAddSource(run_loop.get(), command_source.get(), kCFRunLoopDefaultMode);
 
     CFRunLoopRun();
     return ok_result();
   }
 
-  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID command_id, ChannelID channel_id, const string &root_path) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
-    LOGGER << "Adding watcher for path " << root_path << " at channel " << channel << "." << endl;
+    LOGGER << "Adding watcher for path " << root_path << " at channel " << channel_id << "." << endl;
 
-    auto *subscription = new Subscription(this, channel);
-
-    FSEventStreamContext stream_context = {
+    FSEventStreamContext stream_context{
       0,  // version
-      subscription,  // info
+      event_stream_registry.create_info(
+        bind(&MacOSWorkerPlatform::fs_event_triggered, this, channel_id, _1, _2, _3, _4, _5)),  // info
       nullptr,  // retain
       nullptr,  // release
       nullptr  // copyDescription
     };
 
-    CFStringRef watch_root = CFStringCreateWithBytes(kCFAllocatorDefault,
+    RefHolder<CFStringRef> watch_root(CFStringCreateWithBytes(kCFAllocatorDefault,
       reinterpret_cast<const UInt8 *>(root_path.c_str()),
       root_path.size(),
       kCFStringEncodingUTF8,
-      0u);
-    if (watch_root == nullptr) {
+      0u));
+    if (watch_root.empty()) {
       string msg("Unable to allocate string for root path: ");
       msg += root_path;
       return Result<bool>::make_error(move(msg));
     }
 
-    CFArrayRef watch_roots =
-      CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void **>(&watch_root), 1, nullptr);
-    if (watch_roots == nullptr) {
+    RefHolder<CFArrayRef> watch_roots(
+      CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void **>(&watch_root), 1, nullptr));
+    if (watch_roots.empty()) {
       string msg("Unable to allocate array for watch root: ");
       msg += root_path;
-      CFRelease(watch_root);
-
       return Result<bool>::make_error(move(msg));
     }
 
-    FSEventStreamRef event_stream = FSEventStreamCreate(kCFAllocatorDefault,
-      event_stream_helper,
-      &stream_context,
-      watch_roots,
-      kFSEventStreamEventIdSinceNow,
-      LATENCY,
-      kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagFileEvents);
-    if (event_stream == nullptr) {
+    RefHolder<FSEventStreamRef> event_stream(FSEventStreamCreate(kCFAllocatorDefault,  // allocator
+      EventStreamFnRegistry::callback,  // callback
+      &stream_context,  // context
+      watch_roots.get(),  // paths_to_watch
+      kFSEventStreamEventIdSinceNow,  // since_when
+      LATENCY,  // latency
+      kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagFileEvents  // flags
+      ));
+    if (event_stream.empty()) {
       string msg("Unable to create event stream for watch root: ");
       msg += root_path;
-      CFRelease(watch_root);
-
       return Result<bool>::make_error(move(msg));
     }
 
-    subscription->event_stream = event_stream;
-    subscriptions.insert(make_pair(channel, subscription));
-
-    FSEventStreamScheduleWithRunLoop(event_stream, run_loop, kCFRunLoopDefaultMode);
-    if (FSEventStreamStart(event_stream) == 0u) {
+    FSEventStreamScheduleWithRunLoop(event_stream.get(), run_loop.get(), kCFRunLoopDefaultMode);
+    if (FSEventStreamStart(event_stream.get()) == 0u) {
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
-      CFRelease(watch_roots);
-      CFRelease(watch_root);
-
       // Emit an Add command for the polling thread to pick up
-      emit(Message(CommandPayload(COMMAND_ADD, command, string(root_path), channel)));
+      emit(Message(CommandPayload(COMMAND_ADD, command_id, string(root_path), channel_id)));
       return ok_result(false);
     }
-
-    CFRelease(watch_roots);
-    CFRelease(watch_root);
+    event_streams.emplace(channel_id, move(event_stream));
 
     cache.prepopulate(root_path, 4096);
     return ok_result(true);
   }
 
-  Result<bool> handle_remove_command(CommandID /*command*/, ChannelID channel) override
+  Result<bool> handle_remove_command(CommandID /*command_id*/, ChannelID channel_id) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
-    LOGGER << "Removing watcher for channel " << channel << "." << endl;
+    LOGGER << "Removing watcher for channel " << channel_id << "." << endl;
 
-    auto maybe_subscription = subscriptions.find(channel);
-    if (maybe_subscription == subscriptions.end()) {
-      LOGGER << "No subscription for channel " << channel << "." << endl;
+    auto maybe_stream = event_streams.find(channel_id);
+    if (maybe_stream == event_streams.end()) {
+      LOGGER << "No subscription for channel " << channel_id << "." << endl;
       return ok_result(true);
     }
+    RefHolder<FSEventStreamRef> event_stream(move(maybe_stream->second));
+    event_streams.erase(maybe_stream);
 
-    Subscription *subscription = maybe_subscription->second;
-    subscriptions.erase(maybe_subscription);
+    FSEventStreamStop(event_stream.get());
+    FSEventStreamInvalidate(event_stream.get());
 
-    FSEventStreamStop(subscription->event_stream);
-    FSEventStreamInvalidate(subscription->event_stream);
-    FSEventStreamRelease(subscription->event_stream);
-
-    delete subscription;
     return ok_result(true);
   }
 
-  void handle_fs_event(ChannelID channel_id,
-    ConstFSEventStreamRef /*event_stream*/,
+  FnRegistryAction source_triggered()
+  {
+    Result<> r = handle_commands();
+    if (r.is_error()) LOGGER << "Unable to handle incoming commands: " << r << "." << endl;
+    return FN_KEEP;
+  }
+
+  FnRegistryAction fs_event_triggered(ChannelID channel_id,
+    ConstFSEventStreamRef /*ref*/,
     size_t num_events,
     void *event_paths,
     const FSEventStreamEventFlags *event_flags,
@@ -219,54 +185,91 @@ public:
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
     message_buffer.reserve(num_events);
 
-    EventHandler handler(message_buffer, cache);
+    EventHandler handler(message_buffer, cache, rename_buffer);
     for (size_t i = 0; i < num_events; i++) {
-      string event_path(paths[i]);
-      handler.handle(event_path, event_flags[i]);
+      handler.handle(string(paths[i]), event_flags[i]);
     }
-    handler.flush();
+    cache.apply();
+
+    shared_ptr<set<RenameBuffer::Key>> out = rename_buffer.flush_unmatched(message_buffer);
+    if (!out->empty()) {
+      LOGGER << "Scheduling expiration of " << out->size() << " unpaired rename entries on channel " << channel_id
+             << "." << endl;
+      CFAbsoluteTime fire_time = CFAbsoluteTimeGetCurrent() + RENAME_TIMEOUT;
+
+      CFRunLoopTimerContext timer_context{
+        0,  // version
+        timer_registry.create_info(bind(&MacOSWorkerPlatform::timer_triggered, this, out, channel_id, _1)),  // info
+        nullptr,  // retain
+        nullptr,  // release
+        nullptr  // copy description
+      };
+
+      // timer is released in MacOSWorkerPlatform::timer_triggered.
+      CFRunLoopTimerRef timer = CFRunLoopTimerCreate(kCFAllocatorDefault,  // allocator
+        fire_time,  // fire date
+        0,  // interval (0 = oneshot)
+        0,  // flags, ignored
+        0,  // order, ignored
+        TimerFnRegistry::callback,  // callout
+        &timer_context  // context
+      );
+
+      CFRunLoopAddTimer(run_loop.get(), timer, kCFRunLoopDefaultMode);
+    }
 
     Result<> er = emit_all(message_buffer.begin(), message_buffer.end());
     if (er.is_error()) {
-      LOGGER << "Unable to emit ack messages: " << er << "." << endl;
-      return;
+      LOGGER << "Unable to emit filesystem event messages: " << er << "." << endl;
+      return FN_KEEP;
     }
 
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
            << plural(message_buffer.size(), "message") << " produced." << endl;
-
     cache.prune();
+
+    return FN_KEEP;
   }
+
+  FnRegistryAction timer_triggered(shared_ptr<set<RenameBuffer::Key>> keys,
+    ChannelID channel_id,
+    CFRunLoopTimerRef timer)
+  {
+    LOGGER << "Expiring " << plural(keys->size(), "rename entry", "rename entries") << " on channel " << channel_id
+           << "." << endl;
+
+    MessageBuffer buffer;
+    ChannelMessageBuffer message_buffer(buffer, channel_id);
+
+    shared_ptr<set<RenameBuffer::Key>> next = rename_buffer.flush_unmatched(message_buffer, keys);
+    assert(next->empty());
+    keys.reset();
+
+    Result<> er = emit_all(message_buffer.begin(), message_buffer.end());
+    if (er.is_error()) LOGGER << "Unable to emit flushed rename event messages: " << er << "." << endl;
+
+    CFRelease(timer);
+
+    return FN_DISPOSE;
+  }
+
+  MacOSWorkerPlatform(const MacOSWorkerPlatform &) = delete;
+  MacOSWorkerPlatform(MacOSWorkerPlatform &&) = delete;
+  MacOSWorkerPlatform &operator=(const MacOSWorkerPlatform &) = delete;
+  MacOSWorkerPlatform &operator=(MacOSWorkerPlatform &&) = delete;
 
 private:
-  CFRunLoopRef run_loop;
-  CFRunLoopSourceRef command_source;
+  SourceFnRegistry source_registry;
+  TimerFnRegistry timer_registry;
+  EventStreamFnRegistry event_stream_registry;
 
-  unordered_map<ChannelID, Subscription *> subscriptions;
+  unordered_map<ChannelID, RefHolder<FSEventStreamRef>> event_streams;
+  RenameBuffer rename_buffer;
   RecentFileCache cache;
+
+  RefHolder<CFRunLoopSourceRef> command_source;
+  RefHolder<CFRunLoopRef> run_loop;
 };
-
-static void command_perform_helper(void *info)
-{
-  auto *platform = reinterpret_cast<MacOSWorkerPlatform *>(info);
-  Result<> r = platform->handle_commands();
-  if (r.is_error()) {
-    LOGGER << "Unable to handle incoming commands: " << r << "." << endl;
-  }
-}
-
-static void event_stream_helper(ConstFSEventStreamRef event_stream,
-  void *info,
-  size_t num_events,
-  void *event_paths,
-  const FSEventStreamEventFlags *event_flags,
-  const FSEventStreamEventId *event_ids)
-{
-  auto *sub = reinterpret_cast<Subscription *>(info);
-  auto *platform = dynamic_cast<MacOSWorkerPlatform *>(sub->platform);
-
-  platform->handle_fs_event(sub->channel, event_stream, num_events, event_paths, event_flags, event_ids);
-}
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
 {
