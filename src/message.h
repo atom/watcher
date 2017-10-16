@@ -118,6 +118,8 @@ private:
   const size_t split_count;
 };
 
+static_assert(sizeof(CommandPayload) <= sizeof(FileSystemPayload), "CommandPayload is larger than FileSystemPayload");
+
 class AckPayload
 {
 public:
@@ -142,6 +144,8 @@ private:
   const bool success;
   std::string message;
 };
+
+static_assert(sizeof(AckPayload) <= sizeof(FileSystemPayload), "AckPayload is larger than FileSystemPayload");
 
 enum MessageKind
 {
