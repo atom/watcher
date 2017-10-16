@@ -150,7 +150,7 @@ public:
       return ok_result(false);
     }
 
-    subscriptions.emplace(channel_id, Subscription(channel_id, recursive, move(event_stream)));
+    subscriptions.emplace(channel_id, Subscription(channel_id, recursive, string(root_path), move(event_stream)));
 
     cache.prepopulate(root_path, 4096);
     return ok_result(true);
@@ -189,9 +189,15 @@ public:
     ChannelMessageBuffer message_buffer(buffer, channel_id);
 
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
+    auto sub = subscriptions.find(channel_id);
+    if (sub == subscriptions.end()) {
+      LOGGER << "No active subscription for channel " << channel_id << "." << endl;
+      return FN_KEEP;
+    }
+
     message_buffer.reserve(num_events);
 
-    EventHandler handler(message_buffer, cache, rename_buffer);
+    EventHandler handler(message_buffer, cache, rename_buffer, sub->second.get_recursive(), sub->second.get_root());
     for (size_t i = 0; i < num_events; i++) {
       handler.handle(string(paths[i]), event_flags[i]);
     }

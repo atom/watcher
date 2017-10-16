@@ -6,9 +6,14 @@
 #include "subscription.h"
 
 using std::move;
+using std::string;
 
-Subscription::Subscription(ChannelID channel_id, bool recursive, RefHolder<FSEventStreamRef> &&event_stream) :
+Subscription::Subscription(ChannelID channel_id,
+  bool recursive,
+  string &&root,
+  RefHolder<FSEventStreamRef> &&event_stream) :
   channel_id{channel_id},
+  root{move(root)},
   recursive{recursive},
   event_stream{move(event_stream)}
 {
@@ -17,6 +22,7 @@ Subscription::Subscription(ChannelID channel_id, bool recursive, RefHolder<FSEve
 
 Subscription::Subscription(Subscription &&original) :
   channel_id{original.channel_id},
+  root{move(original.root)},
   recursive{original.recursive},
   event_stream{move(original.event_stream)}
 {

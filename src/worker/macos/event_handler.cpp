@@ -4,9 +4,11 @@
 #include <cerrno>
 #include <iomanip>
 #include <iostream>
+#include <libgen.h>
 #include <memory>
 #include <string>
 #include <sys/stat.h>
+#include <sys/syslimits.h>
 #include <utility>
 
 #include "../../log.h"
@@ -27,9 +29,11 @@ class EventFunctor
 {
 public:
   EventFunctor(EventHandler &handler, string &&event_path, FSEventStreamEventFlags flags) :
+    recursive{handler.recursive},
     message_buffer{handler.message_buffer},
     cache{handler.cache},
     rename_buffer{handler.rename_buffer},
+    root_path{handler.root_path},
     event_path{move(event_path)},
     flags{flags}
   {
@@ -43,6 +47,7 @@ public:
 
   void operator()()
   {
+    if (skip_recursive_event()) return;
     collect_info();
     report();
 
@@ -53,6 +58,26 @@ public:
   }
 
 private:
+  bool skip_recursive_event()
+  {
+    if (recursive) return false;
+    if (event_path == root_path) return false;
+
+    char parent_dir[PATH_MAX];
+    char *result = dirname_r(event_path.c_str(), parent_dir);
+    if (result == nullptr) return false;
+    if (string(parent_dir) == root_path) return false;
+
+    return true;
+  }
+
+  // Check and update the recently-seen entry cache for this entry.
+  void collect_info()
+  {
+    former = cache.former_at_path(event_path, flag_file, flag_directory);
+    current = cache.current_at_path(event_path, flag_file, flag_directory);
+  }
+
   // Log the raw and interpreted flag information.
   void report()
   {
@@ -85,13 +110,6 @@ private:
     if ((flags & kFSEventStreamEventFlagItemIsLastHardlink) != 0) logline << " ItemIsLastHardlink";
 
     logline << " ] former=" << former->to_string(false) << " current=" << current->to_string(false) << endl;
-  }
-
-  // Check and update the recently-seen entry cache for this entry.
-  void collect_info()
-  {
-    former = cache.former_at_path(event_path, flag_file, flag_directory);
-    current = cache.current_at_path(event_path, flag_file, flag_directory);
   }
 
   // Emit messages for events that have unambiguous flags.
@@ -192,9 +210,11 @@ private:
     return true;
   }
 
+  bool recursive;
   ChannelMessageBuffer &message_buffer;
   RecentFileCache &cache;
   RenameBuffer &rename_buffer;
+  const string &root_path;
 
   string event_path;
   FSEventStreamEventFlags flags;
@@ -210,10 +230,16 @@ private:
   shared_ptr<StatResult> current;
 };
 
-EventHandler::EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache, RenameBuffer &rename_buffer) :
+EventHandler::EventHandler(ChannelMessageBuffer &message_buffer,
+  RecentFileCache &cache,
+  RenameBuffer &rename_buffer,
+  bool recursive,
+  const string &root_path) :
   cache{cache},
   message_buffer{message_buffer},
-  rename_buffer{rename_buffer}
+  rename_buffer{rename_buffer},
+  recursive{recursive},
+  root_path{root_path}
 {
   //
 }
