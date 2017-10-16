@@ -120,7 +120,10 @@ string CommandPayload::describe() const
   builder << "[CommandPayload id " << id << " ";
 
   switch (action) {
-    case COMMAND_ADD: builder << "add " << root << " at channel " << arg; break;
+    case COMMAND_ADD:
+      builder << "add " << root << " at channel " << arg;
+      if (!recursive) builder << " (non-recursively)";
+      break;
     case COMMAND_REMOVE: builder << "remove channel " << arg; break;
     case COMMAND_LOG_FILE: builder << "log to file " << root; break;
     case COMMAND_LOG_DISABLE: builder << "disable logging"; break;

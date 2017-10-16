@@ -88,6 +88,7 @@ public:
 
   Result<> watch(std::string &&root,
     bool poll,
+    bool recursive,
     std::unique_ptr<Nan::Callback> ack_callback,
     std::unique_ptr<Nan::Callback> event_callback);
 

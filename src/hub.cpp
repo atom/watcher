@@ -50,7 +50,11 @@ Hub::Hub() : worker_thread(&event_handler), polling_thread(&event_handler)
   worker_thread.run();
 }
 
-Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback, unique_ptr<Callback> event_callback)
+Result<> Hub::watch(string &&root,
+  bool poll,
+  bool recursive,
+  unique_ptr<Callback> ack_callback,
+  unique_ptr<Callback> event_callback)
 {
   ChannelID channel_id = next_channel_id;
   next_channel_id++;
@@ -59,10 +63,11 @@ Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback,
 
   if (poll) {
     return send_command(
-      polling_thread, CommandPayloadBuilder::add(channel_id, move(root), true, 1), move(ack_callback));
+      polling_thread, CommandPayloadBuilder::add(channel_id, move(root), recursive, 1), move(ack_callback));
   }
 
-  return send_command(worker_thread, CommandPayloadBuilder::add(channel_id, move(root), true, 1), move(ack_callback));
+  return send_command(
+    worker_thread, CommandPayloadBuilder::add(channel_id, move(root), recursive, 1), move(ack_callback));
 }
 
 Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)

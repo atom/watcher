@@ -138,12 +138,14 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   Local<Object> options = maybe_options.ToLocalChecked();
 
   bool poll = false;
+  bool recursive = true;
   if (!get_bool_option(options, "poll", poll)) return;
+  if (!get_bool_option(options, "recursive", recursive)) return;
 
   unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[2].As<Function>()));
   unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[3].As<Function>()));
 
-  Result<> r = Hub::get().watch(move(root_str), poll, move(ack_callback), move(event_callback));
+  Result<> r = Hub::get().watch(move(root_str), poll, recursive, move(ack_callback), move(event_callback));
   if (r.is_error()) {
     Nan::ThrowError(r.get_error().c_str());
   }

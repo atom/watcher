@@ -85,7 +85,10 @@ public:
   }
 
   // Recursively watch a directory tree.
-  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID command,
+    ChannelID channel,
+    const string &root_path,
+    bool /*recursive*/) override
   {
     vector<string> poll;
 

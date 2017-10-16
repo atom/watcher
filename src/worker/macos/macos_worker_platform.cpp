@@ -1,6 +1,7 @@
 #include <CoreServices/CoreServices.h>
 #include <cerrno>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
@@ -21,6 +22,7 @@
 #include "flags.h"
 #include "recent_file_cache.h"
 #include "rename_buffer.h"
+#include "subscription.h"
 
 using std::bind;
 using std::endl;
@@ -84,10 +86,18 @@ public:
     return ok_result();
   }
 
-  Result<bool> handle_add_command(CommandID command_id, ChannelID channel_id, const string &root_path) override
+  Result<bool> handle_add_command(CommandID command_id,
+    ChannelID channel_id,
+    const string &root_path,
+    bool recursive) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
-    LOGGER << "Adding watcher for path " << root_path << " at channel " << channel_id << "." << endl;
+
+    ostream &logline = LOGGER << "Adding watcher for path " << root_path;
+    if (!recursive) {
+      logline << " (non-recursively)";
+    }
+    logline << " at channel " << channel_id << "." << endl;
 
     FSEventStreamContext stream_context{
       0,  // version
@@ -139,7 +149,8 @@ public:
       emit(Message(CommandPayloadBuilder::add(channel_id, string(root_path), true, 1).set_id(command_id).build()));
       return ok_result(false);
     }
-    event_streams.emplace(channel_id, move(event_stream));
+
+    subscriptions.emplace(channel_id, Subscription(channel_id, recursive, move(event_stream)));
 
     cache.prepopulate(root_path, 4096);
     return ok_result(true);
@@ -150,17 +161,12 @@ public:
     if (!is_healthy()) return health_err_result().propagate<bool>();
     LOGGER << "Removing watcher for channel " << channel_id << "." << endl;
 
-    auto maybe_stream = event_streams.find(channel_id);
-    if (maybe_stream == event_streams.end()) {
+    auto maybe_sub = subscriptions.find(channel_id);
+    if (maybe_sub == subscriptions.end()) {
       LOGGER << "No subscription for channel " << channel_id << "." << endl;
       return ok_result(true);
     }
-    RefHolder<FSEventStreamRef> event_stream(move(maybe_stream->second));
-    event_streams.erase(maybe_stream);
-
-    FSEventStreamStop(event_stream.get());
-    FSEventStreamInvalidate(event_stream.get());
-
+    subscriptions.erase(maybe_sub);
     return ok_result(true);
   }
 
@@ -263,7 +269,7 @@ private:
   TimerFnRegistry timer_registry;
   EventStreamFnRegistry event_stream_registry;
 
-  unordered_map<ChannelID, RefHolder<FSEventStreamRef>> event_streams;
+  unordered_map<ChannelID, Subscription> subscriptions;
   RenameBuffer rename_buffer;
   RecentFileCache cache;
 
