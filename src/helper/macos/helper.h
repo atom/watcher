@@ -143,7 +143,7 @@ public:
 class TimerFnRegistry : public FnRegistry<TimerFn, TimerFnRegistry>
 {
 public:
-  static void callback(CFRunLoopTimerRef ref, void *info);
+  static void callback(CFRunLoopTimerRef timer, void *info);
 
   TimerFnRegistry() = default;
 
