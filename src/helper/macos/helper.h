@@ -108,6 +108,8 @@ protected:
       before{before}
     {}
 
+    ~Entry() = default;
+
     FnType fn;
     This *registry;
     typename std::forward_list<Entry>::const_iterator before;
@@ -130,7 +132,7 @@ public:
 
   SourceFnRegistry() = default;
 
-  ~SourceFnRegistry() = default;
+  ~SourceFnRegistry() override = default;
 
   SourceFnRegistry(const SourceFnRegistry &) = delete;
   SourceFnRegistry(SourceFnRegistry &&) = delete;
@@ -145,7 +147,7 @@ public:
 
   TimerFnRegistry() = default;
 
-  ~TimerFnRegistry() = default;
+  ~TimerFnRegistry() override = default;
 
   TimerFnRegistry(const TimerFnRegistry &) = delete;
   TimerFnRegistry(TimerFnRegistry &&) = delete;
@@ -165,7 +167,7 @@ public:
 
   EventStreamFnRegistry() = default;
 
-  ~EventStreamFnRegistry() = default;
+  ~EventStreamFnRegistry() override = default;
 
   EventStreamFnRegistry(const EventStreamFnRegistry &) = delete;
   EventStreamFnRegistry(EventStreamFnRegistry &&) = delete;
