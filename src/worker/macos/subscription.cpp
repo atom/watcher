@@ -20,7 +20,7 @@ Subscription::Subscription(ChannelID channel_id,
   //
 }
 
-Subscription::Subscription(Subscription &&original) :
+Subscription::Subscription(Subscription &&original) noexcept :
   channel_id{original.channel_id},
   root{move(original.root)},
   recursive{original.recursive},
