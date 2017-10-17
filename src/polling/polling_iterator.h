@@ -21,8 +21,9 @@ class DirectoryRecord;
 class PollingIterator
 {
 public:
-  // Create an iterator poised to begin at a root `DirectoryRecord`.
-  explicit PollingIterator(const std::shared_ptr<DirectoryRecord> &root);
+  // Create an iterator poised to begin at a root `DirectoryRecord`. If `recursive` is true, the iterator will
+  // automatically advance into subdirectories of the root.
+  explicit PollingIterator(const std::shared_ptr<DirectoryRecord> &root, bool recursive);
 
   PollingIterator(const PollingIterator &) = delete;
   PollingIterator(PollingIterator &&) = delete;
@@ -33,6 +34,9 @@ public:
 private:
   // The top-level `DirectoryRecord` of the `PolledRoot`, so we know where to reset when we reach the end.
   std::shared_ptr<DirectoryRecord> root;
+
+  // If `true`, the iterator will automatically descend into subdirectories as they are discovered.
+  bool recursive;
 
   // The `DirectoryRecord` that we're on right now.
   std::shared_ptr<DirectoryRecord> current;
@@ -100,10 +104,16 @@ public:
   void push_entry(std::string &&entry, EntryKind kind) { iterator.entries.emplace_back(std::move(entry), kind); }
 
   // Called from `DirectoryRecord::entry()` when a subdirectory is encountered to enqueue it for traversal.
-  void push_directory(const std::shared_ptr<DirectoryRecord> &subdirectory) { iterator.directories.push(subdirectory); }
+  void push_directory(const std::shared_ptr<DirectoryRecord> &subdirectory)
+  {
+    if (iterator.recursive) iterator.directories.push(subdirectory);
+  }
 
   // Access the message buffer to emit events from other classes.
   ChannelMessageBuffer &get_buffer() { return buffer; }
+
+  // Allow the `DirectoryRecord` to determine whether or not this iteration is recursive.
+  bool is_recursive() { return iterator.recursive; }
 
   // Perform at most `throttle_allocation` filesystem operations, emitting events and updating records appropriately. If
   // the end of the filesystem tree is reached, the iteration will stop and leave the `PollingIterator` ready to resume
