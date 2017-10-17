@@ -72,7 +72,7 @@
                 "msvs_settings": {
                     "VCCLCompilerTool": {
                         "ExceptionHandling": "2",
-                        "WarningLevel": "4",
+                        "WarningLevel": "3",
                         "DebugInformationFormat": "3",
                         "Optimization": "0"
                     }
