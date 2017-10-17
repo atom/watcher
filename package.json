@@ -44,6 +44,7 @@
     "test-until": "^1.1.1"
   },
   "dependencies": {
+    "event-kit": "^2.4.0",
     "nan": "2.6.2"
   },
   "standard": {
