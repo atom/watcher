@@ -11,7 +11,7 @@ class Subscription
 public:
   Subscription(ChannelID channel_id, bool recursive, std::string &&root, RefHolder<FSEventStreamRef> &&event_stream);
 
-  Subscription(Subscription &&original);
+  Subscription(Subscription &&original) noexcept;
 
   ~Subscription();
 
