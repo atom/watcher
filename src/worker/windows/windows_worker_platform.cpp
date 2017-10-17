@@ -1,11 +1,11 @@
 #define WIN32_LEAN_AND_MEAN
 
+#include <iostream>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
-#include <iostream>
 #include <uv.h>
 #include <vector>
 #include <windows.h>
@@ -147,7 +147,8 @@ public:
     if (!schedr.get_value()) {
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
-      return emit(Message(CommandPayloadBuilder::add(channel, string(root_path), recursive, 1).build())).propagate(false);
+      return emit(Message(CommandPayloadBuilder::add(channel, string(root_path), recursive, 1).build()))
+        .propagate(false);
     }
 
     return ok_result(true);

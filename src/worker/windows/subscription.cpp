@@ -18,7 +18,11 @@ using std::wstring;
 const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
 const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
 
-Subscription::Subscription(ChannelID channel, HANDLE root, const wstring &path, bool recursive, WindowsWorkerPlatform *platform) :
+Subscription::Subscription(ChannelID channel,
+  HANDLE root,
+  const wstring &path,
+  bool recursive,
+  WindowsWorkerPlatform *platform) :
   command{0},
   channel{channel},
   platform{platform},
