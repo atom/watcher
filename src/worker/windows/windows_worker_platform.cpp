@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <iostream>
 #include <uv.h>
 #include <vector>
 #include <windows.h>
@@ -23,6 +24,7 @@ using std::endl;
 using std::make_pair;
 using std::map;
 using std::move;
+using std::ostream;
 using std::ostringstream;
 using std::pair;
 using std::shared_ptr;
@@ -103,7 +105,7 @@ public:
   Result<bool> handle_add_command(CommandID command,
     ChannelID channel,
     const string &root_path,
-    bool /*recursive*/) override
+    bool recursive) override
   {
     if (!is_healthy()) return health_err_result().propagate<bool>();
 
@@ -126,7 +128,7 @@ public:
     }
 
     // Allocate and persist the subscription
-    Subscription *sub = new Subscription(channel, root, root_path_w, this);
+    Subscription *sub = new Subscription(channel, root, root_path_w, recursive, this);
     auto insert_result = subscriptions.insert(make_pair(channel, sub));
     if (!insert_result.second) {
       delete sub;
@@ -136,14 +138,16 @@ public:
       return Result<bool>::make_error(msg.str());
     }
 
-    LOGGER << "Added directory root " << root_path << "." << endl;
+    ostream &logline = LOGGER << "Added directory root " << root_path;
+    if (!recursive) logline << " (non-recursive)";
+    logline << "." << endl;
 
     Result<bool> schedr = sub->schedule(&event_helper);
     if (schedr.is_error()) return schedr.propagate<bool>();
     if (!schedr.get_value()) {
       LOGGER << "Falling back to polling for watch root " << root_path << "." << endl;
 
-      return emit(Message(CommandPayloadBuilder::add(channel, string(root_path), true, 1).build())).propagate(false);
+      return emit(Message(CommandPayloadBuilder::add(channel, string(root_path), recursive, 1).build())).propagate(false);
     }
 
     return ok_result(true);
