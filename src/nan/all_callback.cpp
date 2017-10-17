@@ -14,6 +14,7 @@ using Nan::FunctionCallbackInfo;
 using Nan::HandleScope;
 using std::bind;
 using std::forward_list;
+using std::list;
 using std::move;
 using std::placeholders::_1;
 using std::shared_ptr;
@@ -22,16 +23,13 @@ using v8::Array;
 using v8::Local;
 using v8::Value;
 
-forward_list<shared_ptr<AllCallback>> AllCallback::retained;
+list<shared_ptr<AllCallback>> AllCallback::retained;
 
 shared_ptr<AllCallback> AllCallback::create(unique_ptr<Callback> &&done)
 {
-  auto previous_begin = retained.begin();
   shared_ptr<AllCallback> created(new AllCallback(move(done)));
   retained.emplace_front(created);
-  if (previous_begin != retained.end()) {
-    (*previous_begin)->before_it = retained.begin();
-  }
+  retained.front()->me = retained.begin();
   return retained.front();
 }
 
@@ -42,7 +40,7 @@ AllCallback::AllCallback(unique_ptr<Callback> &&done) :
   remaining{0},
   error(Nan::Undefined()),
   results(Nan::New<Array>(0)),
-  before_it{retained.before_begin()}
+  me{retained.end()}
 {
   //
 }
@@ -71,7 +69,7 @@ void AllCallback::fire_if_empty()
   Local<Value> argv[] = {l_error, l_results};
   done->Call(2, argv);
 
-  retained.erase_after(before_it);
+  retained.erase(me);
 }
 
 void AllCallback::callback_complete(size_t callback_index, const FunctionCallbackInfo<Value> &info)
