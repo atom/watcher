@@ -125,9 +125,9 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
         entry_deleted(it, previous_entry_path, previous_entry_kind);
         auto former = previous;
         ++previous;
-        entries.erase(former);
 
         subdirectories.erase(previous_entry_name);
+        entries.erase(former);
       } else {
         ++previous;
       }

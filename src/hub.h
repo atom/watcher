@@ -52,7 +52,7 @@ public:
 
   Result<> disable_worker_log(std::unique_ptr<Nan::Callback> callback)
   {
-    return send_command(worker_thread, CommandPayloadBuilder::log_to_stderr(), std::move(callback));
+    return send_command(worker_thread, CommandPayloadBuilder::log_disable(), std::move(callback));
   }
 
   Result<> use_polling_log_file(std::string &&polling_log_file, std::unique_ptr<Nan::Callback> callback)
