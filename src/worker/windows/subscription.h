@@ -13,7 +13,11 @@ class WindowsWorkerPlatform;
 class Subscription
 {
 public:
-  Subscription(ChannelID channel, HANDLE root, const std::wstring &path, bool recursive, WindowsWorkerPlatform *platform);
+  Subscription(ChannelID channel,
+    HANDLE root,
+    const std::wstring &path,
+    bool recursive,
+    WindowsWorkerPlatform *platform);
 
   ~Subscription();
 
