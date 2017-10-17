@@ -88,11 +88,11 @@ public:
   Result<bool> handle_add_command(CommandID command,
     ChannelID channel,
     const string &root_path,
-    bool /*recursive*/) override
+    bool recursive) override
   {
     vector<string> poll;
 
-    Result<> r0 = registry.add(channel, string(root_path), true, poll);
+    Result<> r0 = registry.add(channel, string(root_path), recursive, poll);
     if (r0.is_error()) return r0.propagate<bool>();
 
     if (!poll.empty()) {
@@ -100,7 +100,8 @@ public:
       poll_messages.reserve(poll.size());
 
       for (string &poll_root : poll) {
-        poll_messages.emplace_back(CommandPayloadBuilder::add(channel, move(poll_root), true, poll.size()).build());
+        poll_messages.emplace_back(
+          CommandPayloadBuilder::add(channel, move(poll_root), recursive, poll.size()).build());
       }
 
       return emit_all(poll_messages.begin(), poll_messages.end()).propagate(false);

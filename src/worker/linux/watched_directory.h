@@ -14,7 +14,8 @@
 class WatchedDirectory
 {
 public:
-  WatchedDirectory(int wd, ChannelID channel_id, std::string &&directory);
+  WatchedDirectory(int wd, ChannelID channel_id, std::string &&directory, bool recursive);
+
   ~WatchedDirectory() = default;
 
   // Interpret a single inotify event. Buffer messages, store or resolve rename Cookies from the CookieJar, and
@@ -36,6 +37,7 @@ private:
   int wd;
   ChannelID channel_id;
   std::string directory;
+  bool recursive;
 };
 
 #endif

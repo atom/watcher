@@ -78,17 +78,15 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
   if (!is_healthy()) return health_err_result<>();
 
   uint32_t mask = IN_ATTRIB | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_FROM
-    | IN_MOVED_TO | IN_DONT_FOLLOW | IN_EXCL_UNLINK;
-  if (recursive) mask |= IN_ONLYDIR;
+    | IN_MOVED_TO | IN_DONT_FOLLOW | IN_EXCL_UNLINK | IN_ONLYDIR;
 
-  LOGGER << "Watching path [" << root << "]." << endl;
+  ostream &logline = LOGGER << "Watching path [" << root << "]";
+  if (!recursive) logline << " (non-recursively)";
+  logline << "." << endl;
+
   int wd = inotify_add_watch(inotify_fd, root.c_str(), mask);
   if (wd == -1) {
     int watch_errno = errno;
-
-    if (watch_errno == ENOTDIR) {
-      return ok_result();
-    }
 
     if (watch_errno == ENOENT || watch_errno == EACCES) {
       LOGGER << "Directory " << root << " is no longer accessible. Ignoring." << endl;
@@ -101,13 +99,12 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
       return ok_result();
     }
 
-    // TODO: signal a revert to polling on ENOSPC
     return errno_result("Unable to watch directory", watch_errno);
   }
 
   LOGGER << "Assigned watch descriptor " << wd << " at [" << root << "] on channel " << channel_id << "." << endl;
 
-  shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, string(root)));
+  shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, string(root), recursive));
 
   by_wd.insert({wd, watched_dir});
   by_channel.insert({channel_id, watched_dir});
@@ -133,15 +130,15 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
         subdir += "/";
         subdir += basename;
 
-#ifndef _DIRENT_HAVE_D_TYPE
+#ifdef _DIRENT_HAVE_D_TYPE
         if (entry->d_type == DT_DIR || entry->d_type == DT_UNKNOWN) {
-          Result<> add_r = add(channel_id, subdir, true);
+          Result<> add_r = add(channel_id, subdir, recursive, poll);
           if (add_r.is_error()) {
             LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
           }
         }
 #else
-        Result<> add_r = add(channel_id, subdir, true, poll);
+        Result<> add_r = add(channel_id, subdir, recursive, poll);
         if (add_r.is_error()) {
           LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
         }
