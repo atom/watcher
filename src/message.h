@@ -165,8 +165,6 @@ private:
   friend class CommandPayloadBuilder;
 };
 
-static_assert(sizeof(CommandPayload) <= sizeof(FileSystemPayload), "CommandPayload is larger than FileSystemPayload");
-
 class CommandPayloadBuilder
 {
 public:
@@ -292,8 +290,6 @@ private:
   const bool success;
   std::string message;
 };
-
-static_assert(sizeof(AckPayload) <= sizeof(FileSystemPayload), "AckPayload is larger than FileSystemPayload");
 
 enum MessageKind
 {
