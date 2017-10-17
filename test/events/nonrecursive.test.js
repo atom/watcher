@@ -4,7 +4,7 @@ const {Fixture} = require('../helper')
 const {EventMatcher} = require('./matcher');
 
 [false, true].forEach(poll => {
-  describe.only(`nonrecursive watching with poll = ${poll}`, function () {
+  describe(`nonrecursive watching with poll = ${poll}`, function () {
     let fixture, matcher
 
     beforeEach(async function () {
