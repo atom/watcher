@@ -205,7 +205,7 @@ void DirectoryRecord::entry(BoundPollingIterator *it,
   if (current_kind != KIND_DIRECTORY && current_kind != KIND_UNKNOWN && dir != subdirectories.end()) {
     subdirectories.erase(dir);
   }
-  if (current_kind == KIND_DIRECTORY) {
+  if (current_kind == KIND_DIRECTORY && it->is_recursive()) {
     if (dir == subdirectories.end()) {
       shared_ptr<DirectoryRecord> subdir(new DirectoryRecord(this, string(entry_name)));
       subdirectories.emplace(entry_name, subdir);

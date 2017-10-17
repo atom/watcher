@@ -11,8 +11,9 @@
 using std::shared_ptr;
 using std::string;
 
-PollingIterator::PollingIterator(const shared_ptr<DirectoryRecord> &root) :
+PollingIterator::PollingIterator(const shared_ptr<DirectoryRecord> &root, bool recursive) :
   root(root),
+  recursive{recursive},
   current(root),
   current_path(root->path()),
   phase{PollingIterator::SCAN}

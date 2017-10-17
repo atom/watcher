@@ -13,7 +13,11 @@ class WindowsWorkerPlatform;
 class Subscription
 {
 public:
-  Subscription(ChannelID channel, HANDLE root, const std::wstring &path, WindowsWorkerPlatform *platform);
+  Subscription(ChannelID channel,
+    HANDLE root,
+    const std::wstring &path,
+    bool recursive,
+    WindowsWorkerPlatform *platform);
 
   ~Subscription();
 
@@ -43,6 +47,7 @@ private:
   std::wstring path;
   HANDLE root;
   OVERLAPPED overlapped;
+  bool recursive;
   bool terminating;
 
   DWORD buffer_size;

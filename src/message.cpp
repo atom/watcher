@@ -80,12 +80,25 @@ CommandPayload::CommandPayload(CommandAction action,
   CommandID id,
   std::string &&root,
   uint_fast32_t arg,
+  bool recursive,
   size_t split_count) :
   id{id},
   action{action},
   root{move(root)},
   arg{arg},
+  recursive{recursive},
   split_count{split_count}
+{
+  //
+}
+
+CommandPayload::CommandPayload(const CommandPayload &original) :
+  id{original.id},
+  action{original.action},
+  root{original.root},
+  arg{original.arg},
+  recursive{original.recursive},
+  split_count{original.split_count}
 {
   //
 }
@@ -95,6 +108,7 @@ CommandPayload::CommandPayload(CommandPayload &&original) noexcept :
   action{original.action},
   root{move(original.root)},
   arg{original.arg},
+  recursive{original.recursive},
   split_count{original.split_count}
 {
   //
@@ -106,7 +120,10 @@ string CommandPayload::describe() const
   builder << "[CommandPayload id " << id << " ";
 
   switch (action) {
-    case COMMAND_ADD: builder << "add " << root << " at channel " << arg; break;
+    case COMMAND_ADD:
+      builder << "add " << root << " at channel " << arg;
+      if (!recursive) builder << " (non-recursively)";
+      break;
     case COMMAND_REMOVE: builder << "remove channel " << arg; break;
     case COMMAND_LOG_FILE: builder << "log to file " << root; break;
     case COMMAND_LOG_DISABLE: builder << "disable logging"; break;

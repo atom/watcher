@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <iostream>
 #include <map>
 #include <string>
 #include <thread>
@@ -17,6 +18,7 @@
 
 using std::endl;
 using std::move;
+using std::ostream;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -130,12 +132,14 @@ Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(cons
 
 Result<Thread::CommandOutcome> PollingThread::handle_add_command(const CommandPayload *command)
 {
-  LOGGER << "Adding poll root at path " << command->get_root() << " to channel " << command->get_channel_id()
-         << " with " << plural(command->get_split_count(), "split") << "." << endl;
+  ostream &logline = LOGGER << "Adding poll root at path " << command->get_root();
+  if (!command->get_recursive()) logline << " (non-recursively)";
+  logline << " to channel " << command->get_channel_id() << " with " << plural(command->get_split_count(), "split")
+          << "." << endl;
 
   roots.emplace(std::piecewise_construct,
     std::forward_as_tuple(command->get_channel_id()),
-    std::forward_as_tuple(string(command->get_root()), command->get_channel_id()));
+    std::forward_as_tuple(string(command->get_root()), command->get_channel_id(), command->get_recursive()));
 
   auto existing = pending_splits.find(command->get_channel_id());
   if (existing != pending_splits.end()) {

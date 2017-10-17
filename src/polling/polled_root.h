@@ -18,7 +18,8 @@ public:
   //
   // The newly constructed root does *not* contain any initial scan information, to avoid CPU usage spikes when
   // watching large directory trees. The subtree's records will be populated on the first scan.
-  PolledRoot(std::string &&root_path, ChannelID channel_id);
+  PolledRoot(std::string &&root_path, ChannelID channel_id, bool recursive);
+
   ~PolledRoot() = default;
 
   // Perform at most `throttle_allocation` operations, accumulating any changes into a provided `buffer` for batch

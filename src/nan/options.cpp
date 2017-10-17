@@ -52,7 +52,6 @@ bool get_bool_option(Local<Object> &options, const char *key_name, bool &out)
 {
   Nan::HandleScope scope;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
-  out = false;
 
   MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
   if (as_maybe_value.IsEmpty()) {
@@ -78,7 +77,6 @@ bool get_uint_option(v8::Local<v8::Object> &options, const char *key_name, uint_
 {
   Nan::HandleScope scope;
   const Local<String> key = Nan::New<String>(key_name).ToLocalChecked();
-  out = 0;
 
   MaybeLocal<Value> as_maybe_value = Nan::Get(options, key);
   if (as_maybe_value.IsEmpty()) {

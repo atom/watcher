@@ -70,7 +70,7 @@ public:
         r &= side.enact_in(&registry, poll);
 
         for (auto &poll_root : poll) {
-          messages.add(Message(CommandPayload(COMMAND_ADD, NULL_COMMAND_ID, move(poll_root.second), poll_root.first)));
+          messages.add(Message(CommandPayloadBuilder::add(poll_root.first, move(poll_root.second), true, 1).build()));
         }
 
         if (!messages.empty()) {
@@ -85,11 +85,14 @@ public:
   }
 
   // Recursively watch a directory tree.
-  Result<bool> handle_add_command(CommandID command, ChannelID channel, const string &root_path) override
+  Result<bool> handle_add_command(CommandID /*command*/,
+    ChannelID channel,
+    const string &root_path,
+    bool recursive) override
   {
     vector<string> poll;
 
-    Result<> r0 = registry.add(channel, string(root_path), true, poll);
+    Result<> r0 = registry.add(channel, string(root_path), recursive, poll);
     if (r0.is_error()) return r0.propagate<bool>();
 
     if (!poll.empty()) {
@@ -97,7 +100,8 @@ public:
       poll_messages.reserve(poll.size());
 
       for (string &poll_root : poll) {
-        poll_messages.emplace_back(CommandPayload(COMMAND_ADD, command, move(poll_root), channel, poll.size()));
+        poll_messages.emplace_back(
+          CommandPayloadBuilder::add(channel, move(poll_root), recursive, poll.size()).build());
       }
 
       return emit_all(poll_messages.begin(), poll_messages.end()).propagate(false);

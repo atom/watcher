@@ -13,7 +13,11 @@
 class EventHandler
 {
 public:
-  EventHandler(ChannelMessageBuffer &message_buffer, RecentFileCache &cache, RenameBuffer &rename_buffer);
+  EventHandler(ChannelMessageBuffer &message_buffer,
+    RecentFileCache &cache,
+    RenameBuffer &rename_buffer,
+    bool recursive,
+    const std::string &root_path);
 
   ~EventHandler() = default;
 
@@ -28,6 +32,8 @@ private:
   RecentFileCache &cache;
   ChannelMessageBuffer &message_buffer;
   RenameBuffer &rename_buffer;
+  bool recursive;
+  const std::string &root_path;
 
   friend class EventFunctor;
 };

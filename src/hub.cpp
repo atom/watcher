@@ -50,7 +50,11 @@ Hub::Hub() : worker_thread(&event_handler), polling_thread(&event_handler)
   worker_thread.run();
 }
 
-Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback, unique_ptr<Callback> event_callback)
+Result<> Hub::watch(string &&root,
+  bool poll,
+  bool recursive,
+  unique_ptr<Callback> ack_callback,
+  unique_ptr<Callback> event_callback)
 {
   ChannelID channel_id = next_channel_id;
   next_channel_id++;
@@ -58,10 +62,12 @@ Result<> Hub::watch(string &&root, bool poll, unique_ptr<Callback> ack_callback,
   channel_callbacks.emplace(channel_id, move(event_callback));
 
   if (poll) {
-    return send_command(polling_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
+    return send_command(
+      polling_thread, CommandPayloadBuilder::add(channel_id, move(root), recursive, 1), move(ack_callback));
   }
 
-  return send_command(worker_thread, COMMAND_ADD, move(ack_callback), move(root), channel_id);
+  return send_command(
+    worker_thread, CommandPayloadBuilder::add(channel_id, move(root), recursive, 1), move(ack_callback));
 }
 
 Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
@@ -70,8 +76,8 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
   shared_ptr<AllCallback> all = AllCallback::create(move(ack_callback));
 
   Result<> r = ok_result();
-  r &= send_command(worker_thread, COMMAND_REMOVE, all->create_callback(), "", channel_id);
-  r &= send_command(polling_thread, COMMAND_REMOVE, all->create_callback(), "", channel_id);
+  r &= send_command(worker_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback());
+  r &= send_command(polling_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback());
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {
@@ -97,14 +103,11 @@ void Hub::collect_status(Status &status)
   polling_thread.collect_status(status);
 }
 
-Result<> Hub::send_command(Thread &thread,
-  CommandAction action,
-  unique_ptr<Callback> callback,
-  string &&root,
-  uint_fast32_t arg)
+Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<Nan::Callback> callback)
 {
   CommandID command_id = next_command_id;
-  Message command(CommandPayload(action, command_id, move(root), arg));
+  builder.set_id(command_id);
+  Message command(builder.build());
   pending_callbacks.emplace(command_id, move(callback));
   next_command_id++;
 

@@ -12,10 +12,11 @@
 using std::move;
 using std::string;
 
-WatchedDirectory::WatchedDirectory(int wd, ChannelID channel_id, string &&directory) :
+WatchedDirectory::WatchedDirectory(int wd, ChannelID channel_id, string &&directory, bool recursive) :
   wd{wd},
   channel_id{channel_id},
-  directory{move(directory)}
+  directory{move(directory)},
+  recursive{recursive}
 {
   //
 }
@@ -33,7 +34,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
 
     if (kind == KIND_DIRECTORY) {
       // subdirectory created
-      side.track_subdirectory(path, channel_id);
+      if (recursive) side.track_subdirectory(path, channel_id);
       buffer.created(channel_id, move(path), kind);
       return ok_result();
     }
@@ -74,7 +75,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
 
   if ((event.mask & IN_MOVED_TO) == IN_MOVED_TO) {
     // rename destination for directory or entry inside directory
-    if (kind == KIND_DIRECTORY) {
+    if (kind == KIND_DIRECTORY && recursive) {
       side.track_subdirectory(path, channel_id);
     }
     jar.moved_to(buffer, channel_id, event.cookie, move(path), kind);

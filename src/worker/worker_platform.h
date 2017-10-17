@@ -22,7 +22,10 @@ public:
   virtual Result<> wake() = 0;
 
   virtual Result<> listen() = 0;
-  virtual Result<bool> handle_add_command(CommandID command, ChannelID channel, const std::string &root_path) = 0;
+  virtual Result<bool> handle_add_command(CommandID command,
+    ChannelID channel,
+    const std::string &root_path,
+    bool recursive) = 0;
   virtual Result<bool> handle_remove_command(CommandID command, ChannelID channel) = 0;
 
   Result<> handle_commands()

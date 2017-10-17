@@ -10,6 +10,7 @@
 #include "subscription.h"
 
 using std::endl;
+using std::ostream;
 using std::ostringstream;
 using std::wostringstream;
 using std::wstring;
@@ -17,13 +18,18 @@ using std::wstring;
 const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
 const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
 
-Subscription::Subscription(ChannelID channel, HANDLE root, const wstring &path, WindowsWorkerPlatform *platform) :
+Subscription::Subscription(ChannelID channel,
+  HANDLE root,
+  const wstring &path,
+  bool recursive,
+  WindowsWorkerPlatform *platform) :
   command{0},
   channel{channel},
   platform{platform},
   path{path},
   root{root},
   terminating{false},
+  recursive{recursive},
   buffer_size{DEFAULT_BUFFER_SIZE},
   buffer{new BYTE[buffer_size]},
   written{new BYTE[buffer_size]}
@@ -45,12 +51,14 @@ Result<bool> Subscription::schedule(LPOVERLAPPED_COMPLETION_ROUTINE fn)
     return ok_result(true);
   }
 
-  LOGGER << "Scheduling the next change callback for channel " << channel << "." << endl;
+  ostream &logline = LOGGER << "Scheduling the next change callback for channel " << channel;
+  if (!recursive) logline << " (non-recursively)";
+  logline << "." << endl;
 
   int success = ReadDirectoryChangesW(root,  // root directory handle
     buffer.get(),  // result buffer
     buffer_size,  // result buffer size
-    TRUE,  // recursive
+    recursive,  // recursive
     FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE
       | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS | FILE_NOTIFY_CHANGE_CREATION
       | FILE_NOTIFY_CHANGE_SECURITY,  // change flags

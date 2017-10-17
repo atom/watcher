@@ -9,21 +9,13 @@
 
 #include "result.h"
 
-enum FileSystemAction
-{
-  ACTION_CREATED = 0,
-  ACTION_DELETED = 1,
-  ACTION_MODIFIED = 2,
-  ACTION_RENAMED = 3
-};
-
-std::ostream &operator<<(std::ostream &out, FileSystemAction action);
-
 enum EntryKind
 {
   KIND_FILE = 0,
   KIND_DIRECTORY = 1,
-  KIND_UNKNOWN = 2
+  KIND_UNKNOWN = 2,
+  KIND_MIN = KIND_FILE,
+  KIND_MAX = KIND_UNKNOWN
 };
 
 std::ostream &operator<<(std::ostream &out, EntryKind kind);
@@ -36,30 +28,71 @@ using ChannelID = uint_fast32_t;
 
 const ChannelID NULL_CHANNEL_ID = 0;
 
+enum FileSystemAction
+{
+  ACTION_CREATED = 0,
+  ACTION_DELETED = 1,
+  ACTION_MODIFIED = 2,
+  ACTION_RENAMED = 3,
+  ACTION_MIN = ACTION_CREATED,
+  ACTION_MAX = ACTION_RENAMED
+};
+
+std::ostream &operator<<(std::ostream &out, FileSystemAction action);
+
 class FileSystemPayload
 {
 public:
-  FileSystemPayload(ChannelID channel_id,
-    FileSystemAction action,
-    EntryKind entry_kind,
+  static FileSystemPayload created(ChannelID channel_id, std::string &&path, const EntryKind &kind)
+  {
+    return FileSystemPayload(channel_id, ACTION_CREATED, kind, "", std::move(path));
+  }
+
+  static FileSystemPayload modified(ChannelID channel_id, std::string &&path, const EntryKind &kind)
+  {
+    return FileSystemPayload(channel_id, ACTION_MODIFIED, kind, "", std::move(path));
+  }
+
+  static FileSystemPayload deleted(ChannelID channel_id, std::string &&path, const EntryKind &kind)
+  {
+    return FileSystemPayload(channel_id, ACTION_DELETED, kind, "", std::move(path));
+  }
+
+  static FileSystemPayload renamed(ChannelID channel_id,
     std::string &&old_path,
-    std::string &&path);
+    std::string &&path,
+    const EntryKind &kind)
+  {
+    return FileSystemPayload(channel_id, ACTION_RENAMED, kind, std::move(old_path), std::move(path));
+  }
+
   FileSystemPayload(FileSystemPayload &&original) noexcept;
+
   ~FileSystemPayload() = default;
+
+  const ChannelID &get_channel_id() const { return channel_id; }
+
+  const FileSystemAction &get_filesystem_action() const { return action; }
+
+  const EntryKind &get_entry_kind() const { return entry_kind; }
+
+  const std::string &get_old_path() const { return old_path; }
+
+  const std::string &get_path() const { return path; }
+
+  std::string describe() const;
 
   FileSystemPayload(const FileSystemPayload &original) = delete;
   FileSystemPayload &operator=(const FileSystemPayload &original) = delete;
   FileSystemPayload &operator=(FileSystemPayload &&original) = delete;
 
-  const ChannelID &get_channel_id() const { return channel_id; }
-  const FileSystemAction &get_filesystem_action() const { return action; }
-  const EntryKind &get_entry_kind() const { return entry_kind; }
-  const std::string &get_old_path() const { return old_path; }
-  const std::string &get_path() const { return path; }
-
-  std::string describe() const;
-
 private:
+  FileSystemPayload(ChannelID channel_id,
+    FileSystemAction action,
+    EntryKind entry_kind,
+    std::string &&old_path,
+    std::string &&path);
+
   const ChannelID channel_id;
   const FileSystemAction action;
   const EntryKind entry_kind;
@@ -89,52 +122,167 @@ const CommandID NULL_COMMAND_ID = 0;
 class CommandPayload
 {
 public:
-  CommandPayload(CommandAction action,
-    CommandID id = NULL_COMMAND_ID,
-    std::string &&root = "",
-    uint_fast32_t arg = NULL_CHANNEL_ID,
-    size_t split_count = 1);
   CommandPayload(CommandPayload &&original) noexcept;
+
+  explicit CommandPayload(const CommandPayload &original);
+
   ~CommandPayload() = default;
 
-  CommandPayload(const CommandPayload &original) = delete;
-  CommandPayload &operator=(const CommandPayload &original) = delete;
-  CommandPayload &operator=(CommandPayload &&original) = delete;
-
   CommandID get_id() const { return id; }
+
   const CommandAction &get_action() const { return action; }
+
   const std::string &get_root() const { return root; }
+
   const uint_fast32_t &get_arg() const { return arg; }
+
   const ChannelID &get_channel_id() const { return arg; }
+
+  const bool &get_recursive() const { return recursive; }
+
   const size_t &get_split_count() const { return split_count; }
 
   std::string describe() const;
 
+  CommandPayload &operator=(const CommandPayload &original) = delete;
+  CommandPayload &operator=(CommandPayload &&original) = delete;
+
 private:
+  CommandPayload(CommandAction action,
+    CommandID id,
+    std::string &&root,
+    uint_fast32_t arg,
+    bool recursive,
+    size_t split_count);
+
   const CommandID id;
   const CommandAction action;
   std::string root;
   const uint_fast32_t arg;
+  bool recursive;
   const size_t split_count;
+
+  friend class CommandPayloadBuilder;
+};
+
+class CommandPayloadBuilder
+{
+public:
+  static CommandPayloadBuilder add(ChannelID channel_id, std::string &&root, bool recursive, size_t split_count)
+  {
+    return CommandPayloadBuilder(COMMAND_ADD, std::move(root), channel_id, recursive, split_count);
+  }
+
+  static CommandPayloadBuilder remove(ChannelID channel_id)
+  {
+    return CommandPayloadBuilder(COMMAND_REMOVE, "", channel_id, false, 1);
+  }
+
+  static CommandPayloadBuilder log_to_file(std::string &&log_file)
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_FILE, std::move(log_file), NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder log_to_stderr()
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_STDERR, "", NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder log_to_stdout()
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_STDOUT, "", NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder log_disable()
+  {
+    return CommandPayloadBuilder(COMMAND_LOG_DISABLE, "", NULL_CHANNEL_ID, false, 1);
+  }
+
+  static CommandPayloadBuilder polling_interval(const uint_fast32_t &interval)
+  {
+    return CommandPayloadBuilder(COMMAND_POLLING_INTERVAL, "", interval, false, 1);
+  }
+
+  static CommandPayloadBuilder polling_throttle(const uint_fast32_t &throttle)
+  {
+    return CommandPayloadBuilder(COMMAND_POLLING_THROTTLE, "", throttle, false, 1);
+  }
+
+  static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
+
+  CommandPayloadBuilder(CommandPayloadBuilder &&original) noexcept :
+    id{original.id},
+    action{original.action},
+    root{std::move(original.root)},
+    arg{original.arg},
+    recursive{original.recursive},
+    split_count{original.split_count}
+  {
+    //
+  }
+
+  ~CommandPayloadBuilder() = default;
+
+  CommandPayloadBuilder &set_id(CommandID id)
+  {
+    this->id = id;
+    return *this;
+  }
+
+  CommandPayload build()
+  {
+    assert(action >= COMMAND_MIN && action <= COMMAND_MAX);
+    return CommandPayload(action, id, std::move(root), arg, recursive, split_count);
+  }
+
+  CommandPayloadBuilder(const CommandPayloadBuilder &) = delete;
+  CommandPayloadBuilder &operator=(const CommandPayloadBuilder &) = delete;
+  CommandPayloadBuilder &operator=(CommandPayloadBuilder &&) = delete;
+
+private:
+  CommandPayloadBuilder(CommandAction action,
+    std::string &&root,
+    uint_fast32_t arg,
+    bool recursive,
+    size_t split_count) :
+    id{NULL_COMMAND_ID},
+    action{action},
+    root{std::move(root)},
+    arg{arg},
+    recursive{recursive},
+    split_count{split_count}
+  {}
+
+  CommandID id;
+  CommandAction action;
+  std::string root;
+  uint_fast32_t arg;
+  bool recursive;
+  size_t split_count;
 };
 
 class AckPayload
 {
 public:
   AckPayload(CommandID key, ChannelID channel_id, bool success, std::string &&message);
+
   AckPayload(AckPayload &&original) = default;
+
   ~AckPayload() = default;
+
+  const CommandID &get_key() const { return key; }
+
+  const ChannelID &get_channel_id() const { return channel_id; }
+
+  const bool &was_successful() const { return success; }
+
+  const std::string &get_message() const { return message; }
+
+  std::string describe() const;
 
   AckPayload(const AckPayload &original) = delete;
   AckPayload &operator=(const AckPayload &original) = delete;
   AckPayload &operator=(AckPayload &&original) = delete;
-
-  const CommandID &get_key() const { return key; }
-  const ChannelID &get_channel_id() const { return channel_id; }
-  const bool &was_successful() const { return success; }
-  const std::string &get_message() const { return message; }
-
-  std::string describe() const;
 
 private:
   const CommandID key;
@@ -158,20 +306,26 @@ public:
   static Message ack(const Message &original, const Result<> &result);
 
   explicit Message(FileSystemPayload &&payload);
+
   explicit Message(CommandPayload &&payload);
+
   explicit Message(AckPayload &&payload);
+
   Message(Message &&original) noexcept;
+
   ~Message();
+
+  const FileSystemPayload *as_filesystem() const;
+
+  const CommandPayload *as_command() const;
+
+  const AckPayload *as_ack() const;
+
+  std::string describe() const;
 
   Message(const Message &) = delete;
   Message &operator=(const Message &) = delete;
   Message &operator=(Message &&) = delete;
-
-  const FileSystemPayload *as_filesystem() const;
-  const CommandPayload *as_command() const;
-  const AckPayload *as_ack() const;
-
-  std::string describe() const;
 
 private:
   MessageKind kind;
@@ -185,8 +339,11 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &stream, const FileSystemPayload &e);
+
 std::ostream &operator<<(std::ostream &stream, const CommandPayload &e);
+
 std::ostream &operator<<(std::ostream &stream, const AckPayload &e);
+
 std::ostream &operator<<(std::ostream &stream, const Message &e);
 
 #endif
