@@ -13,7 +13,7 @@
     "format:js": "standard --fix",
     "build:debug": "node script/helper/gen-compilation-db.js rebuild --debug",
     "test": "mocha --require test/global.js --require mocha-stress --recursive --harmony",
-    "test:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js --recursive",
+    "test:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js --require mocha-stress --recursive",
     "ci:appveyor": "npm run test -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5 --timeout 30000",
     "ci:circle": "npm run test -- --fgrep '^mac' --invert --reporter mocha-junit-reporter --reporter-options mochaFile=${CIRCLE_TEST_REPORTS}/mocha/test-results.xml",
     "ci:travis": "npm run test -- --fgrep '^linux' --invert --reporter list",
