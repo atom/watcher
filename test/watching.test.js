@@ -113,5 +113,41 @@ describe('watching a directory', function () {
     await until('modification event arrives', matcher.allEvents({path: internalFile}))
   })
 
+  it('can watch a directory nested within an already-watched directory', async function () {
+    const rootFile = fixture.watchPath('root-file.txt')
+    const subDir = fixture.watchPath('subdir')
+    const subFile = fixture.watchPath('subdir', 'sub-file.txt')
+
+    await fs.mkdir(subDir)
+    await fs.writeFile(rootFile, 'root\n')
+    await fs.writeFile(subFile, 'sub\n')
+
+    const parent = new EventMatcher(fixture)
+    await parent.watch([], {})
+
+    const child = new EventMatcher(fixture)
+    const nw = await child.watch(['subdir'], {})
+
+    await fs.appendFile(rootFile, 'change 0\n')
+    await fs.appendFile(subFile, 'change 0\n')
+
+    await until('parent events arrive', parent.allEvents(
+      {path: rootFile},
+      {path: subFile}
+    ))
+    await until('child events arrive', parent.allEvents(
+      {path: subFile}
+    ))
+
+    await nw.stop()
+    parent.reset()
+
+    await fs.appendFile(rootFile, 'change 1\n')
+    await fs.appendFile(subFile, 'change 1\n')
+
+    await until('parent events arrive', parent.allEvents(
+      {path: rootFile},
+      {path: subFile}
+    ))
   })
 })
