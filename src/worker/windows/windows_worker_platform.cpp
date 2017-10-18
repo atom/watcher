@@ -140,7 +140,7 @@ public:
 
     ostream &logline = LOGGER << "Added directory root " << root_path;
     if (!recursive) logline << " (non-recursive)";
-    logline << "." << endl;
+    logline << " at channel " << channel << "." << endl;
 
     Result<bool> schedr = sub->schedule(&event_helper);
     if (schedr.is_error()) return schedr.propagate<bool>();
