@@ -78,7 +78,7 @@ describe('NativeWatcherRegistry', function () {
     registry = new NativeWatcherRegistry(normalizedPath => createNative(normalizedPath))
   })
 
-  it('attaches a Watcher to a newly created NativeWatcher for a new directory', async function () {
+  it('attaches a PathWatcher to a newly created NativeWatcher for a new directory', async function () {
     const watcher = new MockWatcher(absolute('some', 'path'))
     const NATIVE = new MockNative('created')
     createNative = () => NATIVE
@@ -129,7 +129,7 @@ describe('NativeWatcherRegistry', function () {
     assert.strictEqual(watcher.native, EXISTING)
   })
 
-  it('adopts Watchers from NativeWatchers on child directories', async function () {
+  it('adopts PathWatchers from NativeWatchers on child directories', async function () {
     const parentDir = absolute('existing', 'path')
     const childDir0 = path.join(parentDir, 'child', 'directory', 'zero')
     const childDir1 = path.join(parentDir, 'child', 'directory', 'one')
