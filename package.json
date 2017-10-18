@@ -41,6 +41,7 @@
     "mocha-stress": "^1.0.0",
     "shell-quote": "^1.6.1",
     "standard": "10.0.2",
+    "temp": "^0.8.3",
     "test-until": "^1.1.1"
   },
   "dependencies": {
