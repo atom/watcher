@@ -3,7 +3,7 @@ const fs = require('fs-extra')
 const path = require('path')
 
 const {CompositeDisposable} = require('event-kit')
-const {watchPath, stopAllWatchers, printWatchers} = require('../lib')
+const {watchPath, stopAllWatchers} = require('../lib')
 
 process.on('unhandledRejection', r => console.log(r))
 
@@ -24,7 +24,7 @@ describe('exported functions', function () {
     await Promise.all(
       tempDirs.map(tempDir => {
         return fs.remove(tempDir, {maxBusyTries: 1})
-          .catch(err => { console.warn('Unable to delete fixture directory', err)})
+          .catch(err => { console.warn('Unable to delete fixture directory', err) })
       })
     )
     tempDirs = []
