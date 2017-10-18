@@ -1,4 +1,4 @@
-const {status} = require('../lib/native-watcher')
+const {status} = require('../lib/binding')
 const {Fixture} = require('./helper')
 
 describe('polling', function () {

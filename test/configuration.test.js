@@ -1,7 +1,7 @@
 /* eslint-dev mocha */
 const fs = require('fs-extra')
 
-const {configure, STDERR} = require('../lib/native-watcher')
+const {configure} = require('../lib/binding')
 const {Fixture} = require('./helper')
 
 describe('configuration', function () {
