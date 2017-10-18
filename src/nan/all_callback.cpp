@@ -1,4 +1,4 @@
-#include <forward_list>
+#include <list>
 #include <memory>
 #include <nan.h>
 #include <utility>
@@ -13,7 +13,6 @@ using Nan::FunctionCallback;
 using Nan::FunctionCallbackInfo;
 using Nan::HandleScope;
 using std::bind;
-using std::forward_list;
 using std::list;
 using std::move;
 using std::placeholders::_1;
