@@ -50,7 +50,6 @@ class MockNative {
   constructor (name) {
     this.name = name
     this.attached = []
-    this.disposed = false
     this.stopped = false
 
     this.emitter = new Emitter()
@@ -64,10 +63,6 @@ class MockNative {
 
   onWillStop (callback) {
     return this.emitter.on('will-stop', callback)
-  }
-
-  dispose () {
-    this.disposed = true
   }
 
   stop () {
@@ -180,15 +175,12 @@ describe('NativeWatcherRegistry', function () {
 
     assert.strictEqual(watcher0.native, PARENT)
     assert.strictEqual(CHILD0.stopped, true)
-    assert.strictEqual(CHILD0.disposed, true)
 
     assert.strictEqual(watcher1.native, PARENT)
     assert.strictEqual(CHILD1.stopped, true)
-    assert.strictEqual(CHILD1.disposed, true)
 
     assert.strictEqual(watcher2.native, OTHER)
     assert.strictEqual(OTHER.stopped, false)
-    assert.strictEqual(OTHER.disposed, false)
   })
 
   describe('removing NativeWatchers', function () {
