@@ -49,7 +49,7 @@ describe('configuration', function () {
     })
 
     describe("after it's started", function () {
-      it.stress(100, 'configures the logger', async function () {
+      it('configures the logger', async function () {
         await configure({mainLog: STDERR})
 
         await fixture.watch([], {poll: true}, () => {})
