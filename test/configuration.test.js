@@ -50,8 +50,6 @@ describe('configuration', function () {
 
     describe("after it's started", function () {
       it('configures the logger', async function () {
-        await configure({mainLog: STDERR})
-
         await fixture.watch([], {poll: true}, () => {})
 
         await configure({pollingLog: fixture.pollingLogFile})
