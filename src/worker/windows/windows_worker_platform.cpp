@@ -222,9 +222,6 @@ public:
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
     Result<bool> next = sub->schedule(&event_helper);
-    if (next.is_error()) {
-      report_error(string(next.get_error()));
-    }
 
     // Process received events.
     MessageBuffer buffer;
