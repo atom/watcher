@@ -22,6 +22,9 @@ public:
   // enqueue SideEffects based on the event's mask.
   Result<> accept_event(MessageBuffer &buffer, CookieJar &jar, SideEffect &side, const inotify_event &event);
 
+  // Access the Channel ID this WatchedDirectory will broadcast on.
+  ChannelID get_channel_id() { return channel_id; }
+
   // Access the watch descriptor that corresponds to this directory.
   int get_descriptor() { return wd; }
 
