@@ -17,6 +17,7 @@ describe('exported functions', function () {
   afterEach(async function () {
     subs.dispose()
     await stopAllWatchers()
+    await tempCleanup()
   })
 
   function tempMkdir (...args) {
@@ -26,6 +27,18 @@ describe('exported functions', function () {
           reject(err)
         } else {
           resolve(dirPath)
+        }
+      })
+    })
+  }
+
+  function tempCleanup () {
+    return new Promise((resolve, reject) => {
+      temp.cleanup(err => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
         }
       })
     })
