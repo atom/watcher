@@ -55,14 +55,14 @@ describe('exported functions', function () {
 
   describe('watchPath()', function () {
     it('resolves the returned promise when the watcher begins listening', async function () {
-      const rootDir = await tempMkdir('atom-fsmanager-test-')
+      const rootDir = await tempMkdir('atom-watcher-test-')
 
       const watcher = await watchPath(rootDir, {}, () => {})
       assert.strictEqual(watcher.constructor.name, 'PathWatcher')
     })
 
     it('reuses an existing native watcher and resolves getStartPromise immediately if attached to a running watcher', async function () {
-      const rootDir = await tempMkdir('atom-fsmanager-test-')
+      const rootDir = await tempMkdir('atom-watcher-test-')
 
       const watcher0 = await watchPath(rootDir, {}, () => {})
       const watcher1 = await watchPath(rootDir, {}, () => {})
@@ -71,7 +71,7 @@ describe('exported functions', function () {
     })
 
     it("reuses existing native watchers even while they're still starting", async function () {
-      const rootDir = await tempMkdir('atom-fsmanager-test-')
+      const rootDir = await tempMkdir('atom-watcher-test-')
 
       const [watcher0, watcher1] = await Promise.all([
         watchPath(rootDir, {}, () => {}),
@@ -81,7 +81,7 @@ describe('exported functions', function () {
     })
 
     it("doesn't attach new watchers to a native watcher that's stopping", async function () {
-      const rootDir = await tempMkdir('atom-fsmanager-test-')
+      const rootDir = await tempMkdir('atom-watcher-test-')
 
       const watcher0 = await watchPath(rootDir, {}, () => {})
       const native0 = watcher0.native
@@ -93,7 +93,7 @@ describe('exported functions', function () {
     })
 
     it('reuses an existing native watcher on a parent directory and filters events', async function () {
-      const rootDir = await tempMkdir('atom-fsmanager-test-').then(fs.realpath)
+      const rootDir = await tempMkdir('atom-watcher-test-').then(fs.realpath)
       const rootFile = path.join(rootDir, 'rootfile.txt')
       const subDir = path.join(rootDir, 'subdir')
       const subFile = path.join(subDir, 'subfile.txt')
@@ -120,7 +120,7 @@ describe('exported functions', function () {
     })
 
     it('adopts existing child watchers and filters events appropriately to them', async function () {
-      const parentDir = await tempMkdir('atom-fsmanager-test-').then(fs.realpath)
+      const parentDir = await tempMkdir('atom-watcher-test-').then(fs.realpath)
 
       // Create the directory tree
       const rootFile = path.join(parentDir, 'rootfile.txt')
