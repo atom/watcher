@@ -1,11 +1,13 @@
-const temp = require('temp').track()
+const temp = require('temp')
 const fs = require('fs-extra')
 const path = require('path')
 
 const {CompositeDisposable} = require('event-kit')
-const {watchPath, stopAllWatchers} = require('../lib')
+const {watchPath, stopAllWatchers, printWatchers} = require('../lib')
 
 process.on('unhandledRejection', r => console.log(r))
+
+let tempDirs = []
 
 describe('exported functions', function () {
   let subs
@@ -16,8 +18,16 @@ describe('exported functions', function () {
 
   afterEach(async function () {
     subs.dispose()
+
     await stopAllWatchers()
-    await tempCleanup()
+
+    await Promise.all(
+      tempDirs.map(tempDir => {
+        return fs.remove(tempDir, {maxBusyTries: 1})
+          .catch(err => { console.warn('Unable to delete fixture directory', err)})
+      })
+    )
+    tempDirs = []
   })
 
   function tempMkdir (...args) {
@@ -26,19 +36,8 @@ describe('exported functions', function () {
         if (err) {
           reject(err)
         } else {
+          tempDirs.push(dirPath)
           resolve(dirPath)
-        }
-      })
-    })
-  }
-
-  function tempCleanup () {
-    return new Promise((resolve, reject) => {
-      temp.cleanup(err => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
         }
       })
     })
