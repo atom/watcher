@@ -8,6 +8,7 @@
     "lint": "npm run lint:js && npm run lint:cpp",
     "lint:js": "standard",
     "lint:cpp": "script/c++-lint",
+    "iwyu": "node script/helper/iwyu.js",
     "format": "npm run format:js && npm run format:cpp",
     "format:cpp": "script/c++-format",
     "format:js": "standard --fix",
