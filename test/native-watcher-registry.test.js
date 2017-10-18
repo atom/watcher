@@ -65,9 +65,9 @@ class MockNative {
     return this.emitter.on('will-stop', callback)
   }
 
-  stop () {
+  stop (split = true) {
     this.stopped = true
-    this.emitter.emit('will-stop')
+    this.emitter.emit('will-stop', split)
   }
 }
 
