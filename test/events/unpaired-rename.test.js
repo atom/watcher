@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
 const {Fixture} = require('../helper')
-const {EventMatcher} = require('./matcher');
+const {EventMatcher} = require('../matcher');
 
 [false, true].forEach(poll => {
   describe(`unpaired rename events with poll = ${poll}`, function () {
@@ -13,7 +13,7 @@ const {EventMatcher} = require('./matcher');
       await fixture.log()
 
       matcher = new EventMatcher(fixture)
-      await matcher.watch({poll})
+      await matcher.watch([], {poll})
     })
 
     afterEach(async function () {

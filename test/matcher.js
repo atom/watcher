@@ -9,12 +9,11 @@ class EventMatcher {
   constructor (fixture) {
     this.fixture = fixture
 
-    this.errors = []
-    this.events = []
+    this.reset()
   }
 
-  watch (options) {
-    return this.fixture.watch([], options, (err, events) => {
+  watch (...args) {
+    return this.fixture.watch(...args, (err, events) => {
       this.errors.push(err)
       this.events.push(...events)
     })
@@ -54,6 +53,11 @@ class EventMatcher {
     return this.events.every(event => {
       return specs.every(spec => !specMatches(spec, event))
     })
+  }
+
+  reset () {
+    this.errors = []
+    this.events = []
   }
 }
 

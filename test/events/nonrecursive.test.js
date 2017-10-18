@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
 const {Fixture} = require('../helper')
-const {EventMatcher} = require('./matcher');
+const {EventMatcher} = require('../matcher');
 
 [false, true].forEach(poll => {
   describe(`nonrecursive watching with poll = ${poll}`, function () {
@@ -18,7 +18,7 @@ const {EventMatcher} = require('./matcher');
       ])
 
       matcher = new EventMatcher(fixture)
-      await matcher.watch({poll, recursive: false})
+      await matcher.watch([], {poll, recursive: false})
     })
 
     afterEach(async function () {
