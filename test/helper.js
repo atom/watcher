@@ -69,7 +69,7 @@ class Fixture {
     this.subs.dispose()
     this.subs = new CompositeDisposable()
 
-    const natives = new Set(this.watchers.map(watcher => watcher.native || watcher).filter(Boolean))
+    const natives = new Set(this.watchers.map(watcher => watcher.getNativeWatcher()).filter(Boolean))
     await Promise.all(Array.from(natives, native => native.stop(false)))
 
     if (process.platform === 'win32') {
