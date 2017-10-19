@@ -26,8 +26,9 @@ function parts (fullPath) {
 }
 
 class MockWatcher {
-  constructor (normalizedPath) {
+  constructor (normalizedPath, options) {
     this.normalizedPath = normalizedPath
+    this.options = options
     this.native = null
   }
 
@@ -345,6 +346,186 @@ describe('NativeWatcherRegistry', function () {
         missing: () => false,
         children: () => false
       }))
+    })
+
+    it('splits to non-recursive and recursive NativeWatchers', async function () {
+      const PARENT = new MockNative('parent')
+      const CHILD0 = new MockNative('child 0')
+      const CHILD1 = new MockNative('child 1')
+      const CHILD2 = new MockNative('child 2')
+
+      const parentDir = absolute('root')
+      const child0Dir = absolute('root', 'nonrec0')
+      const child1Dir = absolute('root', 'nonrec0', 'subdir', 'rec0')
+      const child2Dir = absolute('root', 'rec1')
+      const child3Dir = absolute('root', 'rec1', 'nonrec1')
+
+      createNative = (thePath, opts) => {
+        if (thePath === parentDir) {
+          assert.isTrue(opts.recursive)
+          return PARENT
+        } else if (thePath === child0Dir) {
+          assert.isFalse(opts.recursive)
+          return CHILD0
+        } else if (thePath === child1Dir) {
+          assert.isTrue(opts.recursive)
+          return CHILD1
+        } else if (thePath === child2Dir) {
+          assert.isFalse(opts.recursive)
+          return CHILD2
+        }
+
+        return new MockNative('nope')
+      }
+
+      const parentWatcher = new MockWatcher(parentDir, {recursive: true})
+      const child0Watcher = new MockWatcher(child0Dir, {recursive: false})
+      const child1Watcher = new MockWatcher(child1Dir, {recursive: true})
+      const child2Watcher = new MockWatcher(child2Dir, {recursive: true})
+      const child3Watcher = new MockWatcher(child3Dir, {recursive: false})
+      await registry.attach(parentWatcher)
+      await Promise.all(
+        [child0Watcher, child1Watcher, child2Watcher, child3Watcher].map(w => registry.attach(w))
+      )
+
+      assert.strictEqual(parentWatcher.native, PARENT)
+      assert.strictEqual(child0Watcher.native, PARENT)
+      assert.strictEqual(child1Watcher.native, PARENT)
+      assert.strictEqual(child2Watcher.native, PARENT)
+      assert.strictEqual(child3Watcher.native, PARENT)
+
+      PARENT.stop()
+
+      assert.strictEqual(child0Watcher.native, CHILD0)
+      assert.strictEqual(child1Watcher.native, CHILD1)
+      assert.strictEqual(child2Watcher.native, CHILD2)
+      assert.strictEqual(child3Watcher.native, CHILD2)
+    })
+  })
+
+  describe('non-recursive PathWatchers', function () {
+    it('attaches to an existing non-recursive NativeWatcher on the same directory', async function () {
+      const EXISTING = new MockNative('existing')
+      const existingPath = absolute('existing', 'path')
+      let firstTime = true
+      createNative = () => {
+        if (firstTime) {
+          firstTime = false
+          return EXISTING
+        }
+
+        return new MockNative('nope')
+      }
+      await registry.attach(new MockWatcher(existingPath, {recursive: false}))
+
+      const watcher = new MockWatcher(existingPath, {recursive: false})
+      await registry.attach(watcher)
+
+      assert.strictEqual(watcher.native, EXISTING)
+    })
+
+    describe('attaches to an existing recursive NativeWatcher', function () {
+      let existingPath, EXISTING
+
+      beforeEach(async function () {
+        EXISTING = new MockNative('existing')
+        existingPath = absolute('existing', 'path')
+        let firstTime = true
+        createNative = () => {
+          if (firstTime) {
+            firstTime = false
+            return EXISTING
+          }
+
+          return new MockNative('nope')
+        }
+
+        await registry.attach(new MockWatcher(existingPath, {recursive: true}))
+      })
+
+      it('on the same directory', async function () {
+        const watcher = new MockWatcher(existingPath, {recursive: false})
+        await registry.attach(watcher)
+        assert.strictEqual(watcher.native, EXISTING)
+      })
+
+      it('on a parent directory', async function () {
+        const childPath = absolute('existing', 'path', 'subdir')
+        const watcher = new MockWatcher(childPath, {recursive: false})
+        await registry.attach(watcher)
+        assert.strictEqual(watcher.native, EXISTING)
+      })
+    })
+
+    describe('re-attaches to a new recursive NativeWatcher', function () {
+      let existingPath, existingWatcher, EXISTING, CREATED
+
+      beforeEach(async function () {
+        EXISTING = new MockNative('existing')
+        CREATED = new MockNative('created')
+        existingPath = absolute('existing', 'path', 'subdirectory')
+        let count = 0
+        createNative = () => {
+          if (count === 0) {
+            count++
+            return EXISTING
+          } else if (count === 1) {
+            count++
+            return CREATED
+          }
+
+          return new MockNative('nope')
+        }
+
+        existingWatcher = new MockWatcher(existingPath, {recursive: false})
+        await registry.attach(existingWatcher)
+      })
+
+      it('when the same directory is watched recursively', async function () {
+        const watcher = new MockWatcher(existingPath, {recursive: true})
+        await registry.attach(watcher)
+
+        assert.strictEqual(watcher.native, CREATED)
+        assert.strictEqual(existingWatcher.native, CREATED)
+      })
+
+      it('when a parent directory is watched recursively', async function () {
+        const parentDir = absolute('existing', 'path')
+        const watcher = new MockWatcher(parentDir, {recursive: true})
+        await registry.attach(watcher)
+
+        assert.strictEqual(watcher.native, CREATED)
+        assert.strictEqual(existingWatcher.native, CREATED)
+      })
+    })
+
+    it('does not prevent a child directory from being watched with a new recursive NativeWatcher', async function () {
+      const parentDir = absolute('existing', 'path')
+      const childDir = absolute('existing', 'path', 'child', 'directory')
+
+      const PARENT = new MockNative('existing')
+      const CHILD = new MockNative('created')
+
+      createNative = (thePath, opts) => {
+        if (thePath === parentDir) {
+          assert.isFalse(opts.recursive)
+          return PARENT
+        } else if (thePath === childDir) {
+          assert.isTrue(opts.recursive)
+          return CHILD
+        }
+
+        return new MockNative('nope')
+      }
+
+      const parentWatcher = new MockWatcher(parentDir, {recursive: false})
+      await registry.attach(parentWatcher)
+      assert.strictEqual(parentWatcher.native, PARENT)
+
+      const childWatcher = new MockWatcher(childDir, {recursive: true})
+      await registry.attach(childWatcher)
+      assert.strictEqual(childWatcher.native, CHILD)
+      assert.strictEqual(parentWatcher.native, PARENT)
     })
   })
 })
