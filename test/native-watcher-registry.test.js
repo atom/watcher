@@ -28,22 +28,28 @@ function parts (fullPath) {
 class MockWatcher {
   constructor (normalizedPath, options) {
     this.normalizedPath = normalizedPath
-    this.options = options
+    this.options = Object.assign({recursive: true}, options)
     this.native = null
+  }
+
+  getOptions () {
+    return this.options
   }
 
   getNormalizedPathPromise () {
     return Promise.resolve(this.normalizedPath)
   }
 
-  attachToNative (native, nativePath) {
-    if (this.normalizedPath.startsWith(nativePath)) {
-      if (this.native) {
-        this.native.attached = this.native.attached.filter(each => each !== this)
-      }
-      this.native = native
-      this.native.attached.push(this)
+  attachToNative (native, nativePath, options) {
+    if (this.native === native) return
+    if (!this.normalizedPath.startsWith(nativePath)) return
+    if (!options.recursive && this.normalizedPath !== nativePath) return
+
+    if (this.native) {
+      this.native.attached = this.native.attached.filter(each => each !== this)
     }
+    this.native = native
+    this.native.attached.push(this)
   }
 }
 
@@ -56,9 +62,9 @@ class MockNative {
     this.emitter = new Emitter()
   }
 
-  reattachTo (newNative, nativePath) {
+  reattachTo (newNative, nativePath, options) {
     for (const watcher of this.attached) {
-      watcher.attachToNative(newNative, nativePath)
+      watcher.attachToNative(newNative, nativePath, options)
     }
   }
 
@@ -76,7 +82,7 @@ describe('NativeWatcherRegistry', function () {
   let createNative, registry
 
   beforeEach(function () {
-    registry = new NativeWatcherRegistry(normalizedPath => createNative(normalizedPath))
+    registry = new NativeWatcherRegistry((normalizedPath, options) => createNative(normalizedPath, options))
   })
 
   it('attaches a PathWatcher to a newly created NativeWatcher for a new directory', async function () {
@@ -371,7 +377,7 @@ describe('NativeWatcherRegistry', function () {
           assert.isTrue(opts.recursive)
           return CHILD1
         } else if (thePath === child2Dir) {
-          assert.isFalse(opts.recursive)
+          assert.isTrue(opts.recursive)
           return CHILD2
         }
 
@@ -404,7 +410,7 @@ describe('NativeWatcherRegistry', function () {
   })
 
   describe('non-recursive PathWatchers', function () {
-    it('attaches to an existing non-recursive NativeWatcher on the same directory', async function () {
+    it('attach to an existing non-recursive NativeWatcher on the same directory', async function () {
       const EXISTING = new MockNative('existing')
       const existingPath = absolute('existing', 'path')
       let firstTime = true
@@ -424,7 +430,7 @@ describe('NativeWatcherRegistry', function () {
       assert.strictEqual(watcher.native, EXISTING)
     })
 
-    describe('attaches to an existing recursive NativeWatcher', function () {
+    describe('attach to an existing recursive NativeWatcher', function () {
       let existingPath, EXISTING
 
       beforeEach(async function () {
@@ -457,7 +463,7 @@ describe('NativeWatcherRegistry', function () {
       })
     })
 
-    describe('re-attaches to a new recursive NativeWatcher', function () {
+    describe('re-attach to a new recursive NativeWatcher', function () {
       let existingPath, existingWatcher, EXISTING, CREATED
 
       beforeEach(async function () {
