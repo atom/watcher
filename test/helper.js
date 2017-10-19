@@ -11,6 +11,12 @@ class Fixture {
   constructor () {
     this.watchers = []
     this.subs = new CompositeDisposable()
+    this.createWatcher = async (watchRoot, options, callback) => {
+      const w = new NativeWatcher(watchRoot, options)
+      w.onDidChange(callback)
+      await w.start()
+      return w
+    }
   }
 
   async before () {
@@ -38,6 +44,10 @@ class Fixture {
     })
   }
 
+  createWatcherWith (cb) {
+    this.createWatcher = cb
+  }
+
   fixturePath (...subPath) {
     return path.join(this.fixtureDir, ...subPath)
   }
@@ -48,12 +58,8 @@ class Fixture {
 
   async watch (subPath, options, callback) {
     const watchRoot = this.watchPath(...subPath)
-    const watcher = new NativeWatcher(watchRoot, options)
-
-    this.subs.add(watcher.onDidChange(events => callback(null, events)))
+    const watcher = await this.createWatcher(watchRoot, options, events => callback(null, events))
     this.subs.add(watcher.onDidError(err => callback(err)))
-
-    await watcher.start()
 
     this.watchers.push(watcher)
     return watcher
@@ -63,7 +69,8 @@ class Fixture {
     this.subs.dispose()
     this.subs = new CompositeDisposable()
 
-    await Promise.all(this.watchers.map(watcher => watcher.stop()))
+    const natives = new Set(this.watchers.map(watcher => watcher.getNativeWatcher()).filter(Boolean))
+    await Promise.all(Array.from(natives, native => native.stop(false)))
 
     if (process.platform === 'win32') {
       await configure({mainLog: DISABLE, workerLog: DISABLE, pollingLog: DISABLE})
