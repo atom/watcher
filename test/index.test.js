@@ -1,10 +1,8 @@
 const fs = require('fs-extra')
-const path = require('path')
 
-const {CompositeDisposable} = require('event-kit')
 const {Fixture} = require('./helper')
 const {EventMatcher} = require('./matcher')
-const {watchPath, stopAllWatchers} = require('../lib')
+const {watchPath} = require('../lib')
 
 describe('exported functions', function () {
   let fixture
