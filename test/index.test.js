@@ -3,9 +3,9 @@ const fs = require('fs-extra')
 const path = require('path')
 
 const {CompositeDisposable} = require('event-kit')
+const {Fixture} = require('./helper')
+const {EventMatcher} = require('./matcher')
 const {watchPath, stopAllWatchers} = require('../lib')
-
-process.on('unhandledRejection', r => console.log(r))
 
 let tempDirs = []
 
@@ -177,6 +177,95 @@ describe('exported functions', function () {
         subWatcherChanges1,
         parentWatcherChanges
       ])
+    })
+
+    describe('{recursive: false}', function () {
+      let fixture
+      let immediateFile, immediateSubdir, subdirFile, deepSubdir, deepFile
+
+      beforeEach(async function () {
+        fixture = new Fixture()
+        fixture.createWatcherWith(watchPath)
+        await fixture.before()
+        await fixture.log()
+
+        immediateFile = fixture.watchPath('immediate-file.txt')
+        immediateSubdir = fixture.watchPath('subdir0')
+        subdirFile = fixture.watchPath('subdir0', 'subdir-file.txt')
+        deepSubdir = fixture.watchPath('subdir0', 'subdir1')
+        deepFile = fixture.watchPath('subdir0', 'subdir1', 'deep-file.txt')
+
+        await fs.mkdir(immediateSubdir)
+        await fs.mkdir(deepSubdir)
+        await Promise.all([
+          fs.writeFile(immediateFile, 'contents\n'),
+          fs.writeFile(subdirFile, 'contents\n'),
+          fs.writeFile(deepFile, 'contents\n')
+        ])
+      })
+
+      afterEach(async function () {
+        await fixture.after(this.currentTest)
+      })
+
+      it('only receives events for immediate children', async function () {
+        const matcher = new EventMatcher(fixture)
+
+        await matcher.watch([], {recursive: false})
+
+        await fs.appendFile(subdirFile, 'newline\n')
+        await fs.appendFile(immediateFile, 'newline\n')
+
+        await until('immediate event arrives', matcher.allEvents({path: immediateFile}))
+        assert.isTrue(matcher.noEvents({path: subdirFile}))
+      })
+
+      it('attaches to an existing non-recursive watcher at the same path', async function () {
+        const matcher0 = new EventMatcher(fixture)
+        const watcher0 = await matcher0.watch([], {recursive: false})
+
+        const matcher1 = new EventMatcher(fixture)
+        const watcher1 = await matcher1.watch([], {recursive: false})
+
+        assert.strictEqual(watcher0.native, watcher1.native)
+
+        await fs.writeFile(subdirFile, 'newline\n')
+        await fs.writeFile(immediateFile, 'newline\n')
+
+        await until('immediate event arrives on matcher 0', matcher0.allEvents({path: immediateFile}))
+        await until('immediate event arrives on matcher 1', matcher1.allEvents({path: immediateFile}))
+
+        assert.isTrue(matcher0.noEvents({path: subdirFile}))
+        assert.isTrue(matcher1.noEvents({path: subdirFile}))
+      })
+
+      it('attaches to an existing recursive watcher and filters events', async function () {
+        const matcher0 = new EventMatcher(fixture)
+        const watcher0 = await matcher0.watch([], {recursive: true})
+
+        const matcher1 = new EventMatcher(fixture)
+        const watcher1 = await matcher1.watch(['subdir0'], {recursive: false})
+
+        assert.strictEqual(watcher1.native, watcher0.native)
+
+        await fs.writeFile(subdirFile, 'newline\n')
+        await fs.writeFile(immediateFile, 'newline\n')
+        await fs.writeFile(deepFile, 'newline\n')
+
+        await until('both events arrive on matcher 0', matcher0.allEvents(
+          {path: immediateFile},
+          {path: subdirFile},
+          {path: deepFile}
+        ))
+        await until('immediate event arrives on matcher 1', matcher1.allEvents(
+          {path: subdirFile}
+        ))
+
+        assert.isTrue(matcher1.noEvents(
+          {path: immediateFile},
+          {path: deepFile}
+        ))
+      })
     })
   })
 })
