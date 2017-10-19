@@ -6,12 +6,8 @@ dist: trusty
 
 addons:
   apt:
-    sources:
-    - llvm-toolchain-trusty-5.0
     packages:
-    - clang-5.0
-    - clang-format-5.0
-    - clang-tidy-5.0
+    - clang-3.9
     - build-essential
 
 git:
@@ -21,16 +17,9 @@ branches:
   only:
   - master
 
-before_install:
-- mkdir -p ${HOME}/bin
-- ln -s /usr/bin/clang-format-5.0 ${HOME}/bin/clang-format
-- ln -s /usr/bin/clang-tidy-5.0 ${HOME}/bin/clang-tidy
-- npm install -g npm@5.4.2
-
 script:
 - npm run ci:travis
-- npm run lint
-- npm run format && git diff --exit-code -- src/ test/
+- npm run lint:js
 
 env:
   global:
