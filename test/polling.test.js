@@ -1,4 +1,4 @@
-const watcher = require('../lib')
+const {status} = require('../lib/binding')
 const {Fixture} = require('./helper')
 
 describe('polling', function () {
@@ -16,15 +16,15 @@ describe('polling', function () {
 
   describe('thread state', function () {
     it('does not run the polling thread while no paths are being polled', function () {
-      assert.equal(watcher.status().pollingThreadState, 'stopped')
+      assert.equal(status().pollingThreadState, 'stopped')
     })
 
     it('runs the polling thread when polling a directory for changes', async function () {
-      const sub = await fixture.watch([], {poll: true}, () => {})
-      assert.equal(watcher.status().pollingThreadState, 'running')
+      const watcher = await fixture.watch([], {poll: true}, () => {})
+      assert.equal(status().pollingThreadState, 'running')
 
-      await sub.unwatch()
-      await until(() => watcher.status().pollingThreadState === 'stopped')
+      await watcher.stop()
+      await until(() => status().pollingThreadState === 'stopped')
     })
   })
 })

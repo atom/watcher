@@ -140,7 +140,7 @@ public:
 
     ostream &logline = LOGGER << "Added directory root " << root_path;
     if (!recursive) logline << " (non-recursive)";
-    logline << "." << endl;
+    logline << " at channel " << channel << "." << endl;
 
     Result<bool> schedr = sub->schedule(&event_helper);
     if (schedr.is_error()) return schedr.propagate<bool>();
@@ -222,9 +222,6 @@ public:
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
     Result<bool> next = sub->schedule(&event_helper);
-    if (next.is_error()) {
-      report_error(string(next.get_error()));
-    }
 
     // Process received events.
     MessageBuffer buffer;

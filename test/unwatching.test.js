@@ -18,7 +18,7 @@ describe('unwatching a directory', function () {
     let error = null
     const events = []
 
-    const sub = await fixture.watch([], {}, (err, es) => {
+    const watcher = await fixture.watch([], {}, (err, es) => {
       error = err
       events.push(...es)
     })
@@ -29,7 +29,7 @@ describe('unwatching a directory', function () {
     await until('the event arrives', () => events.some(event => event.path === filePath))
     assert.isNull(error)
 
-    await sub.unwatch()
+    await watcher.stop()
     const eventCount = events.length
 
     await fs.writeFile(filePath, 'the modification')
@@ -43,13 +43,13 @@ describe('unwatching a directory', function () {
 
   it('is a no-op if the directory is not being watched', async function () {
     let error = null
-    const sub = await fixture.watch([], {}, err => (error = err))
+    const watcher = await fixture.watch([], {}, err => (error = err))
     assert.isNull(error)
 
-    await sub.unwatch()
+    await watcher.stop()
     assert.isNull(error)
 
-    await sub.unwatch()
+    await watcher.stop()
     assert.isNull(error)
   })
 })

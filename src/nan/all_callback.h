@@ -3,6 +3,7 @@
 
 #include <forward_list>
 #include <functional>
+#include <list>
 #include <memory>
 #include <nan.h>
 #include <v8.h>
@@ -40,9 +41,9 @@ private:
   Nan::Persistent<v8::Value> error;
   Nan::Persistent<v8::Array> results;
 
-  std::forward_list<std::shared_ptr<AllCallback>>::iterator before_it;
+  std::list<std::shared_ptr<AllCallback>>::iterator me;
 
-  static std::forward_list<std::shared_ptr<AllCallback>> retained;
+  static std::list<std::shared_ptr<AllCallback>> retained;
 };
 
 #endif

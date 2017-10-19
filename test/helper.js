@@ -2,13 +2,15 @@
 
 const path = require('path')
 const fs = require('fs-extra')
+const {CompositeDisposable} = require('event-kit')
 
-const watcher = require('../lib')
-const {DISABLE} = watcher
+const {NativeWatcher} = require('../lib/native-watcher')
+const {configure, DISABLE} = require('../lib/binding')
 
 class Fixture {
   constructor () {
-    this.subs = []
+    this.watchers = []
+    this.subs = new CompositeDisposable()
   }
 
   async before () {
@@ -29,7 +31,7 @@ class Fixture {
   }
 
   log () {
-    return watcher.configure({
+    return configure({
       mainLog: this.mainLogFile,
       workerLog: this.workerLogFile,
       pollingLog: this.pollingLogFile
@@ -46,16 +48,25 @@ class Fixture {
 
   async watch (subPath, options, callback) {
     const watchRoot = this.watchPath(...subPath)
-    const sub = await watcher.watch(watchRoot, options, callback)
-    this.subs.push(sub)
-    return sub
+    const watcher = new NativeWatcher(watchRoot, options)
+
+    this.subs.add(watcher.onDidChange(events => callback(null, events)))
+    this.subs.add(watcher.onDidError(err => callback(err)))
+
+    await watcher.start()
+
+    this.watchers.push(watcher)
+    return watcher
   }
 
   async after (currentTest) {
-    await Promise.all(this.subs.map(sub => sub.unwatch()))
+    this.subs.dispose()
+    this.subs = new CompositeDisposable()
+
+    await Promise.all(this.watchers.map(watcher => watcher.stop()))
 
     if (process.platform === 'win32') {
-      await watcher.configure({mainLog: DISABLE, workerLog: DISABLE, pollingLog: DISABLE})
+      await configure({mainLog: DISABLE, workerLog: DISABLE, pollingLog: DISABLE})
     }
 
     if (currentTest.state === 'failed' || process.env.VERBOSE) {

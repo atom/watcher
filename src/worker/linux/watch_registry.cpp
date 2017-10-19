@@ -25,6 +25,7 @@ using std::ostream;
 using std::set;
 using std::shared_ptr;
 using std::string;
+using std::unordered_multimap;
 using std::vector;
 
 static ostream &operator<<(ostream &out, const inotify_event *event)
@@ -158,6 +159,10 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
 
 Result<> WatchRegistry::remove(ChannelID channel_id)
 {
+  using WatchedDirectoryPtr = shared_ptr<WatchedDirectory>;
+  using WDMap = unordered_multimap<int, WatchedDirectoryPtr>;
+  using WDIter = WDMap::iterator;
+
   if (!is_healthy()) return health_err_result<>();
 
   auto its = by_channel.equal_range(channel_id);
@@ -169,12 +174,24 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
   LOGGER << "Stopping " << plural(wds.size(), "inotify watch descriptor") << "." << endl;
 
   by_channel.erase(channel_id);
-  for (auto &&wd : wds) {
-    by_wd.erase(wd);
+  for (auto &wd : wds) {
+    auto wd_matches = by_wd.equal_range(wd);
 
-    int err = inotify_rm_watch(inotify_fd, wd);
-    if (err == -1) {
-      LOGGER << "Unable to remove watch descriptor " << wd << ": " << errno_result<>("") << "." << endl;
+    vector<WDIter> to_erase;
+    for (auto each_wd = wd_matches.first; each_wd != wd_matches.second; ++each_wd) {
+      if (each_wd->second->get_channel_id() == channel_id) {
+        to_erase.push_back(each_wd);
+      }
+    }
+    for (WDIter &it : to_erase) {
+      by_wd.erase(it);
+    }
+
+    if (by_wd.count(wd) == 0) {
+      int err = inotify_rm_watch(inotify_fd, wd);
+      if (err == -1) {
+        LOGGER << "Unable to remove watch descriptor " << wd << ": " << errno_result<>("") << "." << endl;
+      }
     }
   }
 
