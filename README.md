@@ -99,7 +99,7 @@ const watcher = await watchPath('/var/log', {recursive: true}, (events) => {
 
 The returned `Promise` resolves to a `PathWatcher` instance when the watcher is fully installed and events are flowing. The `Promise` may reject if the path does not exist, is not a directory, or if an operating system error prevented the watcher from successfully initializing, like a thread failing to launch or memory being exhausted.
 
-The _path_ argument specifies the root directory to watch. This must be an existing directory, but may be relative, contain symlinks, or contain `.` and `..` segments. Multiple independent calls to `watchPath()` may result in `PathWatcher` instances backed by the same native event source, so it is relatively cheap to create many watchers within the same directory hierarchy across your codebase.
+The _path_ argument specifies the root directory to watch. This must be an existing directory, but may be relative, contain symlinks, or contain `.` and `..` segments. Multiple independent calls to `watchPath()` may result in `PathWatcher` instances backed by the same native event source or polling root, so it is relatively cheap to create many watchers within the same directory hierarchy across your codebase.
 
 The _options_ argument configures the nature of the watch. Pass `{}` to accept the defaults. Available options are:
 
@@ -137,7 +137,7 @@ The `callback` argument will be invoked with an `Error` with a stack trace that 
 
 ### PathWatcher.dispose()
 
-Release an event subscription. The event callback associated with this `PathWatcher` will not be called after the watcher has been disposed, synchronously. Note that the native resources used to feed events to this watcher may remain, if another active `PathWatcher` is consuming events from it, and even if they are freed as a result of this disposal they will be freed asynchronously.
+Release an event subscription. The event callback associated with this `PathWatcher` will not be called after the watcher has been disposed, synchronously. Note that the native resources or polling root used to feed events to this watcher may remain, if another active `PathWatcher` is consuming events from it, and even if they are freed as a result of this disposal they will be freed asynchronously.
 
 ```js
 const {watchPath} = require('@atom/watcher')
