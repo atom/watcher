@@ -105,7 +105,7 @@ The _options_ argument configures the nature of the watch. Pass `{}` to accept t
 
 * `recursive`: If `true`, filesystem events that occur within subdirectories will be reported as well. If `false`, only changes to immediate children of the provided path will be reported. Defaults to `true`.
 
-The _callback_ argument will be called repeatedly with each batch of filesystem events that are delivered until the [`.dispose() method`](#pathwatcher-dispose) is called. Event batches are `Arrays` containing objects with the following keys:
+The _callback_ argument will be called repeatedly with each batch of filesystem events that are delivered until the [`.dispose() method`](#pathwatcherdispose) is called. Event batches are `Arrays` containing objects with the following keys:
 
 * `action`: a `String` describing the filesystem action that occurred. One of `"created"`, `"modified"`, `"deleted"`, or `"renamed"`.
 * `kind`: a `String` distinguishing the type of filesystem entry that was acted upon, if known. One of `"file"`, `"directory"`, or `"unknown"`.
