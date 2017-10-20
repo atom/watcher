@@ -34,7 +34,7 @@ const w = await watcher.watchPath('/var/log', {}, events => {
     // "created", "modified", "deleted", "renamed"
     console.log(`Event action: ${event.action}`)
 
-    // absolute path to the filesystem entry that was touched
+    // Absolute path to the filesystem entry that was touched
     console.log(`Event path: ${event.path}`)
 
     // "file", "directory", or "unknown"
