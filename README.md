@@ -93,7 +93,7 @@ Invoke a callback with each batch of filesystem events that occur beneath a spec
 ```js
 const {watchPath} = require('@atom/watcher')
 const watcher = await watchPath('/var/log', {recursive: true}, (events) => {
-  //
+  // ...
 })
 ```
 
