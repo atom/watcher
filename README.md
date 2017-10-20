@@ -114,7 +114,7 @@ The _callback_ argument will be called repeatedly with each batch of filesystem 
 
 The callback _may_ be invoked for filesystem events that occur before the promise is resolved, but it _will_ be invoked for any changes that occur after it resolves. All three arguments are mandatory.
 
-_:spiral_note_pad: When writing tests against code that uses `watchPath`, note that you cannot easily assert that an event was **not** delivered. This is especially true on MacOS, where timestamp resolution can cause you to receive events that occurred before you even issued the `watchPath` call!_
+_:spiral_notepad: When writing tests against code that uses `watchPath`, note that you cannot easily assert that an event was **not** delivered. This is especially true on MacOS, where timestamp resolution can cause you to receive events that occurred before you even issued the `watchPath` call!_
 
 ### PathWatcher.onDidError()
 
