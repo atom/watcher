@@ -2,7 +2,7 @@
 
 On MacOS, @atom/watcher uses the [FSEvents API](https://developer.apple.com/library/content/documentation/Darwin/Conceptual/FSEvents_ProgGuide/UsingtheFSEventsFramework/UsingtheFSEventsFramework.html) from Core Foundation. Each registered watch root creates a new `FSEventStream` which is scheduled on the [`CFRunLoop`](https://developer.apple.com/documentation/corefoundation/cfrunloop-rht) associated with the single worker thread. Out-of-band commands are delivered to the worker thread by signalling a [`CFRunLoopSource`](https://developer.apple.com/documentation/corefoundation/1542679-cfrunloopsourcecreate?language=objc).
 
-## fsevents oddities
+## FSEvents oddities
 
 FSEvents coalesces filesystem events that occur at the same path within a few-second window, OR'ing together the bits set by individual actions. For example, if these events are performed in rapid succession:
 
