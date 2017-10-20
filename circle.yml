@@ -3,7 +3,7 @@ machine:
     version: 8.3
   environment:
     NVM_DIR: "${HOME}/.nvm"
-    NODE_VERSION: "8.1.4"
+    NODE_VERSION: "7.4.0"
     PATH: "${PATH}:/usr/local/opt/llvm/bin"
 
 dependencies:
@@ -14,7 +14,6 @@ dependencies:
   - echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
   - nvm install ${NODE_VERSION}
   - nvm alias default ${NODE_VERSION}
-  - npm install -g npm@5.4.2
   override:
   - npm install
 
