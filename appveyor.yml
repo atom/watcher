@@ -5,7 +5,7 @@ cache:
   - '%APPDATA%\npm-cache'
 
 environment:
-  nodejs_version: "8.1.4"
+  nodejs_version: "7.4.0"
 
 platform:
   - x86
@@ -16,7 +16,6 @@ build: off
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm config set msvs_version 2015
-  - npm install -g npm@5.4.2
   - npm install
 
 test_script:
