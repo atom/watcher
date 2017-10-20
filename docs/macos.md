@@ -70,9 +70,4 @@ FSEvents provides no mechanism to associate the old and new sides of a rename ev
 
 ## Known platform limits
 
-After roughly 450 event streams have been created and attached, `FSEventStreamStart()` will fail by returning false and emitting an (unsuppressable) error message to stderr.
-
-```
-```
-
-When this is detected @atom/watcher falls back to polling.
+After roughly 450 event streams have been created and attached, `FSEventStreamStart()` will fail by returning false. When this is detected @atom/watcher falls back to polling.
