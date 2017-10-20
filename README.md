@@ -4,7 +4,7 @@
 |:------|:-------:|------:|
 | [![Build Status](https://travis-ci.org/atom/watcher.svg?branch=master)](https://travis-ci.org/atom/watcher) | [![Build status](https://ci.appveyor.com/api/projects/status/xgm4eg6hbj53cpkl/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/watcher/branch/master) | [![CircleCI](https://circleci.com/gh/atom/watcher/tree/master.svg?style=svg)](https://circleci.com/gh/atom/watcher/tree/master) |
 
-**@atom/watcher** is a filesystem watching library for node.js built to power [Atom](https://atom.io). It prioritizes:
+**@atom/watcher** is a filesystem watching library for Node.js built to power [Atom](https://atom.io). It prioritizes:
 
 * **High fidelity** to the native filesystem watching system calls provided by each operating system.
 * **Graceful degredation** to polling when native events are unavailable.
@@ -14,7 +14,7 @@
 
 ## Installation
 
-@atom/watcher is developed against node.js 7.4.0 with the `--harmony` flag enabled, but it should work with any node version that supports async/await. Your system must be able to [build native node.js modules](https://github.com/nodejs/node-gyp#installation). @atom/watcher supports [MacOS](./docs/macos.md) _(>= MacOS 10.7)_, [Windows](./docs/windows.md) _(>= Windows XP, >= Windows Server 2003)_, and [Linux](./docs/linux.md) _(kernel >= 2.6.27, glibc >= 2.9 :point_right: Ubuntu >= 10.04, Debian >= 6, RHEL >= 6)_.
+@atom/watcher is developed against Node.js 7.4.0 with the `--harmony` flag enabled, but it should work with any Node.js version that supports `async`/`await`. Your system must be able to [build native node.js modules](https://github.com/nodejs/node-gyp#installation). @atom/watcher supports [MacOS](./docs/macos.md) _(>= MacOS 10.7)_, [Windows](./docs/windows.md) _(>= Windows XP, >= Windows Server 2003)_, and [Linux](./docs/linux.md) _(kernel >= 2.6.27, glibc >= 2.9 :point_right: Ubuntu >= 10.04, Debian >= 6, RHEL >= 6)_.
 
 ```bash
 $ npm install @atom/watcher
@@ -75,7 +75,7 @@ await watcher.configure({
 `mainLog` configures the logging of events from the main thread, in line with libuv's event loop. It may be one of:
 
 * A `String` specifying a path to log to a file. Be careful that you don't log to a directory that you're watching :innocent:
-* The constants `watcher.STDERR` or `watcher.STDOUT` to log to the node process' standard error or output streams.
+* The constants `watcher.STDERR` or `watcher.STDOUT` to log to the `node` process' standard error or output streams.
 * `watcher.DISABLE` to disable main thread logging. This is the default.
 
 `workerLog` configures logging for the worker thread, which is used to interact with native operating system filesystem watching APIs. It accepts the same arguments as `mainLog` and also defaults to `watcher.DISABLE`.
