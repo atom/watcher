@@ -14,7 +14,7 @@
 
 ## Installation
 
-@atom/watcher is developed against Node.js 7.4.0 with the `--harmony` flag enabled, but it should work with any Node.js version that supports `async`/`await`. Your system must be able to [build native node.js modules](https://github.com/nodejs/node-gyp#installation). @atom/watcher supports [MacOS](./docs/macos.md) _(>= MacOS 10.7)_, [Windows](./docs/windows.md) _(>= Windows XP, >= Windows Server 2003)_, and [Linux](./docs/linux.md) _(kernel >= 2.6.27, glibc >= 2.9 :point_right: Ubuntu >= 10.04, Debian >= 6, RHEL >= 6)_.
+@atom/watcher is developed against Node.js 7.4.0 with the `--harmony` flag enabled, but it should work with any Node.js version that supports `async`/`await`. Your system must be able to [build native Node.js modules](https://github.com/nodejs/node-gyp#installation). @atom/watcher supports [MacOS](./docs/macos.md) _(>= MacOS 10.7)_, [Windows](./docs/windows.md) _(>= Windows XP, >= Windows Server 2003)_, and [Linux](./docs/linux.md) _(kernel >= 2.6.27, glibc >= 2.9 :point_right: Ubuntu >= 10.04, Debian >= 6, RHEL >= 6)_.
 
 ```bash
 $ npm install @atom/watcher
