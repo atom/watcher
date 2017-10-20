@@ -4,16 +4,23 @@
 // for a description of the format.
 
 const path = require('path')
-const fs = require('fs-extra')
 const readline = require('readline')
-const {spawn} = require('child_process')
-const shell = require('shell-quote')
+const {spawn, execFileSync} = require('child_process')
 
 const BASE_DIR = path.resolve(__dirname, '..', '..')
 const BUILD_DIR = path.resolve(BASE_DIR, 'build')
 const OUTPUT_FILE = path.join(BUILD_DIR, 'compile_commands.json')
 const NODE_GYP_BINARY = process.platform === 'win32' ? 'node-gyp.cmd' : 'node-gyp'
 const VERBOSE = process.env.V === '1'
+
+let fs, shell
+try {
+  fs = require('fs-extra')
+  shell = require('shell-quote')
+} catch (e) {
+  execFileSync(NODE_GYP_BINARY, process.argv.slice(2), {stdio: 'inherit'})
+  process.exit(0)
+}
 
 class CompilationDatabase {
   constructor () {
