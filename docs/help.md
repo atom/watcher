@@ -97,28 +97,28 @@ In rough order of urgency:
 
    ```
    gyp WARN download NVM_NODEJS_ORG_MIRROR is deprecated and will be removed in node-gyp v4, please use NODEJS_ORG_MIRROR
-  gyp WARN download NVM_NODEJS_ORG_MIRROR is deprecated and will be removed in node-gyp v4, please use NODEJS_ORG_MIRROR
-  gyp WARN download NVM_NODEJS_ORG_MIRROR is deprecated and will be removed in node-gyp v4, please use NODEJS_ORG_MIRROR
-    CC(target) Debug/obj.target/openpa/openpa/src/opa_primitives.o
-    CC(target) Debug/obj.target/openpa/openpa/src/opa_queue.o
-    LIBTOOL-STATIC Debug/openpa.a
-    CXX(target) Debug/obj.target/nsfw/src/NSFW.o
-  ../src/NSFW.cpp:159:37: warning: 'NewInstance' is deprecated [-Wdeprecated-declarations]
-      info.GetReturnValue().Set(cons->NewInstance());
-                                      ^
-  /Users/smashwilson/.node-gyp/8.1.4/include/node/v8.h:3674:3: note: 'NewInstance' has been explicitly marked deprecated here
-    V8_DEPRECATED("Use maybe version", Local<Object> NewInstance() const);
-    ^
-  /Users/smashwilson/.node-gyp/8.1.4/include/node/v8config.h:332:29: note: expanded from macro 'V8_DEPRECATED'
-    declarator __attribute__((deprecated))
-                              ^
-  1 warning generated.
-    CXX(target) Debug/obj.target/nsfw/src/Queue.o
-    CXX(target) Debug/obj.target/nsfw/src/NativeInterface.o
-    CXX(target) Debug/obj.target/nsfw/src/Lock.o
-    CXX(target) Debug/obj.target/nsfw/src/osx/RunLoop.o
-    CXX(target) Debug/obj.target/nsfw/src/osx/FSEventsService.o
-    SOLINK_MODULE(target) Debug/nsfw.node
+    gyp WARN download NVM_NODEJS_ORG_MIRROR is deprecated and will be removed in node-gyp v4, please use NODEJS_ORG_MIRROR
+    gyp WARN download NVM_NODEJS_ORG_MIRROR is deprecated and will be removed in node-gyp v4, please use NODEJS_ORG_MIRROR
+      CC(target) Debug/obj.target/openpa/openpa/src/opa_primitives.o
+      CC(target) Debug/obj.target/openpa/openpa/src/opa_queue.o
+      LIBTOOL-STATIC Debug/openpa.a
+      CXX(target) Debug/obj.target/nsfw/src/NSFW.o
+    ../src/NSFW.cpp:159:37: warning: 'NewInstance' is deprecated [-Wdeprecated-declarations]
+        info.GetReturnValue().Set(cons->NewInstance());
+                                        ^
+    /Users/smashwilson/.node-gyp/8.1.4/include/node/v8.h:3674:3: note: 'NewInstance' has been explicitly marked deprecated here
+      V8_DEPRECATED("Use maybe version", Local<Object> NewInstance() const);
+      ^
+    /Users/smashwilson/.node-gyp/8.1.4/include/node/v8config.h:332:29: note: expanded from macro 'V8_DEPRECATED'
+      declarator __attribute__((deprecated))
+                                ^
+    1 warning generated.
+      CXX(target) Debug/obj.target/nsfw/src/Queue.o
+      CXX(target) Debug/obj.target/nsfw/src/NativeInterface.o
+      CXX(target) Debug/obj.target/nsfw/src/Lock.o
+      CXX(target) Debug/obj.target/nsfw/src/osx/RunLoop.o
+      CXX(target) Debug/obj.target/nsfw/src/osx/FSEventsService.o
+      SOLINK_MODULE(target) Debug/nsfw.node
    ```
 
    These are from [nsfw](https://github.com/axosoft/nsfw), one of the other watcher backends I test against.
