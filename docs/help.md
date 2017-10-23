@@ -1,6 +1,6 @@
 # So you want to help out
 
-First of all: thank you! Shipping complicated native code into Atom is risky, and every bug we find now saves scores of Atom users from unceremonious crashes or lock-ups. I'm going to be working on some more intensive randomized testing soon, but having multiple pairs of eyes on this is critical to avoid the pitfalls of "works on my machine" syndrome.
+First of all: Thank you! Shipping complicated native code into Atom is risky, and every bug we find now saves scores of Atom users from unceremonious crashes or lock-ups. I'm going to be working on some more intensive randomized testing soon, but having multiple pairs of eyes on this is critical to avoid the pitfalls of "works on my machine" syndrome.
 
 I've written a quick Swiss-army-knife utility to exercise @atom/watcher and compare it to other watching libraries at [@smashwilson/watcher-stress](https://github.com/smashwilson/watcher-stress). You can clone it and run it from that repository:
 
@@ -41,7 +41,7 @@ Before you begin:
 $ ulimit -c unlimited
 
 # Create a directory to write logs to *that you aren't watching.*
-$ mkdir -p ~/watcher-logs
+$ mkdir ~/watcher-logs
 ```
 
 * **Leave the CLI running on a directory you're working in day to day.**
@@ -75,7 +75,7 @@ $ mkdir -p ~/watcher-logs
 
   If you have access to any sort of non-standard filesystem, I'd love to make sure that @atom/watcher can handle it properly. Specifically, I'm interested in our behaviour on:
 
-  * Network drives on any kind: NAS, samba shares of various versions
+  * Network drives on any kind: NAS, Samba shares of various versions
   * FUSE filesystems like `sshfs` or `s3fs`.
   * Older filesystems like HFS+ on MacOS, FAT32 on Windows, anything other than ext3 on Linux.
 
@@ -136,7 +136,7 @@ In rough order of urgency:
 
 3. **Lock-ups in native code.** If the process stops responding entirely, there's probably a race condition somewhere. Logs and stack traces would be most valuable here. (MacOS lets you pull native stack traces from the Activity Monitor, for example.)
 
-4. **Excessive RAM consumption.** Especially if you notice the node process gradually consuming more and more memory as the day goes on. This means that there's a memory leak somewhere, although it will be difficult to track down where without something like [`valgrind`](http://valgrind.org/). If you feel ambitious you can speculate about the cause, but even knowing we have a leak lurking somewhere would be valuable :smile:
+4. **Excessive RAM consumption.** Especially if you notice the node process gradually consuming more and more memory as the day goes on. This means that there's a memory leak somewhere, although it will be difficult to track down where without something like [`valgrind`](http://valgrind.org/). If you feel ambitious you can speculate about the cause, but even knowing we have a leak lurking somewhere would be valuable. :smile:
 
 5. **Sustained high CPU usage.** The stress-tests _will_ churn your CPU and disk fairly heavily (because they're stress-tests) but the CLI should not. You may notice brief CLI CPU usage spikes if you clone a large git repository or unpack a big tarball, but if usage stays high or spikes when you aren't doing anything, that's a problem.
 
