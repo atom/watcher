@@ -25,11 +25,17 @@ Do you want to ask a question? Are you looking for support? The Atom message boa
 2. [Second Step]
 3. [and so on...]
 
-**Expected behavior:** [What you expect to happen]
+**Expected behavior:**
 
-**Actual behavior:** [What actually happens]
+[What you expect to happen]
 
-**Reproduces how often:** [What percentage of the time does it reproduce?]
+**Actual behavior:**
+
+[What actually happens]
+
+**Reproduces how often:**
+
+[What percentage of the time does it reproduce?]
 
 ### Versions
 
