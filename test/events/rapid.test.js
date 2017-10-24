@@ -46,6 +46,19 @@ const {EventMatcher} = require('../matcher');
           {action: 'created', kind: 'file', path: createdPath}
         ))
       })
+
+      it('understands rapid creation and rename events', async function () {
+        const originalPath = fixture.watchPath('created.txt')
+        const finalPath = fixture.watchPath('final.txt')
+
+        await fs.writeFile(originalPath, 'contents\n')
+        await fs.rename(originalPath, finalPath)
+
+        await until('both events arrive', matcher.orderedEvents(
+          {action: 'created', kind: 'file', path: originalPath},
+          {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath}
+        ))
+      })
     }
 
     it('correlates rapid file rename events', async function () {
