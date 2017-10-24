@@ -48,9 +48,9 @@ void MessageBuffer::ack(CommandID command_id, ChannelID channel_id, bool success
 
 void MessageBuffer::error(ChannelID channel_id, string &&message, bool fatal)
 {
-  Message message(ErrorPayload(channel_id, move(message), fatal));
-  LOGGER << "Emitting error message " << message << endl;
-  messages.push_back(move(message));
+  Message m(ErrorPayload(channel_id, move(message), fatal));
+  LOGGER << "Emitting error message " << m << endl;
+  messages.push_back(move(m));
 }
 
 ChannelMessageBuffer::ChannelMessageBuffer(MessageBuffer &buffer, ChannelID channel_id) :
