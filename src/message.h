@@ -300,11 +300,11 @@ public:
 
   ~ErrorPayload() = default;
 
-  const ChannelID &get_channel_id() { return channel_id; }
+  const ChannelID &get_channel_id() const { return channel_id; }
 
-  const std::string &get_message() { return message; }
+  const std::string &get_message() const { return message; }
 
-  const bool &was_fatal() { return fatal; }
+  const bool &was_fatal() const { return fatal; }
 
   std::string describe() const;
 
