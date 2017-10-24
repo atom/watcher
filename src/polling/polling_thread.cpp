@@ -53,11 +53,17 @@ Result<> PollingThread::body()
       return ok_result();
     }
 
-    cycle();
+    Result<> r = cycle();
+    if (r.is_error()) {
+      LOGGER << "Polling cycle failure " << r << "." << endl;
+      return r.propagate_as_void();
+    }
 
     if (is_healthy()) {
       LOGGER << "Sleeping for " << poll_interval.count() << "ms." << endl;
       std::this_thread::sleep_for(poll_interval);
+    } else {
+      return health_err_result<>();
     }
   }
 }
