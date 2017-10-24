@@ -38,12 +38,6 @@ void RenameBuffer::observe_event(Event &event)
   const shared_ptr<StatResult> &former = event.get_former();
   const shared_ptr<StatResult> &current = event.get_current();
 
-  if (!former->has_changed_from(*current)) {
-    // The entry is still there with the same inode.
-    // Moved away and back, maybe?
-    return;
-  }
-
   if (former->is_present()) {
     shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
     observe_present_entry(event.message_buffer(), former_present, false);
@@ -52,6 +46,11 @@ void RenameBuffer::observe_event(Event &event)
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
     observe_present_entry(event.message_buffer(), current_present, true);
+  }
+
+  if (former->is_absent() && current->is_absent()) {
+    shared_ptr<AbsentEntry> current_absent = static_pointer_cast<AbsentEntry>(current);
+    observe_absent(event.message_buffer(), current_absent);
   }
 }
 
@@ -106,6 +105,13 @@ void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
     logline << "conflicting pair " << *present << incoming_desc << " =/= " << *(existing.entry) << existing_desc
             << "have conflicting entry kinds: Ignoring events." << endl;
   }
+}
+
+void RenameBuffer::observe_absent(ChannelMessageBuffer &message_buffer, const std::shared_ptr<AbsentEntry> &absent)
+{
+  LOGGER << "Unable to correlate rename from " << absent->get_path() << " without an inode." << endl;
+  message_buffer.created(string(absent->get_path()), absent->get_entry_kind());
+  message_buffer.deleted(string(absent->get_path()), absent->get_entry_kind());
 }
 
 shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer)

@@ -72,6 +72,8 @@ private:
     const std::shared_ptr<PresentEntry> &present,
     bool current);
 
+  void observe_absent(ChannelMessageBuffer &message_buffer, const std::shared_ptr<AbsentEntry> &absent);
+
   std::unordered_map<Key, RenameBufferEntry> observed_by_inode;
 };
 
