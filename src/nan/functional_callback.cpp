@@ -16,6 +16,11 @@ using v8::Local;
 using v8::Value;
 using Contents = v8::ArrayBuffer::Contents;
 
+void _noop_callback_helper(const FunctionCallbackInfo<Value> & /*info*/)
+{
+  // Do nothing
+}
+
 void _fn_callback_helper(const FunctionCallbackInfo<Value> &info)
 {
   Local<ArrayBuffer> cb_array = info.Data().As<ArrayBuffer>();
@@ -39,5 +44,13 @@ unique_ptr<Callback> fn_callback(FnCallback &fn)
   Local<ArrayBuffer> fn_addr =
     ArrayBuffer::New(Isolate::GetCurrent(), static_cast<void *>(payload), sizeof(FnCallback *));
   Local<Function> wrapper = Nan::New<Function>(_fn_callback_helper, fn_addr);
+  return unique_ptr<Callback>(new Callback(wrapper));
+}
+
+unique_ptr<Callback> noop_callback()
+{
+  Nan::HandleScope scope;
+
+  Local<Function> wrapper = Nan::New<Function>(_noop_callback_helper);
   return unique_ptr<Callback>(new Callback(wrapper));
 }
