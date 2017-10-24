@@ -22,7 +22,6 @@ using std::endl;
 using std::hex;
 using std::move;
 using std::ostream;
-using std::shared_ptr;
 using std::string;
 
 BatchHandler::BatchHandler(ChannelMessageBuffer &message_buffer,
