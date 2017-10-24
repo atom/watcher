@@ -18,7 +18,7 @@
 #include "../../result.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
-#include "event_handler.h"
+#include "batch_handler.h"
 #include "flags.h"
 #include "recent_file_cache.h"
 #include "rename_buffer.h"
@@ -197,9 +197,9 @@ public:
 
     message_buffer.reserve(num_events);
 
-    EventHandler handler(message_buffer, cache, rename_buffer, sub->second.get_recursive(), sub->second.get_root());
+    BatchHandler handler(message_buffer, cache, rename_buffer, sub->second.get_recursive(), sub->second.get_root());
     for (size_t i = 0; i < num_events; i++) {
-      handler.handle(string(paths[i]), event_flags[i]);
+      handler.event(string(paths[i]), event_flags[i]);
     }
     cache.apply();
 

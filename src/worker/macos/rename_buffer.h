@@ -12,6 +12,9 @@
 #include "../../message_buffer.h"
 #include "recent_file_cache.h"
 
+// Forward declaration to be able to accept an Event argument
+class Event;
+
 // Filesystem entry that was flagged as participating in a rename by a received filesystem event.
 class RenameBufferEntry
 {
@@ -46,9 +49,7 @@ public:
 
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
   // based on the previous and currently observed state of the entry at that path.
-  void observe_entry(ChannelMessageBuffer &message_buffer,
-    const std::shared_ptr<StatResult> &former,
-    const std::shared_ptr<StatResult> &current);
+  void observe_event(Event &event);
 
   // Enqueue creation and removal events for any buffer entries that have remained unpaired through two consecutive
   // event batches.
@@ -70,6 +71,8 @@ private:
   void observe_present_entry(ChannelMessageBuffer &message_buffer,
     const std::shared_ptr<PresentEntry> &present,
     bool current);
+
+  void observe_absent(ChannelMessageBuffer &message_buffer, const std::shared_ptr<AbsentEntry> &absent);
 
   std::unordered_map<Key, RenameBufferEntry> observed_by_inode;
 };

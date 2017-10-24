@@ -32,7 +32,7 @@
                     "src/helper/macos/helper.cpp",
                     "src/worker/macos/macos_worker_platform.cpp",
                     "src/worker/macos/recent_file_cache.cpp",
-                    "src/worker/macos/event_handler.cpp",
+                    "src/worker/macos/batch_handler.cpp",
                     "src/worker/macos/rename_buffer.cpp",
                     "src/worker/macos/subscription.cpp"
                 ],
