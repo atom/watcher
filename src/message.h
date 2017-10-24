@@ -291,11 +291,41 @@ private:
   std::string message;
 };
 
+class ErrorPayload
+{
+public:
+  ErrorPayload(ChannelID channel_id, std::string &&message, bool fatal);
+
+  ErrorPayload(ErrorPayload &&original) noexcept = default;
+
+  ~ErrorPayload() = default;
+
+  const ChannelID &get_channel_id() { return channel_id; }
+
+  const std::string &get_message() { return message; }
+
+  const bool &was_fatal() { return fatal; }
+
+  std::string describe() const;
+
+  ErrorPayload(const ErrorPayload &) = delete;
+  ErrorPayload &operator=(const ErrorPayload &) = delete;
+  ErrorPayload &operator=(ErrorPayload &&) = delete;
+
+private:
+  const ChannelID channel_id;
+  std::string message;
+  const bool fatal;
+};
+
 enum MessageKind
 {
-  KIND_FILESYSTEM,
-  KIND_COMMAND,
-  KIND_ACK
+  MSG_FILESYSTEM,
+  MSG_COMMAND,
+  MSG_ACK,
+  MSG_ERROR,
+  MSG_MIN = MSG_FILESYSTEM,
+  MSG_MAX = MSG_ERROR
 };
 
 class Message
@@ -311,6 +341,8 @@ public:
 
   explicit Message(AckPayload &&payload);
 
+  explicit Message(ErrorPayload &&payload);
+
   Message(Message &&original) noexcept;
 
   ~Message();
@@ -320,6 +352,8 @@ public:
   const CommandPayload *as_command() const;
 
   const AckPayload *as_ack() const;
+
+  const ErrorPayload *as_error() const;
 
   std::string describe() const;
 
@@ -334,6 +368,7 @@ private:
     FileSystemPayload filesystem_payload;
     CommandPayload command_payload;
     AckPayload ack_payload;
+    ErrorPayload error_payload;
     bool pending{false};
   };
 };
@@ -343,6 +378,8 @@ std::ostream &operator<<(std::ostream &stream, const FileSystemPayload &e);
 std::ostream &operator<<(std::ostream &stream, const CommandPayload &e);
 
 std::ostream &operator<<(std::ostream &stream, const AckPayload &e);
+
+std::ostream &operator<<(std::ostream &stream, const ErrorPayload &e);
 
 std::ostream &operator<<(std::ostream &stream, const Message &e);
 

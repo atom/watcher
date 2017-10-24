@@ -157,19 +157,41 @@ string AckPayload::describe() const
   return builder.str();
 }
 
+ErrorPayload::ErrorPayload(ChannelID channel_id, std::string &&message, bool fatal) :
+  channel_id{channel_id},
+  message{move(message)},
+  fatal{fatal}
+{
+  //
+}
+
+string ErrorPayload::describe() const
+{
+  ostringstream builder;
+  builder << "[ErrorPayload channel " << channel_id << " message \"" << message << '"';
+  if (fatal) builder << " fatal!";
+  builder << "]";
+  return builder.str();
+}
+
 const FileSystemPayload *Message::as_filesystem() const
 {
-  return kind == KIND_FILESYSTEM ? &filesystem_payload : nullptr;
+  return kind == MSG_FILESYSTEM ? &filesystem_payload : nullptr;
 }
 
 const CommandPayload *Message::as_command() const
 {
-  return kind == KIND_COMMAND ? &command_payload : nullptr;
+  return kind == MSG_COMMAND ? &command_payload : nullptr;
 }
 
 const AckPayload *Message::as_ack() const
 {
-  return kind == KIND_ACK ? &ack_payload : nullptr;
+  return kind == MSG_ACK ? &ack_payload : nullptr;
+}
+
+const ErrorPayload *Message::as_error() const
+{
+  return kind == MSG_ERROR ? &error_payload : nullptr;
 }
 
 Message Message::ack(const Message &original, bool success, string &&message)
@@ -189,17 +211,22 @@ Message Message::ack(const Message &original, const Result<> &result)
   return ack(original, false, string(result.get_error()));
 }
 
-Message::Message(FileSystemPayload &&payload) : kind{KIND_FILESYSTEM}, filesystem_payload{move(payload)}
+Message::Message(FileSystemPayload &&payload) : kind{MSG_FILESYSTEM}, filesystem_payload{move(payload)}
 {
   //
 }
 
-Message::Message(CommandPayload &&payload) : kind{KIND_COMMAND}, command_payload{move(payload)}
+Message::Message(CommandPayload &&payload) : kind{MSG_COMMAND}, command_payload{move(payload)}
 {
   //
 }
 
-Message::Message(AckPayload &&payload) : kind{KIND_ACK}, ack_payload{move(payload)}
+Message::Message(AckPayload &&payload) : kind{MSG_ACK}, ack_payload{move(payload)}
+{
+  //
+}
+
+Message::Message(ErrorPayload &&payload) : kind{MSG_ERROR}, error_payload{move(payload)}
 {
   //
 }
@@ -207,18 +234,20 @@ Message::Message(AckPayload &&payload) : kind{KIND_ACK}, ack_payload{move(payloa
 Message::Message(Message &&original) noexcept : kind{original.kind}, pending{true}
 {
   switch (kind) {
-    case KIND_FILESYSTEM: new (&filesystem_payload) FileSystemPayload(move(original.filesystem_payload)); break;
-    case KIND_COMMAND: new (&command_payload) CommandPayload(move(original.command_payload)); break;
-    case KIND_ACK: new (&ack_payload) AckPayload(move(original.ack_payload)); break;
+    case MSG_FILESYSTEM: new (&filesystem_payload) FileSystemPayload(move(original.filesystem_payload)); break;
+    case MSG_COMMAND: new (&command_payload) CommandPayload(move(original.command_payload)); break;
+    case MSG_ACK: new (&ack_payload) AckPayload(move(original.ack_payload)); break;
+    case MSG_ERROR: new (&error_payload) ErrorPayload(move(original.error_payload)); break;
   };
 }
 
 Message::~Message()
 {
   switch (kind) {
-    case KIND_FILESYSTEM: filesystem_payload.~FileSystemPayload(); break;
-    case KIND_COMMAND: command_payload.~CommandPayload(); break;
-    case KIND_ACK: ack_payload.~AckPayload(); break;
+    case MSG_FILESYSTEM: filesystem_payload.~FileSystemPayload(); break;
+    case MSG_COMMAND: command_payload.~CommandPayload(); break;
+    case MSG_ACK: ack_payload.~AckPayload(); break;
+    case MSG_ERROR: error_payload.~ErrorPayload(); break;
   };
 }
 
@@ -228,9 +257,10 @@ string Message::describe() const
   builder << "[Message ";
 
   switch (kind) {
-    case KIND_FILESYSTEM: builder << filesystem_payload; break;
-    case KIND_COMMAND: builder << command_payload; break;
-    case KIND_ACK: builder << ack_payload; break;
+    case MSG_FILESYSTEM: builder << filesystem_payload; break;
+    case MSG_COMMAND: builder << command_payload; break;
+    case MSG_ACK: builder << ack_payload; break;
+    case MSG_ERROR: builder << error_payload; break;
     default: builder << "!!kind=" << kind; break;
   };
 
@@ -251,6 +281,12 @@ std::ostream &operator<<(std::ostream &stream, const CommandPayload &e)
 }
 
 std::ostream &operator<<(std::ostream &stream, const AckPayload &e)
+{
+  stream << e.describe();
+  return stream;
+}
+
+std::ostream &operator<<(std::ostream &stream, const ErrorPayload &e)
 {
   stream << e.describe();
   return stream;
