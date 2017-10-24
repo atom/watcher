@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "../../log.h"
-#include "event_handler.h"
+#include "batch_handler.h"
 #include "recent_file_cache.h"
 
 using std::endl;
@@ -33,10 +33,11 @@ RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool c
   age{0}
 {}
 
-void RenameBuffer::observe_entry(ChannelMessageBuffer &message_buffer,
-  const shared_ptr<StatResult> &former,
-  const shared_ptr<StatResult> &current)
+void RenameBuffer::observe_event(Event &event)
 {
+  const shared_ptr<StatResult> &former = event.get_former();
+  const shared_ptr<StatResult> &current = event.get_current();
+
   if (!former->has_changed_from(*current)) {
     // The entry is still there with the same inode.
     // Moved away and back, maybe?
@@ -45,12 +46,12 @@ void RenameBuffer::observe_entry(ChannelMessageBuffer &message_buffer,
 
   if (former->is_present()) {
     shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
-    observe_present_entry(message_buffer, former_present, false);
+    observe_present_entry(event.message_buffer(), former_present, false);
   }
 
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
-    observe_present_entry(message_buffer, current_present, true);
+    observe_present_entry(event.message_buffer(), current_present, true);
   }
 }
 
