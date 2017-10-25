@@ -267,7 +267,7 @@ private:
       DWORD attrs = GetFileAttributesW(pathw.c_str());
       if (attrs == INVALID_FILE_ATTRIBUTES) {
         DWORD attr_err = GetLastError();
-        if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND) {
+        if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND && attr_err != ERROR_ACCESS_DENIED) {
           return windows_error_result<>("GetFileAttributesW failed", attr_err);
         }
       } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
