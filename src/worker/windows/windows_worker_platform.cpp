@@ -252,6 +252,55 @@ public:
   }
 
 private:
+  Result<> reschedule(Subscription *sub)
+  {
+    Result<bool> sch = sub->schedule(&event_helper);
+    if (sch.is_error()) return emit_fatal_error(sub, sch.propagate_as_void());
+
+    if (!sch.get_value()) {
+      Result<string> root = sub->get_root_path();
+      if (root.is_error()) return emit_fatal_error(sub, root.propagate_as_void());
+
+      LOGGER << "Falling back to polling for path " << root.get_value() << " at channel " << sub->get_channel() << "." << endl;
+
+      Result<> rem = remove(sub);
+      rem &= emit(Message(CommandPayloadBuilder::add(sub->get_channel(), move(root.get_value()), sub->is_recursive(), 1).build()));
+      return rem;
+    }
+
+    return ok_result();
+  }
+
+  Result<> remove(Subscription *sub)
+  {
+    Message response(AckPayload(sub->get_command_id(), sub->get_channel(), true, ""));
+
+    // Ensure that the subscription is valid.
+    ChannelID channel = sub->get_channel();
+    auto it = subscriptions.find(channel);
+    if (it == subscriptions.end() || it->second != sub) {
+      return ok_result();
+    }
+
+    subscriptions.erase(it);
+    delete sub;
+
+    if (sub->get_command_id() != NULL_COMMAND_ID) {
+      return emit(move(response));
+    } else {
+      return ok_result();
+    }
+  }
+
+  Result<> emit_fatal_error(Subscription *sub, Result<> &&r)
+  {
+    assert(r.is_error());
+
+    Result<> out = emit(Message(ErrorPayload(sub->get_channel(), string(r.get_error()), true)));
+    out &= remove(sub);
+    return out;
+  }
+
   Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info,
     Subscription *sub,
     ChannelMessageBuffer &messages,
