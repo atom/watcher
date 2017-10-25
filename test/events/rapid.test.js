@@ -22,7 +22,7 @@ const {EventMatcher} = require('../matcher');
 
     // The polling thread will never be able to distinguish rapid events
     if (!poll) {
-      it.stress(500, 'understands coalesced creation and deletion events', async function () {
+      it('understands coalesced creation and deletion events', async function () {
         const deletedPath = fixture.watchPath('deleted.txt')
         const recreatedPath = fixture.watchPath('recreated.txt')
         const createdPath = fixture.watchPath('created.txt')
