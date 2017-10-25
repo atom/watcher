@@ -307,18 +307,20 @@ private:
     wstring relpathw{info->FileName, info->FileNameLength / sizeof(WCHAR)};
     wstring pathw = sub->make_absolute(move(relpathw));
 
-    DWORD attrs = GetFileAttributesW(pathw.c_str());
-    if (attrs == INVALID_FILE_ATTRIBUTES) {
-      DWORD attr_err = GetLastError();
-      if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND) {
-        LOGGER << windows_error_result<>("GetFileAttributesW failed", attr_err) << endl;
+    if (info->Action != FILE_ACTION_REMOVED && info->Action != FILE_ACTION_RENAMED_OLD_NAME) {
+      DWORD attrs = GetFileAttributesW(pathw.c_str());
+      if (attrs == INVALID_FILE_ATTRIBUTES) {
+        DWORD attr_err = GetLastError();
+        if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND && attr_err != ERROR_ACCESS_DENIED) {
+          LOGGER << windows_error_result<>("GetFileAttributesW failed", attr_err) << "." << endl;
+        }
+      } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+        kind = KIND_DIRECTORY;
+      } else {
+        kind = KIND_FILE;
       }
-    } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
-      kind = KIND_DIRECTORY;
-    } else {
-      kind = KIND_FILE;
+      // TODO check against FILE_ATTRIBUTE_REPARSE_POINT to identify symlinks
     }
-    // TODO check against FILE_ATTRIBUTE_REPARSE_POINT to identify symlinks
 
     Result<string> u8r = to_utf8(pathw);
     if (u8r.is_error()) {

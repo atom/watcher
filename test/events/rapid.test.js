@@ -40,7 +40,7 @@ const {EventMatcher} = require('../matcher');
 
         await until('all events arrive', matcher.orderedEvents(
           {action: 'deleted', path: deletedPath},
-          {action: 'created', kind: 'file', path: recreatedPath},
+          {action: 'created', path: recreatedPath},
           {action: 'deleted', path: recreatedPath},
           {action: 'created', kind: 'file', path: recreatedPath},
           {action: 'created', kind: 'file', path: createdPath}
