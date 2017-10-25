@@ -254,10 +254,12 @@ private:
       Result<string> root = sub->get_root_path();
       if (root.is_error()) return emit_fatal_error(sub, root.propagate_as_void());
 
-      LOGGER << "Falling back to polling for path " << root.get_value() << " at channel " << sub->get_channel() << "." << endl;
+      LOGGER << "Falling back to polling for path " << root.get_value() << " at channel " << sub->get_channel() << "."
+             << endl;
 
       Result<> rem = remove(sub);
-      rem &= emit(Message(CommandPayloadBuilder::add(sub->get_channel(), move(root.get_value()), sub->is_recursive(), 1).build()));
+      rem &= emit(Message(
+        CommandPayloadBuilder::add(sub->get_channel(), move(root.get_value()), sub->is_recursive(), 1).build()));
       return rem;
     }
 

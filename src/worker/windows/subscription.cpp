@@ -12,8 +12,8 @@
 using std::endl;
 using std::ostream;
 using std::ostringstream;
-using std::wostringstream;
 using std::string;
+using std::wostringstream;
 using std::wstring;
 
 const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
