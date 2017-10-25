@@ -191,37 +191,30 @@ public:
       LOGGER << "Filesystem event encountered on terminating channel " << channel << "." << endl;
       terminate = true;
     }
-    if (terminate) {
-      AckPayload ack(sub->get_command_id(), channel, true, "");
-      Message response(move(ack));
-
-      subscriptions.erase(it);
-      delete sub;
-
-      return emit(move(response));
-    }
+    if (terminate) return remove(sub);
 
     // Handle errors.
     if (error_code == ERROR_INVALID_PARAMETER) {
       LOGGER << "Attempting to revert to a network-friendly buffer size." << endl;
-      Result<> resize = sub->use_network_size();
-      if (resize.is_error()) return resize;
 
-      return sub->schedule(&event_helper).propagate_as_void();
+      Result<> resize = sub->use_network_size();
+      if (resize.is_error()) return emit_fatal_error(sub, move(resize));
+
+      return reschedule(sub);
     }
 
     if (error_code == ERROR_NOTIFY_ENUM_DIR) {
       LOGGER << "Change buffer overflow. Some events may have been lost." << endl;
-      return sub->schedule(&event_helper).propagate_as_void();
+      return reschedule(sub);
     }
 
     if (error_code != ERROR_SUCCESS) {
-      return windows_error_result<>("Completion callback error", error_code);
+      return emit_fatal_error(sub, windows_error_result<>("Completion callback error", error_code));
     }
 
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
-    Result<bool> next = sub->schedule(&event_helper);
+    Result<> next = reschedule(sub);
 
     // Process received events.
     MessageBuffer buffer;
@@ -316,7 +309,7 @@ private:
     if (attrs == INVALID_FILE_ATTRIBUTES) {
       DWORD attr_err = GetLastError();
       if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND) {
-        return windows_error_result<>("GetFileAttributesW failed", attr_err);
+        LOGGER << windows_error_result<>("GetFileAttributesW failed", attr_err) << endl;
       }
     } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
       kind = KIND_DIRECTORY;
@@ -326,7 +319,10 @@ private:
     // TODO check against FILE_ATTRIBUTE_REPARSE_POINT to identify symlinks
 
     Result<string> u8r = to_utf8(pathw);
-    if (u8r.is_error()) return u8r.propagate<>();
+    if (u8r.is_error()) {
+      LOGGER << "Unable to convert path to utf-8: " << u8r << "." << endl;
+      return ok_result();
+    }
     string &path = u8r.get_value();
 
     switch (info->Action) {
