@@ -13,6 +13,7 @@ using std::endl;
 using std::ostream;
 using std::ostringstream;
 using std::wostringstream;
+using std::string;
 using std::wstring;
 
 const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
@@ -99,6 +100,11 @@ BYTE *Subscription::get_written(DWORD written_size)
 {
   memcpy(written.get(), buffer.get(), written_size);
   return written.get();
+}
+
+Result<string> Subscription::get_root_path()
+{
+  return to_utf8(path);
 }
 
 wstring Subscription::make_absolute(const wstring &sub_path)

@@ -27,6 +27,8 @@ public:
 
   BYTE *get_written(DWORD written_size);
 
+  Result<std::string> get_root_path();
+
   std::wstring make_absolute(const std::wstring &sub_path);
 
   Result<> stop(const CommandID command);
