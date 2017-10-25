@@ -185,7 +185,7 @@ public:
     // Subscription termination.
     bool terminate = false;
     if (error_code == ERROR_OPERATION_ABORTED) {
-      LOGGER << "ERROR_OPERATION_ABORTED encountered on channel " << channel << "." << endl;
+      LOGGER << "Completing termination of channel " << channel << "." << endl;
       terminate = true;
     } else if (sub->is_terminating()) {
       LOGGER << "Filesystem event encountered on terminating channel " << channel << "." << endl;
