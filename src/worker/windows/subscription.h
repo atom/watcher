@@ -27,17 +27,21 @@ public:
 
   BYTE *get_written(DWORD written_size);
 
+  Result<std::string> get_root_path();
+
   std::wstring make_absolute(const std::wstring &sub_path);
 
   Result<> stop(const CommandID command);
 
-  CommandID get_command_id() const { return command; }
+  const CommandID &get_command_id() const { return command; }
 
-  ChannelID get_channel() const { return channel; }
+  const ChannelID &get_channel() const { return channel; }
 
   WindowsWorkerPlatform *get_platform() const { return platform; }
 
-  bool is_terminating() const { return terminating; }
+  const bool &is_recursive() const { return recursive; }
+
+  const bool &is_terminating() const { return terminating; }
 
 private:
   CommandID command;
