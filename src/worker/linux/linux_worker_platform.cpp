@@ -66,12 +66,7 @@ public:
 
         Result<> r = registry.consume(messages, jar, side);
 
-        vector<SideEffect::PollingRoot> poll;
-        r &= side.enact_in(&registry, poll);
-
-        for (auto &poll_root : poll) {
-          messages.add(Message(CommandPayloadBuilder::add(poll_root.first, move(poll_root.second), true, 1).build()));
-        }
+        side.enact_in(&registry, messages);
 
         if (!messages.empty()) {
           r &= emit_all(messages.begin(), messages.end());

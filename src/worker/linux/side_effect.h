@@ -11,6 +11,8 @@
 // Forward declaration for pointer access.
 class WatchRegistry;
 
+class MessageBuffer;
+
 // Record additional actions that should be triggered by inotify events received in the course of a single notification
 // cycle.
 class SideEffect
@@ -19,13 +21,11 @@ public:
   SideEffect() = default;
   ~SideEffect() = default;
 
-  using PollingRoot = std::pair<ChannelID, std::string>;
-
   // Recursively watch a newly created subdirectory.
   void track_subdirectory(std::string subdir, ChannelID channel_id);
 
   // Perform all enqueued actions.
-  Result<> enact_in(WatchRegistry *registry, std::vector<PollingRoot> &poll);
+  void enact_in(WatchRegistry *registry, MessageBuffer &messages);
 
   SideEffect(const SideEffect &other) = delete;
   SideEffect(SideEffect &&other) = delete;
