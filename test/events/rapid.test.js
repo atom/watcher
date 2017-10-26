@@ -40,11 +40,32 @@ const {EventMatcher} = require('../matcher');
 
         await until('all events arrive', matcher.orderedEvents(
           {action: 'deleted', path: deletedPath},
-          {action: 'created', kind: 'file', path: recreatedPath},
+          {action: 'created', path: recreatedPath},
           {action: 'deleted', path: recreatedPath},
           {action: 'created', kind: 'file', path: recreatedPath},
           {action: 'created', kind: 'file', path: createdPath}
         ))
+      })
+
+      it('understands rapid creation and rename events', async function () {
+        const originalPath = fixture.watchPath('created.txt')
+        const finalPath = fixture.watchPath('final.txt')
+
+        await fs.writeFile(originalPath, 'contents\n')
+        await fs.rename(originalPath, finalPath)
+
+        if (process.platform === 'darwin') {
+          await until('creation and deletion events arrive', matcher.orderedEvents(
+            {action: 'created', kind: 'file', path: originalPath},
+            {action: 'deleted', kind: 'file', path: originalPath},
+            {action: 'created', kind: 'file', path: finalPath}
+          ))
+        } else {
+          await until('creation and rename events arrive', matcher.orderedEvents(
+            {action: 'created', kind: 'file', path: originalPath},
+            {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath}
+          ))
+        }
       })
     }
 

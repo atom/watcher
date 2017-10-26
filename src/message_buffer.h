@@ -26,6 +26,8 @@ public:
 
   void ack(CommandID command_id, ChannelID channel_id, bool success, std::string &&msg);
 
+  void error(ChannelID channel_id, std::string &&message, bool fatal);
+
   void reserve(size_t capacity) { messages.reserve(capacity); }
 
   void add(Message &&message) { messages.emplace_back(std::move(message)); }
@@ -73,6 +75,8 @@ public:
   {
     buffer.ack(command_id, channel_id, success, std::move(msg));
   }
+
+  void error(std::string &&message, bool fatal) { buffer.error(channel_id, std::move(message), fatal); }
 
   void reserve(size_t capacity) { buffer.reserve(capacity); }
 
