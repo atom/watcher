@@ -46,17 +46,17 @@ bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
 
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
-    handled = handled || observe_present_entry(event.message_buffer(), cache, current_present, true);
+    if (observe_present_entry(event.message_buffer(), cache, current_present, true)) handled = true;
   }
 
   if (former->is_present()) {
     shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
-    handled = handled || observe_present_entry(event.message_buffer(), cache, former_present, false);
+    if (observe_present_entry(event.message_buffer(), cache, former_present, false)) handled = true;
   }
 
   if (former->is_absent() && current->is_absent()) {
     shared_ptr<AbsentEntry> current_absent = static_pointer_cast<AbsentEntry>(current);
-    handled = handled || observe_absent(event.message_buffer(), cache, current_absent);
+    if (observe_absent(event.message_buffer(), cache, current_absent)) handled = true;
   }
 
   return handled;
@@ -83,6 +83,7 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
   if (present->could_be_rename_of(*(existing.entry))) {
     // The inodes and entry kinds match, so with high probability, we've found the other half of the rename.
     // Huzzah! Huzzah forever!
+    bool handled = false;
 
     if (!existing.current && current) {
       // The former end is the "from" end and the current end is the "to" end.
@@ -91,7 +92,7 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
       cache.evict(existing.entry);
       message_buffer.renamed(
         string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
-      return true;
+      handled = true;
     } else if (existing.current && !current) {
       // The former end is the "to" end and the current end is the "from" end.
       logline << "completed pair " << *present << " => " << *existing.entry << ": Emitting rename event." << endl;
@@ -99,7 +100,7 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
       cache.evict(present);
       message_buffer.renamed(
         string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
-      return true;
+      handled = true;
     } else {
       // Either both entries are still present (hardlink, re-used inode?) or both are missing (rapidly renamed and
       // deleted?) This could happen if the entry is renamed again between the lstat() calls, possibly.
@@ -108,10 +109,11 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
 
       logline << "conflicting pair " << *present << incoming_desc << " =/= " << *(existing.entry) << existing_desc
               << "are both present." << endl;
-      return false;
+      handled = false;
     }
 
     observed_by_inode.erase(maybe_entry);
+    return handled;
   } else {
     string existing_desc = existing.current ? " (current) " : " (former) ";
     string incoming_desc = current ? " (current) " : " (former) ";
