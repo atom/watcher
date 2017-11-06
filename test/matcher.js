@@ -16,6 +16,10 @@ class EventMatcher {
     return this.fixture.watch(...args, (err, events) => {
       this.errors.push(err)
       this.events.push(...events)
+
+      if (process.env.VERBOSE) {
+        console.log(events)
+      }
     })
   }
 
