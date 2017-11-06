@@ -127,7 +127,7 @@ bool PresentEntry::could_be_rename_of(const StatResult &other) const
   if (other.is_absent()) return false;
 
   const auto &casted = static_cast<const PresentEntry &>(other);  // NOLINT
-  return inode == casted.get_inode();
+  return inode == casted.get_inode() && !kinds_are_different(get_entry_kind(), casted.get_entry_kind());
 }
 
 ino_t PresentEntry::get_inode() const
