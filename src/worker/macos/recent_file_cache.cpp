@@ -171,10 +171,7 @@ bool AbsentEntry::has_changed_from(const StatResult &other) const
 
 bool AbsentEntry::could_be_rename_of(const StatResult &other) const
 {
-  if (!StatResult::could_be_rename_of(other)) return false;
-  if (other.is_present()) return false;
-
-  return true;
+  return false;
 }
 
 string AbsentEntry::to_string(bool verbose) const
