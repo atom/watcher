@@ -127,7 +127,7 @@ bool PresentEntry::could_be_rename_of(const StatResult &other) const
   if (other.is_absent()) return false;
 
   const auto &casted = static_cast<const PresentEntry &>(other);  // NOLINT
-  return inode == casted.get_inode();
+  return inode == casted.get_inode() && !kinds_are_different(get_entry_kind(), casted.get_entry_kind());
 }
 
 ino_t PresentEntry::get_inode() const
@@ -169,12 +169,9 @@ bool AbsentEntry::has_changed_from(const StatResult &other) const
   return false;
 }
 
-bool AbsentEntry::could_be_rename_of(const StatResult &other) const
+bool AbsentEntry::could_be_rename_of(const StatResult & /*other*/) const
 {
-  if (!StatResult::could_be_rename_of(other)) return false;
-  if (other.is_present()) return false;
-
-  return true;
+  return false;
 }
 
 string AbsentEntry::to_string(bool verbose) const
@@ -216,29 +213,42 @@ shared_ptr<StatResult> RecentFileCache::former_at_path(const string &path, bool 
   return maybe->second;
 }
 
+void RecentFileCache::evict(const string &path)
+{
+  auto maybe = by_path.find(path);
+  if (maybe != by_path.end()) {
+    shared_ptr<PresentEntry> existing = maybe->second;
+
+    auto range = by_timestamp.equal_range(existing->get_last_seen());
+    auto to_erase = by_timestamp.end();
+    for (auto it = range.first; it != range.second; ++it) {
+      if (it->second == existing) {
+        to_erase = it;
+      }
+    }
+    if (to_erase != by_timestamp.end()) {
+      by_timestamp.erase(to_erase);
+    }
+
+    by_path.erase(maybe);
+  }
+}
+
+void RecentFileCache::evict(const shared_ptr<PresentEntry> &entry)
+{
+  auto maybe = by_path.find(entry->get_path());
+  if (maybe != by_path.end() && maybe->second == entry) {
+    evict(entry->get_path());
+  }
+}
+
 void RecentFileCache::apply()
 {
   for (auto &pair : pending) {
     shared_ptr<PresentEntry> &present = pair.second;
 
     // Clear an existing entry at the same path if one exists
-    auto maybe = by_path.find(present->get_path());
-    if (maybe != by_path.end()) {
-      shared_ptr<PresentEntry> existing = maybe->second;
-
-      auto range = by_timestamp.equal_range(existing->get_last_seen());
-      auto to_erase = by_timestamp.end();
-      for (auto it = range.first; it != range.second; ++it) {
-        if (it->second == existing) {
-          to_erase = it;
-        }
-      }
-      if (to_erase != by_timestamp.end()) {
-        by_timestamp.erase(to_erase);
-      }
-
-      by_path.erase(maybe);
-    }
+    evict(present->get_path());
 
     // Add the new PresentEntry
     by_path.emplace(present->get_path(), present);
@@ -286,7 +296,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     next_roots.pop();
 
     DIR *dir = opendir(current_root.c_str());
-    if (dir != nullptr) {
+    if (dir == nullptr) {
       errno_t opendir_errno = errno;
       LOGGER << "Unable to open directory " << root << ": " << strerror(opendir_errno) << "." << endl;
       LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;

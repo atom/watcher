@@ -48,8 +48,9 @@ public:
   using Key = ino_t;
 
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
-  // based on the previous and currently observed state of the entry at that path.
-  void observe_event(Event &event);
+  // based on the previous and currently observed state of the entry at that path. Return "true" if the event
+  // is consumed, or "false" if it should be treated as something other than a rename.
+  bool observe_event(Event &event, RecentFileCache &cache);
 
   // Enqueue creation and removal events for any buffer entries that have remained unpaired through two consecutive
   // event batches.
@@ -68,11 +69,14 @@ public:
   RenameBuffer &operator=(RenameBuffer &&) = delete;
 
 private:
-  void observe_present_entry(ChannelMessageBuffer &message_buffer,
+  bool observe_present_entry(ChannelMessageBuffer &message_buffer,
+    RecentFileCache &cache,
     const std::shared_ptr<PresentEntry> &present,
     bool current);
 
-  void observe_absent(ChannelMessageBuffer &message_buffer, const std::shared_ptr<AbsentEntry> &absent);
+  bool observe_absent(ChannelMessageBuffer &message_buffer,
+    RecentFileCache &cache,
+    const std::shared_ptr<AbsentEntry> &absent);
 
   std::unordered_map<Key, RenameBufferEntry> observed_by_inode;
 };

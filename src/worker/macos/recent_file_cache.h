@@ -109,6 +109,10 @@ public:
 
   std::shared_ptr<StatResult> former_at_path(const std::string &path, bool file_hint, bool directory_hint);
 
+  void evict(const std::string &path);
+
+  void evict(const std::shared_ptr<PresentEntry> &entry);
+
   void apply();
 
   void prune();

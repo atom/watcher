@@ -129,6 +129,7 @@ bool Event::emit_if_unambiguous()
       former_kind = former->get_entry_kind();
     }
 
+    cache().evict(event_path);
     message_buffer().deleted(move(event_path), former_kind);
     return true;
   }
@@ -144,8 +145,7 @@ bool Event::emit_if_unambiguous()
 bool Event::emit_if_rename()
 {
   if (flag_renamed()) {
-    rename_buffer().observe_event(*this);
-    return true;
+    return rename_buffer().observe_event(*this, cache());
   }
 
   return false;
@@ -169,6 +169,7 @@ bool Event::emit_if_absent()
   // It isn't there now, so it must have been deleted.
   if (flag_deleted()) {
     message_buffer().deleted(string(current->get_path()), current->get_entry_kind());
+    cache().evict(current->get_path());
   }
   return true;
 }
