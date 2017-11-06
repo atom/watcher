@@ -111,7 +111,7 @@ public:
 
   void evict(const std::string &path);
 
-  void evict(const std::shared_ptr<PresentEntry> entry);
+  void evict(const std::shared_ptr<PresentEntry> &entry);
 
   void apply();
 

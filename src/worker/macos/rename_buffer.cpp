@@ -114,18 +114,18 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
 
     observed_by_inode.erase(maybe_entry);
     return handled;
-  } else {
-    string existing_desc = existing.current ? " (current) " : " (former) ";
-    string incoming_desc = current ? " (current) " : " (former) ";
-
-    logline << "conflicting pair " << *present << incoming_desc << " =/= " << *(existing.entry) << existing_desc
-            << "have conflicting entry kinds." << endl;
-    return false;
   }
+
+  string existing_desc = existing.current ? " (current) " : " (former) ";
+  string incoming_desc = current ? " (current) " : " (former) ";
+
+  logline << "conflicting pair " << *present << incoming_desc << " =/= " << *(existing.entry) << existing_desc
+          << "have conflicting entry kinds." << endl;
+  return false;
 }
 
 bool RenameBuffer::observe_absent(ChannelMessageBuffer &message_buffer,
-  RecentFileCache &cache,
+  RecentFileCache & /*cache*/,
   const std::shared_ptr<AbsentEntry> &absent)
 {
   LOGGER << "Unable to correlate rename from " << absent->get_path() << " without an inode." << endl;

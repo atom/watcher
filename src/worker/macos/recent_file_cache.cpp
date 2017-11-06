@@ -169,7 +169,7 @@ bool AbsentEntry::has_changed_from(const StatResult &other) const
   return false;
 }
 
-bool AbsentEntry::could_be_rename_of(const StatResult &other) const
+bool AbsentEntry::could_be_rename_of(const StatResult & /*other*/) const
 {
   return false;
 }
@@ -234,7 +234,7 @@ void RecentFileCache::evict(const string &path)
   }
 }
 
-void RecentFileCache::evict(const shared_ptr<PresentEntry> entry)
+void RecentFileCache::evict(const shared_ptr<PresentEntry> &entry)
 {
   auto maybe = by_path.find(entry->get_path());
   if (maybe != by_path.end() && maybe->second == entry) {
