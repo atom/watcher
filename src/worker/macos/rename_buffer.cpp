@@ -33,28 +33,37 @@ RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool c
   age{0}
 {}
 
-void RenameBuffer::observe_event(Event &event)
+bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
 {
   const shared_ptr<StatResult> &former = event.get_former();
   const shared_ptr<StatResult> &current = event.get_current();
+  bool handled = false;
 
-  if (former->is_present()) {
-    shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
-    observe_present_entry(event.message_buffer(), former_present, false);
+  if (current->could_be_rename_of(*former)) {
+    // inode and entry kind are still the same. Stale ItemRenamed bit, most likely.
+    return false;
   }
 
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
-    observe_present_entry(event.message_buffer(), current_present, true);
+    handled = handled || observe_present_entry(event.message_buffer(), cache, current_present, true);
+  }
+
+  if (former->is_present()) {
+    shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
+    handled = handled || observe_present_entry(event.message_buffer(), cache, former_present, false);
   }
 
   if (former->is_absent() && current->is_absent()) {
     shared_ptr<AbsentEntry> current_absent = static_pointer_cast<AbsentEntry>(current);
-    observe_absent(event.message_buffer(), current_absent);
+    handled = handled || observe_absent(event.message_buffer(), cache, current_absent);
   }
+
+  return handled;
 }
 
-void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
+bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
+  RecentFileCache &cache,
   const shared_ptr<PresentEntry> &present,
   bool current)
 {
@@ -67,7 +76,7 @@ void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
     RenameBufferEntry entry(present, current);
     observed_by_inode.emplace(present->get_inode(), move(entry));
     logline << "first half " << *present << ": Remembering for later." << endl;
-    return;
+    return true;
   }
   RenameBufferEntry &existing = maybe_entry->second;
 
@@ -79,14 +88,18 @@ void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
       // The former end is the "from" end and the current end is the "to" end.
       logline << "completed pair " << *existing.entry << " => " << *present << ": Emitting rename event." << endl;
 
+      cache.evict(existing.entry);
       message_buffer.renamed(
         string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
+      return true;
     } else if (existing.current && !current) {
       // The former end is the "to" end and the current end is the "from" end.
       logline << "completed pair " << *present << " => " << *existing.entry << ": Emitting rename event." << endl;
 
+      cache.evict(present);
       message_buffer.renamed(
         string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
+      return true;
     } else {
       // Either both entries are still present (hardlink, re-used inode?) or both are missing (rapidly renamed and
       // deleted?) This could happen if the entry is renamed again between the lstat() calls, possibly.
@@ -94,7 +107,8 @@ void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
       string incoming_desc = current ? " (current) " : " (former) ";
 
       logline << "conflicting pair " << *present << incoming_desc << " =/= " << *(existing.entry) << existing_desc
-              << "are both present: Ignoring events." << endl;
+              << "are both present." << endl;
+      return false;
     }
 
     observed_by_inode.erase(maybe_entry);
@@ -103,15 +117,19 @@ void RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
     string incoming_desc = current ? " (current) " : " (former) ";
 
     logline << "conflicting pair " << *present << incoming_desc << " =/= " << *(existing.entry) << existing_desc
-            << "have conflicting entry kinds: Ignoring events." << endl;
+            << "have conflicting entry kinds." << endl;
+    return false;
   }
 }
 
-void RenameBuffer::observe_absent(ChannelMessageBuffer &message_buffer, const std::shared_ptr<AbsentEntry> &absent)
+bool RenameBuffer::observe_absent(ChannelMessageBuffer &message_buffer,
+  RecentFileCache &cache,
+  const std::shared_ptr<AbsentEntry> &absent)
 {
   LOGGER << "Unable to correlate rename from " << absent->get_path() << " without an inode." << endl;
   message_buffer.created(string(absent->get_path()), absent->get_entry_kind());
   message_buffer.deleted(string(absent->get_path()), absent->get_entry_kind());
+  return true;
 }
 
 shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer)
