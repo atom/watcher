@@ -299,7 +299,7 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
     next_roots.pop();
 
     DIR *dir = opendir(current_root.c_str());
-    if (dir != nullptr) {
+    if (dir == nullptr) {
       errno_t opendir_errno = errno;
       LOGGER << "Unable to open directory " << root << ": " << strerror(opendir_errno) << "." << endl;
       LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
