@@ -1,3 +1,4 @@
+/* eslint-dev mocha */
 const fs = require('fs-extra')
 
 const {Fixture} = require('./helper')

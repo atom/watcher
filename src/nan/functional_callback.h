@@ -10,4 +10,6 @@ using FnCallback = std::function<void(const Nan::FunctionCallbackInfo<v8::Value>
 
 std::unique_ptr<Nan::Callback> fn_callback(FnCallback &fn);
 
+std::unique_ptr<Nan::Callback> noop_callback();
+
 #endif

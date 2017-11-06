@@ -1,7 +1,8 @@
+#include <map>
 #include <memory>
 #include <nan.h>
+#include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <uv.h>
 #include <v8.h>
@@ -17,11 +18,13 @@
 
 using Nan::Callback;
 using std::endl;
+using std::map;
 using std::move;
+using std::multimap;
+using std::set;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
-using std::unordered_map;
 using std::vector;
 using v8::Array;
 using v8::Local;
@@ -135,7 +138,9 @@ void Hub::handle_events_from(Thread &thread)
     return;
   }
 
-  unordered_map<ChannelID, vector<Local<Object>>> to_deliver;
+  map<ChannelID, vector<Local<Object>>> to_deliver;
+  multimap<ChannelID, Local<Value>> errors;
+  set<ChannelID> to_unwatch;
 
   for (Message &message : *accepted) {
     const AckPayload *ack = message.as_ack();
@@ -207,12 +212,28 @@ void Hub::handle_events_from(Thread &thread)
       continue;
     }
 
+    const ErrorPayload *error = message.as_error();
+    if (error != nullptr) {
+      LOGGER << "Received error message " << message << "." << endl;
+
+      const ChannelID &channel_id = error->get_channel_id();
+
+      Local<Value> js_err = Nan::Error(error->get_message().c_str());
+      errors.emplace(channel_id, js_err);
+
+      if (error->was_fatal()) {
+        to_unwatch.insert(channel_id);
+      }
+
+      continue;
+    }
+
     LOGGER << "Received unexpected message " << message << "." << endl;
   }
 
   for (auto &pair : to_deliver) {
-    ChannelID channel_id = pair.first;
-    vector<Local<Object>> js_events = pair.second;
+    const ChannelID &channel_id = pair.first;
+    vector<Local<Object>> &js_events = pair.second;
 
     auto maybe_callback = channel_callbacks.find(channel_id);
     if (maybe_callback == channel_callbacks.end()) {
@@ -221,7 +242,7 @@ void Hub::handle_events_from(Thread &thread)
     }
     shared_ptr<Callback> callback = maybe_callback->second;
 
-    LOGGER << "Dispatching " << js_events.size() << " event(s) on channel " << channel_id << " to node callbacks."
+    LOGGER << "Dispatching " << js_events.size() << " event(s) on channel " << channel_id << " to the node callback."
            << endl;
 
     Local<Array> js_array = Nan::New<Array>(js_events.size());
@@ -234,6 +255,28 @@ void Hub::handle_events_from(Thread &thread)
 
     Local<Value> argv[] = {Nan::Null(), js_array};
     callback->Call(2, argv);
+  }
+
+  for (auto &pair : errors) {
+    const ChannelID &channel_id = pair.first;
+    Local<Value> &err = pair.second;
+
+    auto maybe_callback = channel_callbacks.find(channel_id);
+    if (maybe_callback == channel_callbacks.end()) {
+      LOGGER << "Error reported for unexpected channel " << channel_id << "." << endl;
+      continue;
+    }
+    shared_ptr<Callback> callback = maybe_callback->second;
+
+    LOGGER << "Report an error on channel " << channel_id << " to the node callback." << endl;
+
+    Local<Value> argv[] = {err};
+    callback->Call(1, argv);
+  }
+
+  for (const ChannelID &channel_id : to_unwatch) {
+    Result<> er = unwatch(channel_id, noop_callback());
+    if (er.is_error()) LOGGER << "Unable to unwatch fatally errored channel " << channel_id << "." << endl;
   }
 
   if (repeat) handle_events_from(thread);

@@ -185,43 +185,36 @@ public:
     // Subscription termination.
     bool terminate = false;
     if (error_code == ERROR_OPERATION_ABORTED) {
-      LOGGER << "ERROR_OPERATION_ABORTED encountered on channel " << channel << "." << endl;
+      LOGGER << "Completing termination of channel " << channel << "." << endl;
       terminate = true;
     } else if (sub->is_terminating()) {
       LOGGER << "Filesystem event encountered on terminating channel " << channel << "." << endl;
       terminate = true;
     }
-    if (terminate) {
-      AckPayload ack(sub->get_command_id(), channel, true, "");
-      Message response(move(ack));
-
-      subscriptions.erase(it);
-      delete sub;
-
-      return emit(move(response));
-    }
+    if (terminate) return remove(sub);
 
     // Handle errors.
     if (error_code == ERROR_INVALID_PARAMETER) {
       LOGGER << "Attempting to revert to a network-friendly buffer size." << endl;
-      Result<> resize = sub->use_network_size();
-      if (resize.is_error()) return resize;
 
-      return sub->schedule(&event_helper).propagate_as_void();
+      Result<> resize = sub->use_network_size();
+      if (resize.is_error()) return emit_fatal_error(sub, move(resize));
+
+      return reschedule(sub);
     }
 
     if (error_code == ERROR_NOTIFY_ENUM_DIR) {
       LOGGER << "Change buffer overflow. Some events may have been lost." << endl;
-      return sub->schedule(&event_helper).propagate_as_void();
+      return reschedule(sub);
     }
 
     if (error_code != ERROR_SUCCESS) {
-      return windows_error_result<>("Completion callback error", error_code);
+      return emit_fatal_error(sub, windows_error_result<>("Completion callback error", error_code));
     }
 
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
-    Result<bool> next = sub->schedule(&event_helper);
+    Result<> next = reschedule(sub);
 
     // Process received events.
     MessageBuffer buffer;
@@ -252,6 +245,57 @@ public:
   }
 
 private:
+  Result<> reschedule(Subscription *sub)
+  {
+    Result<bool> sch = sub->schedule(&event_helper);
+    if (sch.is_error()) return emit_fatal_error(sub, sch.propagate_as_void());
+
+    if (!sch.get_value()) {
+      Result<string> root = sub->get_root_path();
+      if (root.is_error()) return emit_fatal_error(sub, root.propagate_as_void());
+
+      LOGGER << "Falling back to polling for path " << root.get_value() << " at channel " << sub->get_channel() << "."
+             << endl;
+
+      Result<> rem = remove(sub);
+      rem &= emit(Message(
+        CommandPayloadBuilder::add(sub->get_channel(), move(root.get_value()), sub->is_recursive(), 1).build()));
+      return rem;
+    }
+
+    return ok_result();
+  }
+
+  Result<> remove(Subscription *sub)
+  {
+    Message response(AckPayload(sub->get_command_id(), sub->get_channel(), true, ""));
+
+    // Ensure that the subscription is valid.
+    ChannelID channel = sub->get_channel();
+    auto it = subscriptions.find(channel);
+    if (it == subscriptions.end() || it->second != sub) {
+      return ok_result();
+    }
+
+    subscriptions.erase(it);
+    delete sub;
+
+    if (sub->get_command_id() != NULL_COMMAND_ID) {
+      return emit(move(response));
+    } else {
+      return ok_result();
+    }
+  }
+
+  Result<> emit_fatal_error(Subscription *sub, Result<> &&r)
+  {
+    assert(r.is_error());
+
+    Result<> out = emit(Message(ErrorPayload(sub->get_channel(), string(r.get_error()), true)));
+    out &= remove(sub);
+    return out;
+  }
+
   Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info,
     Subscription *sub,
     ChannelMessageBuffer &messages,
@@ -268,7 +312,7 @@ private:
       if (attrs == INVALID_FILE_ATTRIBUTES) {
         DWORD attr_err = GetLastError();
         if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND && attr_err != ERROR_ACCESS_DENIED) {
-          return windows_error_result<>("GetFileAttributesW failed", attr_err);
+          LOGGER << windows_error_result<>("GetFileAttributesW failed", attr_err) << "." << endl;
         }
       } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
         kind = KIND_DIRECTORY;
@@ -279,7 +323,10 @@ private:
     }
 
     Result<string> u8r = to_utf8(pathw);
-    if (u8r.is_error()) return u8r.propagate<>();
+    if (u8r.is_error()) {
+      LOGGER << "Unable to convert path to utf-8: " << u8r << "." << endl;
+      return ok_result();
+    }
     string &path = u8r.get_value();
 
     switch (info->Action) {

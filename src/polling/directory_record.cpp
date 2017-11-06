@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <uv.h>
@@ -18,6 +19,7 @@ using std::endl;
 using std::hex;
 using std::move;
 using std::ostream;
+using std::ostringstream;
 using std::set;
 using std::shared_ptr;
 using std::string;
@@ -89,7 +91,17 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   string dir = path();
   int scan_err = uv_fs_scandir(nullptr, &scan_req.req, dir.c_str(), 0, nullptr);
   if (scan_err < 0) {
-    LOGGER << "Unable to scan directory " << dir << ": " << uv_strerror(scan_err) << "." << endl;
+    ostringstream msg;
+    msg << "Unable to scan directory " << dir << ": " << uv_strerror(scan_err);
+
+    if (scan_err == UV_ENOENT || scan_err == UV_ENOTDIR || scan_err == UV_EACCES) {
+      // It's probably fine. Just log it.
+      // TODO: Maybe report a deletion if this is the top-level record?
+      LOGGER << msg.str() << "." << endl;
+    } else {
+      it->get_buffer().error(msg.str(), false);
+    }
+
     return;
   }
 
@@ -109,7 +121,10 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   }
 
   if (next_err != UV_EOF) {
-    LOGGER << "Unable to list entries in directory " << dir << ": " << uv_strerror(next_err) << "." << endl;
+    ostringstream msg;
+    msg << "Unable to list entries in directory " << dir << ": " << uv_strerror(next_err);
+
+    it->get_buffer().error(msg.str(), false);
   } else {
     // Report entries that were present the last time we scanned this directory, but aren't included in this
     // scan.
@@ -146,7 +161,9 @@ void DirectoryRecord::entry(BoundPollingIterator *it,
 
   int lstat_err = uv_fs_lstat(nullptr, &lstat_req.req, entry_path.c_str(), nullptr);
   if (lstat_err != 0 && lstat_err != UV_ENOENT && lstat_err != UV_EACCES) {
-    LOGGER << "Unable to stat " << entry_path << ": " << uv_strerror(lstat_err) << "." << endl;
+    ostringstream msg;
+    msg << "Unable to stat " << entry_path << ": " << uv_strerror(lstat_err);
+    it->get_buffer().error(msg.str(), false);
   }
 
   auto previous = entries.find(entry_name);

@@ -14,6 +14,7 @@
 #include "side_effect.h"
 #include "watch_registry.h"
 
+using std::endl;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -64,20 +65,15 @@ public:
         MessageBuffer messages;
         SideEffect side;
 
-        Result<> r = registry.consume(messages, jar, side);
+        Result<> cr = registry.consume(messages, jar, side);
+        if (cr.is_error()) LOGGER << cr << endl;
 
-        vector<SideEffect::PollingRoot> poll;
-        r &= side.enact_in(&registry, poll);
-
-        for (auto &poll_root : poll) {
-          messages.add(Message(CommandPayloadBuilder::add(poll_root.first, move(poll_root.second), true, 1).build()));
-        }
+        side.enact_in(&registry, messages);
 
         if (!messages.empty()) {
-          r &= emit_all(messages.begin(), messages.end());
+          Result<> er = emit_all(messages.begin(), messages.end());
+          if (er.is_error()) return er;
         }
-
-        if (r.is_error()) return r;
       }
     }
 
@@ -92,8 +88,8 @@ public:
   {
     vector<string> poll;
 
-    Result<> r0 = registry.add(channel, string(root_path), recursive, poll);
-    if (r0.is_error()) return r0.propagate<bool>();
+    Result<> r = registry.add(channel, string(root_path), recursive, poll);
+    if (r.is_error()) return r.propagate<bool>();
 
     if (!poll.empty()) {
       vector<Message> poll_messages;

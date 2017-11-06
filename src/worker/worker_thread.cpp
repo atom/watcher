@@ -39,17 +39,13 @@ Result<Thread::CommandOutcome> WorkerThread::handle_add_command(const CommandPay
 {
   Result<bool> r = platform->handle_add_command(
     payload->get_id(), payload->get_channel_id(), payload->get_root(), payload->get_recursive());
-  if (r.is_error()) return r.propagate<CommandOutcome>();
-
-  return ok_result(r.get_value() ? ACK : NOTHING);
+  return r.propagate(r.get_value() ? ACK : NOTHING);
 }
 
 Result<Thread::CommandOutcome> WorkerThread::handle_remove_command(const CommandPayload *payload)
 {
   Result<bool> r = platform->handle_remove_command(payload->get_id(), payload->get_channel_id());
-  if (r.is_error()) return r.propagate<CommandOutcome>();
-
-  return ok_result(r.get_value() ? ACK : NOTHING);
+  return r.propagate(r.get_value() ? ACK : NOTHING);
 }
 
 void WorkerThread::collect_status(Status &status)
