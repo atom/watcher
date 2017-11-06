@@ -213,5 +213,49 @@ describe('exported functions', function () {
         ))
       })
     })
+
+    describe('single file', function () {
+      let watchedFile, unwatchedFile, matcher
+
+      beforeEach(async function () {
+        watchedFile = fixture.watchPath('watched.txt')
+        unwatchedFile = fixture.watchPath('unwatched.txt')
+
+        await Promise.all([
+          fs.writeFile(watchedFile, 'watched\n'),
+          fs.writeFile(unwatchedFile, 'unwatched\n')
+        ])
+
+        matcher = new EventMatcher(fixture)
+        await matcher.watch(['watched.txt'], {})
+      })
+
+      it('receives events for only that file', async function () {
+        await fs.appendFile(unwatchedFile, 'nope\n')
+        await fs.appendFile(watchedFile, 'yep\n')
+
+        await until(matcher.allEvents({path: watchedFile}))
+        assert.isTrue(matcher.noEvents({path: unwatchedFile}))
+      })
+
+      it('continues to work after moving the file away and creating a new one in its place', async function () {
+        let newName = fixture.watchPath('new-name.txt')
+
+        await fs.rename(watchedFile, newName)
+        await until('deletion event arrives', matcher.allEvents({path: watchedFile, action: 'deleted'}))
+
+        await fs.writeFile(watchedFile, 'indeed\n')
+        await until('creation event arrives', matcher.allEvents({path: watchedFile, action: 'created'}))
+
+        await fs.appendFile(newName, 'nope\n')
+        await fs.appendFile(unwatchedFile, 'nope\n')
+        await fs.appendFile(watchedFile, 'yep\n')
+
+        await until('modification event arrives', matcher.allEvents({path: watchedFile, action: 'modified'}))
+
+        assert.isTrue(matcher.noEvents({path: unwatchedFile}))
+        assert.isTrue(matcher.noEvents({path: newName}))
+      })
+    })
   })
 })
