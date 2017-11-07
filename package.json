@@ -1,6 +1,6 @@
 {
   "name": "@atom/watcher",
-  "version": "0.0.5",
+  "version": "0.0.6-0",
   "description": "Atom filesystem watcher",
   "main": "lib/index.js",
   "scripts": {
