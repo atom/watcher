@@ -179,12 +179,16 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
   Hub::get().collect_status(status);
 
   Local<Object> status_object = Nan::New<Object>();
+
+  // Main thread
   Nan::Set(status_object,
     Nan::New<String>("pendingCallbackCount").ToLocalChecked(),
     Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count)));
   Nan::Set(status_object,
     Nan::New<String>("channelCallbackCount").ToLocalChecked(),
     Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count)));
+
+  // Worker thread
   Nan::Set(status_object,
     Nan::New<String>("workerThreadState").ToLocalChecked(),
     Nan::New<String>(status.worker_thread_state).ToLocalChecked());
@@ -203,6 +207,31 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
   Nan::Set(status_object,
     Nan::New<String>("workerOutOk").ToLocalChecked(),
     Nan::New<String>(status.worker_out_ok).ToLocalChecked());
+
+  Nan::Set(status_object,
+    Nan::New<String>("workerSubscriptionCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_subscription_count)).ToLocalChecked());
+#ifdef PLATFORM_MACOS
+  Nan::Set(status_object,
+    Nan::New<String>("workerRenameBufferSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_rename_buffer_size)).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("workerRecentFileCacheSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_recent_file_cache_size)).ToLocalChecked());
+#endif
+#ifdef PLATFORM_LINUX
+  Nan::Set(status_object,
+    Nan::New<String>("workerWatchDescriptorCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_watch_descriptor_count)).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("workerChannelCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_channel_count)).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("workerCookieJarSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_cookie_jar_size)).ToLocalChecked());
+#endif
+
+  // Polling thread
   Nan::Set(status_object,
     Nan::New<String>("pollingThreadState").ToLocalChecked(),
     Nan::New<String>(status.polling_thread_state).ToLocalChecked());
@@ -221,6 +250,13 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
   Nan::Set(status_object,
     Nan::New<String>("pollingOutOk").ToLocalChecked(),
     Nan::New<String>(status.polling_out_ok).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("pollingRootCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_root_count)).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("pollingEntryCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_entry_count)).ToLocalChecked());
+
   info.GetReturnValue().Set(status_object);
 }
 
