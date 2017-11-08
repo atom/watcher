@@ -42,6 +42,10 @@ public:
 
   size_t polling_root_count{0};
   size_t polling_entry_count{0};
+
+  void assimilate_worker_status(const Status &other);
+
+  void assimilate_polling_status(const Status &other);
 };
 
 std::ostream &operator<<(std::ostream &out, const Status &status);
