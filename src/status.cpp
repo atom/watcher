@@ -26,6 +26,8 @@ void Status::assimilate_worker_status(const Status &other)
   worker_channel_count = other.worker_channel_count;
   worker_cookie_jar_size = other.worker_cookie_jar_size;
 #endif
+
+  worker_received = true;
 }
 
 void Status::assimilate_polling_status(const Status &other)
@@ -39,6 +41,8 @@ void Status::assimilate_polling_status(const Status &other)
 
   polling_root_count = other.polling_root_count;
   polling_entry_count = other.polling_entry_count;
+
+  polling_received = true;
 }
 
 ostream &operator<<(ostream &out, const Status &status)
