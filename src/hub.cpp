@@ -255,19 +255,20 @@ void Hub::handle_events_from(Thread &thread)
         continue;
       }
 
-      Status &status = req->second->status;
+      Status &s = req->second->status;
       if (&thread == &worker_thread) {
-        status.assimilate_worker_status(status);
+        s.assimilate_worker_status(status->get_status());
       } else if (&thread == &polling_thread) {
-        status.assimilate_polling_status(status);
+        s.assimilate_polling_status(status->get_status());
       } else {
         LOGGER << "Unknown thread." << endl;
         continue;
       }
 
-      if (status.complete()) {
+      if (s.complete()) {
         handle_completed_status(*(req->second));
         status_reqs.erase(req);
+        LOGGER << "Status request " << request_id << " has been completed." << endl;
       }
 
       continue;
