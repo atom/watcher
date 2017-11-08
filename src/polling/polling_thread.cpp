@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 #include <utility>
@@ -21,6 +22,7 @@ using std::move;
 using std::ostream;
 using std::string;
 using std::to_string;
+using std::unique_ptr;
 using std::vector;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
@@ -243,6 +245,6 @@ Result<Thread::CommandOutcome> PollingThread::handle_status_command(const Comman
     status->polling_entry_count += pair.second.count_entries();
   }
 
-  Result<> r = emit(Message(StatusMessage(payload->get_request_id(), move(status))));
+  Result<> r = emit(Message(StatusPayload(command->get_request_id(), move(status))));
   return r.propagate(NOTHING);
 }

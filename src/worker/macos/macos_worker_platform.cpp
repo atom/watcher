@@ -174,7 +174,7 @@ public:
   {
     status.worker_subscription_count = subscriptions.size();
     status.worker_rename_buffer_size = rename_buffer.size();
-    status.worker_recent_file_cache_size = recent_file_cache.size();
+    status.worker_recent_file_cache_size = cache.size();
   }
 
   FnRegistryAction source_triggered()

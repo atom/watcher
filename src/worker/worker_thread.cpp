@@ -62,6 +62,6 @@ Result<Thread::CommandOutcome> WorkerThread::handle_status_command(const Command
 
   platform->populate_status(*status);
 
-  Result<> r = emit(Message(StatusMessage(payload->get_request_id(), move(status))));
+  Result<> r = emit(Message(StatusPayload(payload->get_request_id(), move(status))));
   return r.propagate(NOTHING);
 }

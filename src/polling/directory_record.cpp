@@ -233,7 +233,7 @@ void DirectoryRecord::entry(BoundPollingIterator *it,
   }
 }
 
-bool DirectoryRecord::all_populated()
+bool DirectoryRecord::all_populated() const
 {
   if (!populated) return false;
 
@@ -246,7 +246,7 @@ bool DirectoryRecord::all_populated()
   return true;
 }
 
-size_t DirectoryRecord::count_entries()
+size_t DirectoryRecord::count_entries() const
 {
   // Start with 1 to count the readdir() on this directory.
   size_t count = 1;
