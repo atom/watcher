@@ -224,3 +224,20 @@ Result<Thread::CommandOutcome> PollingThread::handle_polling_throttle_command(co
   poll_throttle = command->get_arg();
   return ok_result(ACK);
 }
+
+Result<Thread::CommandOutcome> PollingThread::handle_status_command(const CommandPayload *command)
+{
+  unique_ptr<Status> status{new Status()};
+
+  status->polling_thread_state = state_name();
+  status->polling_thread_ok = get_error();
+  status->polling_in_size = get_in_queue_size();
+  status->polling_in_ok = get_in_queue_error();
+  status->polling_out_size = get_out_queue_size();
+  status->polling_out_ok = get_out_queue_error();
+
+  // TODO
+
+  Result<> r = emit(Message(StatusMessage(payload->get_request_id(), move(status))));
+  return r.propagate(NOTHING);
+}

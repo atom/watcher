@@ -53,6 +53,9 @@ private:
   // Configure the number of system calls to perform during each `cycle()`.
   Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *command) override;
 
+  // Respond to a request for collecting status.
+  Result<CommandOutcome> handle_status_command(const CommandPayload *command) override;
+
   std::chrono::milliseconds poll_interval;
   uint_fast32_t poll_throttle;
 
