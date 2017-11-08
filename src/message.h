@@ -112,8 +112,9 @@ enum CommandAction
   COMMAND_POLLING_INTERVAL,
   COMMAND_POLLING_THROTTLE,
   COMMAND_DRAIN,
+  COMMAND_STATUS,
   COMMAND_MIN = COMMAND_ADD,
-  COMMAND_MAX = COMMAND_DRAIN
+  COMMAND_MAX = COMMAND_STATUS
 };
 
 using CommandID = uint_fast32_t;
@@ -210,6 +211,11 @@ public:
   }
 
   static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
+
+  static CommandPayloadBuilder status(ChannelID channel_id)
+  {
+    return CommandPayloadBuilder(COMMAND_STATUS, "", channel_id, false, 1);
+  }
 
   CommandPayloadBuilder(CommandPayloadBuilder &&original) noexcept :
     id{original.id},
@@ -346,8 +352,9 @@ enum MessageKind {
   MSG_COMMAND,
   MSG_ACK,
   MSG_ERROR,
+  MSG_STATUS,
   MSG_MIN = MSG_FILESYSTEM,
-  MSG_MAX = MSG_ERROR
+  MSG_MAX = MSG_STATUS
 };
 
 class Message
