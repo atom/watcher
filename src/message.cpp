@@ -133,6 +133,7 @@ string CommandPayload::describe() const
     case COMMAND_POLLING_INTERVAL: builder << "polling interval " << arg; break;
     case COMMAND_POLLING_THROTTLE: builder << "polling throttle " << arg; break;
     case COMMAND_DRAIN: builder << "drain"; break;
+    case COMMAND_STATUS: builder << "status channel " << arg; break;
     default: builder << "!!action=" << action; break;
   }
 
