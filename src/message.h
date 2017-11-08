@@ -31,6 +31,8 @@ const ChannelID NULL_CHANNEL_ID = 0;
 
 using RequestID = uint_fast32_t;
 
+const RequestID NULL_REQUEST_ID = 0;
+
 enum FileSystemAction
 {
   ACTION_CREATED = 0,
@@ -338,7 +340,9 @@ public:
 
   ~StatusPayload() = default;
 
-  const Status &get_status() { return *status; }
+  const RequestID &get_request_id() const { return request_id; }
+
+  const Status &get_status() const { return *status; }
 
   std::string describe() const;
 
@@ -349,9 +353,10 @@ public:
 private:
   const RequestID request_id;
   std::unique_ptr<Status> status;
-}
+};
 
-enum MessageKind {
+enum MessageKind
+{
   MSG_FILESYSTEM,
   MSG_COMMAND,
   MSG_ACK,
