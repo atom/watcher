@@ -1,14 +1,17 @@
 #include <iomanip>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 
 #include "message.h"
+#include "status.h"
 
 using std::move;
 using std::ostream;
 using std::ostringstream;
 using std::string;
+using std::unique_ptr;
 
 ostream &operator<<(ostream &out, FileSystemAction action)
 {
@@ -174,6 +177,20 @@ string ErrorPayload::describe() const
   return builder.str();
 }
 
+StatusPayload::StatusPayload(ChannelID channel_id, unique_ptr<Status> &&status) :
+  channel_id{channel_id},
+  status{move(status)}
+{
+  //
+}
+
+string StatusPayload::describe() const
+{
+  ostringstream builder;
+  builder << "[StatusPayload channel " << channel_id << "]";
+  return builder.str();
+}
+
 const FileSystemPayload *Message::as_filesystem() const
 {
   return kind == MSG_FILESYSTEM ? &filesystem_payload : nullptr;
@@ -192,6 +209,11 @@ const AckPayload *Message::as_ack() const
 const ErrorPayload *Message::as_error() const
 {
   return kind == MSG_ERROR ? &error_payload : nullptr;
+}
+
+const StatusPayload *Message::as_status() const
+{
+  return kind == MSG_STATUS ? &status_payload : nullptr;
 }
 
 Message Message::ack(const Message &original, bool success, string &&message)
@@ -231,6 +253,11 @@ Message::Message(ErrorPayload &&payload) : kind{MSG_ERROR}, error_payload{move(p
   //
 }
 
+Message::Message(StatusPayload &&payload) : kind{MSG_STATUS}, status_payload{move(payload)}
+{
+  //
+}
+
 Message::Message(Message &&original) noexcept : kind{original.kind}, pending{true}
 {
   switch (kind) {
@@ -238,6 +265,7 @@ Message::Message(Message &&original) noexcept : kind{original.kind}, pending{tru
     case MSG_COMMAND: new (&command_payload) CommandPayload(move(original.command_payload)); break;
     case MSG_ACK: new (&ack_payload) AckPayload(move(original.ack_payload)); break;
     case MSG_ERROR: new (&error_payload) ErrorPayload(move(original.error_payload)); break;
+    case MSG_STATUS: new (&status_payload) StatusPayload(move(original.status_payload)); break;
   };
 }
 
@@ -248,6 +276,7 @@ Message::~Message()
     case MSG_COMMAND: command_payload.~CommandPayload(); break;
     case MSG_ACK: ack_payload.~AckPayload(); break;
     case MSG_ERROR: error_payload.~ErrorPayload(); break;
+    case MSG_STATUS: status_payload.~StatusPayload(); break;
   };
 }
 
@@ -261,6 +290,7 @@ string Message::describe() const
     case MSG_COMMAND: builder << command_payload; break;
     case MSG_ACK: builder << ack_payload; break;
     case MSG_ERROR: builder << error_payload; break;
+    case MSG_STATUS: builder << status_payload; break;
     default: builder << "!!kind=" << kind; break;
   };
 
@@ -287,6 +317,12 @@ std::ostream &operator<<(std::ostream &stream, const AckPayload &e)
 }
 
 std::ostream &operator<<(std::ostream &stream, const ErrorPayload &e)
+{
+  stream << e.describe();
+  return stream;
+}
+
+std::ostream &operator<<(std::ostream &stream, const StatusPayload &e)
 {
   stream << e.describe();
   return stream;

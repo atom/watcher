@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "result.h"
+#include "status.h"
 
 enum EntryKind
 {
@@ -318,8 +319,29 @@ private:
   const bool fatal;
 };
 
-enum MessageKind
+class StatusPayload
 {
+public:
+  StatusPayload(ChannelID channel_id, std::unique_ptr<Status> &&status);
+
+  StatusPayload(StatusPayload &&original) noexcept = default;
+
+  ~StatusPayload() = default;
+
+  const Status &get_status() { return *status; }
+
+  std::string describe() const;
+
+  StatusPayload(const StatusPayload &) = delete;
+  StatusPayload &operator=(const StatusPayload &) = delete;
+  StatusPayload &operator=(StatusPayload &&) = delete;
+
+private:
+  const ChannelID channel_id;
+  std::unique_ptr<Status> status;
+}
+
+enum MessageKind {
   MSG_FILESYSTEM,
   MSG_COMMAND,
   MSG_ACK,
@@ -343,6 +365,8 @@ public:
 
   explicit Message(ErrorPayload &&payload);
 
+  explicit Message(StatusPayload &&payload);
+
   Message(Message &&original) noexcept;
 
   ~Message();
@@ -354,6 +378,8 @@ public:
   const AckPayload *as_ack() const;
 
   const ErrorPayload *as_error() const;
+
+  const StatusPayload *as_status() const;
 
   std::string describe() const;
 
@@ -369,6 +395,7 @@ private:
     CommandPayload command_payload;
     AckPayload ack_payload;
     ErrorPayload error_payload;
+    StatusPayload status_payload;
     bool pending{false};
   };
 };
@@ -380,6 +407,8 @@ std::ostream &operator<<(std::ostream &stream, const CommandPayload &e);
 std::ostream &operator<<(std::ostream &stream, const AckPayload &e);
 
 std::ostream &operator<<(std::ostream &stream, const ErrorPayload &e);
+
+std::ostream &operator<<(std::ostream &stream, const StatusPayload &e);
 
 std::ostream &operator<<(std::ostream &stream, const Message &e);
 
