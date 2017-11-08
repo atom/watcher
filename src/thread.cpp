@@ -318,7 +318,7 @@ Result<Thread::CommandOutcome> Thread::handle_polling_throttle_command(const Com
   return handle_unknown_command(payload);
 }
 
-Result<Thread::CommandOutcome> Thread::handle_status_command(const StatusPayload *payload)
+Result<Thread::CommandOutcome> Thread::handle_status_command(const CommandPayload *payload)
 {
   return handle_unknown_command(payload);
 }
