@@ -17,7 +17,6 @@ using v8::FunctionTemplate;
 using v8::Local;
 using v8::Object;
 using v8::String;
-using v8::Uint32;
 using v8::Value;
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)

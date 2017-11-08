@@ -31,7 +31,7 @@ public:
 
   virtual Result<bool> handle_remove_command(CommandID command, ChannelID channel) = 0;
 
-  virtual void populate_status(Status &status) {}
+  virtual void populate_status(Status & /*status*/) {}
 
   Result<> handle_commands()
   {
