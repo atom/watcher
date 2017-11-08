@@ -125,6 +125,10 @@ Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(cons
     handle_polling_throttle_command(command);
   }
 
+  if (command->get_action() == COMMAND_STATUS) {
+    handle_status_command(command);
+  }
+
   return ok_result(OFFLINE_ACK);
 }
 
