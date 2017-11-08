@@ -63,6 +63,8 @@ public:
   std::shared_ptr<std::set<Key>> flush_unmatched(ChannelMessageBuffer &message_buffer,
     const std::shared_ptr<std::set<Key>> &keys);
 
+  size_t size() { return observed_by_inode.size(); }
+
   RenameBuffer(const RenameBuffer &) = delete;
   RenameBuffer(RenameBuffer &&) = delete;
   RenameBuffer &operator=(const RenameBuffer &) = delete;
