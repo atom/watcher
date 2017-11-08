@@ -21,6 +21,17 @@ public:
   size_t worker_out_size{0};
   std::string worker_out_ok{};
 
+  size_t worker_subscription_count{0};
+#ifdef PLATFORM_MACOS
+  size_t worker_rename_buffer_size{0};
+  size_t worker_recent_file_cache_size{0};
+#endif
+#ifdef PLATFORM_LINUX
+  size_t worker_watch_descriptor_count{0};
+  size_t worker_channel_count{0};
+  size_t worker_cookie_jar_size{0};
+#endif
+
   // Polling thread
   std::string polling_thread_state{};
   std::string polling_thread_ok{};
@@ -28,6 +39,9 @@ public:
   std::string polling_in_ok{};
   size_t polling_out_size{0};
   std::string polling_out_ok{};
+
+  size_t polling_root_count{0};
+  size_t polling_entry_count{0};
 };
 
 std::ostream &operator<<(std::ostream &out, const Status &status);
