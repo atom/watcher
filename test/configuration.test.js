@@ -5,11 +5,13 @@ const {configure} = require('../lib/binding')
 const {Fixture} = require('./helper')
 
 describe('configuration', function () {
-  let fixture
+  let fixture, badPath
 
   beforeEach(async function () {
     fixture = new Fixture()
     await fixture.before()
+
+    badPath = fixture.fixturePath('bad', 'path.log')
   })
 
   afterEach(async function () {
@@ -34,6 +36,14 @@ describe('configuration', function () {
     assert.match(contents, /FileLogger opened/)
   })
 
+  it('fails if the main log file cannot be written', async function () {
+    await assert.isRejected(configure({mainLog: badPath}), /cannot be written/)
+  })
+
+  it('fails if the worker log file cannot be written', async function () {
+    await assert.isRejected(configure({workerLog: badPath}), /cannot be written/)
+  })
+
   describe('for the polling thread', function () {
     describe("while it's stopped", function () {
       it('configures the logger', async function () {
@@ -46,6 +56,10 @@ describe('configuration', function () {
         const contents = await fs.readFile(fixture.pollingLogFile)
         assert.match(contents, /FileLogger opened/)
       })
+
+      it('fails if the polling log file cannot be written', async function () {
+        await assert.isRejected(configure({pollingLog: badPath}), /cannot be written/)
+      })
     })
 
     describe("after it's started", function () {
@@ -56,6 +70,12 @@ describe('configuration', function () {
 
         const contents = await fs.readFile(fixture.pollingLogFile)
         assert.match(contents, /FileLogger opened/)
+      })
+
+      it('fails if the polling log file cannot be written', async function () {
+        await fixture.watch([], {poll: true}, () => {})
+
+        await assert.isRejected(configure({pollingLog: badPath}), /cannot be written/)
       })
     })
   })
