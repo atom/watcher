@@ -236,7 +236,12 @@ Result<Thread::CommandOutcome> PollingThread::handle_status_command(const Comman
   status->polling_out_size = get_out_queue_size();
   status->polling_out_ok = get_out_queue_error();
 
-  // TODO
+  status->polling_root_count = roots.size();
+
+  status->polling_entry_count = 0;
+  for (auto &pair : roots) {
+    status->polling_entry_count += pair.second.count_entries();
+  }
 
   Result<> r = emit(Message(StatusMessage(payload->get_request_id(), move(status))));
   return r.propagate(NOTHING);

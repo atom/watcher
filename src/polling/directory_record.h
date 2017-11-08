@@ -51,7 +51,11 @@ public:
   void mark_populated() { populated = true; }
 
   // Return true if all `DirectoryResults` beneath this one have been populated by an initial scan.
-  bool all_populated();
+  bool all_populated() const;
+
+  // Recursively count the number of stat entries tracked beneath this directory, including this directory itself, as
+  // of the last scan.
+  size_t count_entries() const;
 
 private:
   // Construct a `DirectoryRecord` for a child entry.

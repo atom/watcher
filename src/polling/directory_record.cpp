@@ -246,6 +246,21 @@ bool DirectoryRecord::all_populated()
   return true;
 }
 
+size_t DirectoryRecord::count_entries()
+{
+  // Start with 1 to count the readdir() on this directory.
+  size_t count = 1;
+  for (auto &pair : entries) {
+    if ((pair.second.st_mode & S_IFDIR) != S_IFDIR) {
+      count++;
+    }
+  }
+  for (auto &pair : subdirectories) {
+    count += pair.second->count_entries();
+  }
+  return count;
+}
+
 DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, string &&name) :
   parent{parent},
   name(move(name)),
