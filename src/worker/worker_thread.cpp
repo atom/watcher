@@ -48,12 +48,5 @@ Result<Thread::CommandOutcome> WorkerThread::handle_remove_command(const Command
   return r.propagate(r.get_value() ? ACK : NOTHING);
 }
 
-void WorkerThread::collect_status(Status &status)
 {
-  status.worker_thread_state = state_name();
-  status.worker_thread_ok = get_error();
-  status.worker_in_size = get_in_queue_size();
-  status.worker_in_ok = get_in_queue_error();
-  status.worker_out_size = get_out_queue_size();
-  status.worker_out_ok = get_out_queue_error();
 }

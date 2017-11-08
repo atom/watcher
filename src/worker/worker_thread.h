@@ -18,8 +18,6 @@ public:
   explicit WorkerThread(uv_async_t *main_callback);
   ~WorkerThread() override;
 
-  void collect_status(Status &status) override;
-
   WorkerThread(const WorkerThread &) = delete;
   WorkerThread(WorkerThread &&) = delete;
   WorkerThread &operator=(const WorkerThread &) = delete;

@@ -66,9 +66,6 @@ public:
   // run again.
   Result<bool> drain();
 
-  // Override to populate the appropriate fields within a `Status` structure.
-  virtual void collect_status(Status &status) = 0;
-
 protected:
   // Invoked on the newly created thread. Responsible for performing thread startup, consuming any `ThreadStart`
   // initialization and transitioning to the `RUNNING` phase. Calls `Thread::body()` to perform subclass-defined

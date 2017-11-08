@@ -31,16 +31,6 @@ PollingThread::PollingThread(uv_async_t *main_callback) :
   //
 }
 
-void PollingThread::collect_status(Status &status)
-{
-  status.polling_thread_state = state_name();
-  status.polling_thread_ok = get_error();
-  status.polling_in_size = get_in_queue_size();
-  status.polling_in_ok = get_in_queue_error();
-  status.polling_out_size = get_out_queue_size();
-  status.polling_out_ok = get_out_queue_error();
-}
-
 Result<> PollingThread::body()
 {
   while (true) {

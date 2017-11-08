@@ -31,8 +31,6 @@ public:
   PollingThread(PollingThread &&) = delete;
   ~PollingThread() override = default;
 
-  void collect_status(Status &status) override;
-
   PollingThread &operator=(const PollingThread &) = delete;
   PollingThread &operator=(PollingThread &&) = delete;
 
