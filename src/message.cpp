@@ -178,8 +178,8 @@ string ErrorPayload::describe() const
   return builder.str();
 }
 
-StatusPayload::StatusPayload(ChannelID channel_id, unique_ptr<Status> &&status) :
-  channel_id{channel_id},
+StatusPayload::StatusPayload(RequestID request_id, unique_ptr<Status> &&status) :
+  request_id{request_id},
   status{move(status)}
 {
   //
@@ -188,7 +188,7 @@ StatusPayload::StatusPayload(ChannelID channel_id, unique_ptr<Status> &&status) 
 string StatusPayload::describe() const
 {
   ostringstream builder;
-  builder << "[StatusPayload channel " << channel_id << "]";
+  builder << "[StatusPayload request " << request_id << "]";
   return builder.str();
 }
 

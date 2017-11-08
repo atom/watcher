@@ -29,6 +29,8 @@ using ChannelID = uint_fast32_t;
 
 const ChannelID NULL_CHANNEL_ID = 0;
 
+using RequestID = uint_fast32_t;
+
 enum FileSystemAction
 {
   ACTION_CREATED = 0,
@@ -140,6 +142,8 @@ public:
 
   const ChannelID &get_channel_id() const { return arg; }
 
+  const RequestID &get_request_id() const { return arg; }
+
   const bool &get_recursive() const { return recursive; }
 
   const size_t &get_split_count() const { return split_count; }
@@ -212,9 +216,9 @@ public:
 
   static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
 
-  static CommandPayloadBuilder status(ChannelID channel_id)
+  static CommandPayloadBuilder status(RequestID request_id)
   {
-    return CommandPayloadBuilder(COMMAND_STATUS, "", channel_id, false, 1);
+    return CommandPayloadBuilder(COMMAND_STATUS, "", request_id, false, 1);
   }
 
   CommandPayloadBuilder(CommandPayloadBuilder &&original) noexcept :
@@ -328,7 +332,7 @@ private:
 class StatusPayload
 {
 public:
-  StatusPayload(ChannelID channel_id, std::unique_ptr<Status> &&status);
+  StatusPayload(RequestID request_id, std::unique_ptr<Status> &&status);
 
   StatusPayload(StatusPayload &&original) noexcept = default;
 
@@ -343,7 +347,7 @@ public:
   StatusPayload &operator=(StatusPayload &&) = delete;
 
 private:
-  const ChannelID channel_id;
+  const RequestID request_id;
   std::unique_ptr<Status> status;
 }
 
