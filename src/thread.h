@@ -146,6 +146,9 @@ protected:
   // Configure the number of system calls to perform during each polling cycle.
   virtual Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *payload);
 
+  // Respond to a prompt for thread-local status.
+  virtual Result<CommandOutcome> handle_status_command(const StatusPayload *payload);
+
   // Called when a `Message` with an unexpected command type is received. Logs the message and acknowledges.
   Result<CommandOutcome> handle_unknown_command(const CommandPayload *payload);
 

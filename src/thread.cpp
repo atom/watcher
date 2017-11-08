@@ -38,6 +38,7 @@ Thread::DispatchTable::DispatchTable()
   handlers[COMMAND_POLLING_INTERVAL] = &Thread::handle_polling_interval_command;
   handlers[COMMAND_POLLING_THROTTLE] = &Thread::handle_polling_throttle_command;
   handlers[COMMAND_DRAIN] = &Thread::handle_unknown_command;
+  handlers[COMMAND_STATUS] = &Thread::handle_status_command;
 }
 
 const Thread::DispatchTable Thread::command_handlers;
@@ -313,6 +314,11 @@ Result<Thread::CommandOutcome> Thread::handle_polling_interval_command(const Com
 }
 
 Result<Thread::CommandOutcome> Thread::handle_polling_throttle_command(const CommandPayload *payload)
+{
+  return handle_unknown_command(payload);
+}
+
+Result<Thread::CommandOutcome> Thread::handle_status_command(const StatusPayload *payload)
 {
   return handle_unknown_command(payload);
 }
