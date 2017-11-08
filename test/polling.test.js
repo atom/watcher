@@ -15,16 +15,18 @@ describe('polling', function () {
   })
 
   describe('thread state', function () {
-    it('does not run the polling thread while no paths are being polled', function () {
-      assert.equal(status().pollingThreadState, 'stopped')
+    it('does not run the polling thread while no paths are being polled', async function () {
+      const s = await status()
+      assert.equal(s.pollingThreadState, 'stopped')
     })
 
     it('runs the polling thread when polling a directory for changes', async function () {
       const watcher = await fixture.watch([], {poll: true}, () => {})
-      assert.equal(status().pollingThreadState, 'running')
+      const s = await status()
+      assert.equal(s.pollingThreadState, 'running')
 
       await watcher.stop()
-      await until(() => status().pollingThreadState === 'stopped')
+      await until(async () => (await status()).pollingThreadState === 'stopped')
     })
   })
 })
