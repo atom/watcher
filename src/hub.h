@@ -94,16 +94,37 @@ public:
 
   Result<> unwatch(ChannelID channel_id, std::unique_ptr<Nan::Callback> &&ack_callback);
 
+  Result<> status(std::unique_ptr<Nan::Callback> &&status_callback);
+
   void handle_events();
 
-  void collect_status(Status &status);
-
 private:
+  struct StatusReq
+  {
+    explicit StatusReq(std::unique_ptr<Nan::Callback> &&callback) : callback{std::move(callback)}
+    {
+      //
+    }
+
+    ~StatusReq() = default;
+
+    StatusReq(const StatusReq &) = delete;
+    StatusReq(StatusReq &&) = delete;
+
+    StatusReq &operator=(const StatusReq &) = delete;
+    StatusReq &operator=(StatusReq &&) = delete;
+
+    Status status;
+    std::unique_ptr<Nan::Callback> callback;
+  };
+
   Hub();
 
   Result<> send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<Nan::Callback> callback);
 
   void handle_events_from(Thread &thread);
+
+  void handle_completed_status(StatusReq &req);
 
   static Hub the_hub;
 
@@ -114,8 +135,10 @@ private:
 
   CommandID next_command_id;
   ChannelID next_channel_id;
+  RequestID next_request_id;
 
   std::unordered_map<CommandID, std::unique_ptr<Nan::Callback>> pending_callbacks;
+  std::unordered_map<RequestID, std::unique_ptr<StatusReq>> status_reqs;
   std::unordered_map<ChannelID, std::shared_ptr<Nan::Callback>> channel_callbacks;
 };
 

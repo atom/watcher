@@ -33,6 +33,9 @@ public:
   // Return `true` once the first complete scan has been completed by calls to `PolledRoot::advance()`.
   bool is_all_populated() { return all_populated; }
 
+  // Count the number of filesystem entries that are covered by this polling thread.
+  size_t count_entries() const;
+
   PolledRoot(const PolledRoot &) = delete;
   PolledRoot(PolledRoot &&) = delete;
   PolledRoot &operator=(const PolledRoot &) = delete;

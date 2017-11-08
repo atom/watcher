@@ -17,7 +17,6 @@ using v8::FunctionTemplate;
 using v8::Local;
 using v8::Object;
 using v8::String;
-using v8::Uint32;
 using v8::Value;
 
 void configure(const Nan::FunctionCallbackInfo<Value> &info)
@@ -175,53 +174,8 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 
 void status(const Nan::FunctionCallbackInfo<Value> &info)
 {
-  Status status;
-  Hub::get().collect_status(status);
-
-  Local<Object> status_object = Nan::New<Object>();
-  Nan::Set(status_object,
-    Nan::New<String>("pendingCallbackCount").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count)));
-  Nan::Set(status_object,
-    Nan::New<String>("channelCallbackCount").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count)));
-  Nan::Set(status_object,
-    Nan::New<String>("workerThreadState").ToLocalChecked(),
-    Nan::New<String>(status.worker_thread_state).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("workerThreadOk").ToLocalChecked(),
-    Nan::New<String>(status.worker_thread_ok).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("workerInSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_in_size)));
-  Nan::Set(status_object,
-    Nan::New<String>("workerInOk").ToLocalChecked(),
-    Nan::New<String>(status.worker_in_ok).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("workerOutSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_out_size)));
-  Nan::Set(status_object,
-    Nan::New<String>("workerOutOk").ToLocalChecked(),
-    Nan::New<String>(status.worker_out_ok).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("pollingThreadState").ToLocalChecked(),
-    Nan::New<String>(status.polling_thread_state).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("pollingThreadOk").ToLocalChecked(),
-    Nan::New<String>(status.polling_thread_ok).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("pollingInSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_in_size)));
-  Nan::Set(status_object,
-    Nan::New<String>("pollingInOk").ToLocalChecked(),
-    Nan::New<String>(status.polling_in_ok).ToLocalChecked());
-  Nan::Set(status_object,
-    Nan::New<String>("pollingOutSize").ToLocalChecked(),
-    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_out_size)));
-  Nan::Set(status_object,
-    Nan::New<String>("pollingOutOk").ToLocalChecked(),
-    Nan::New<String>(status.polling_out_ok).ToLocalChecked());
-  info.GetReturnValue().Set(status_object);
+  unique_ptr<Nan::Callback> callback(new Nan::Callback(info[0].As<Function>()));
+  Hub::get().status(move(callback));
 }
 
 void initialize(Local<Object> exports)

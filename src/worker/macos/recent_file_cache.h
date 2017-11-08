@@ -119,6 +119,8 @@ public:
 
   void prepopulate(const std::string &root, size_t max);
 
+  size_t size() { return by_path.size(); }
+
 private:
   std::map<std::string, std::shared_ptr<PresentEntry>> pending;
 

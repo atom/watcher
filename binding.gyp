@@ -27,6 +27,9 @@
         ],
         "conditions": [
             ["OS=='mac'", {
+                "defines": [
+                    'PLATFORM_MACOS'
+                ],
                 "sources": [
                     "src/helper/common_posix.cpp",
                     "src/helper/macos/helper.cpp",
@@ -48,6 +51,9 @@
                 }
             }],
             ["OS=='win'", {
+                "defines": [
+                    'PLATFORM_WINDOWS'
+                ],
                 "sources": [
                     "src/helper/common_win.cpp",
                     "src/helper/windows/helper.cpp",
@@ -56,6 +62,9 @@
                 ]
             }],
             ["OS=='linux'", {
+                "defines": [
+                    'PLATFORM_LINUX'
+                ],
                 "sources": [
                     "src/helper/common_posix.cpp",
                     "src/worker/linux/pipe.cpp",

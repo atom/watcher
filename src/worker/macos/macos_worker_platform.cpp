@@ -170,6 +170,13 @@ public:
     return ok_result(true);
   }
 
+  void populate_status(Status &status) override
+  {
+    status.worker_subscription_count = subscriptions.size();
+    status.worker_rename_buffer_size = rename_buffer.size();
+    status.worker_recent_file_cache_size = cache.size();
+  }
+
   FnRegistryAction source_triggered()
   {
     Result<> r = handle_commands();

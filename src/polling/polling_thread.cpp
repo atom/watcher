@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 #include <utility>
@@ -21,6 +22,7 @@ using std::move;
 using std::ostream;
 using std::string;
 using std::to_string;
+using std::unique_ptr;
 using std::vector;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
@@ -29,16 +31,6 @@ PollingThread::PollingThread(uv_async_t *main_callback) :
   poll_throttle{DEFAULT_POLL_THROTTLE}
 {
   //
-}
-
-void PollingThread::collect_status(Status &status)
-{
-  status.polling_thread_state = state_name();
-  status.polling_thread_ok = get_error();
-  status.polling_in_size = get_in_queue_size();
-  status.polling_in_ok = get_in_queue_error();
-  status.polling_out_size = get_out_queue_size();
-  status.polling_out_ok = get_out_queue_error();
 }
 
 Result<> PollingThread::body()
@@ -131,6 +123,10 @@ Result<Thread::OfflineCommandOutcome> PollingThread::handle_offline_command(cons
 
   if (command->get_action() == COMMAND_POLLING_THROTTLE) {
     handle_polling_throttle_command(command);
+  }
+
+  if (command->get_action() == COMMAND_STATUS) {
+    handle_status_command(command);
   }
 
   return ok_result(OFFLINE_ACK);
@@ -233,4 +229,26 @@ Result<Thread::CommandOutcome> PollingThread::handle_polling_throttle_command(co
 {
   poll_throttle = command->get_arg();
   return ok_result(ACK);
+}
+
+Result<Thread::CommandOutcome> PollingThread::handle_status_command(const CommandPayload *command)
+{
+  unique_ptr<Status> status{new Status()};
+
+  status->polling_thread_state = state_name();
+  status->polling_thread_ok = get_error();
+  status->polling_in_size = get_in_queue_size();
+  status->polling_in_ok = get_in_queue_error();
+  status->polling_out_size = get_out_queue_size();
+  status->polling_out_ok = get_out_queue_error();
+
+  status->polling_root_count = roots.size();
+
+  status->polling_entry_count = 0;
+  for (auto &pair : roots) {
+    status->polling_entry_count += pair.second.count_entries();
+  }
+
+  Result<> r = emit(Message(StatusPayload(command->get_request_id(), move(status))));
+  return r.propagate(NOTHING);
 }

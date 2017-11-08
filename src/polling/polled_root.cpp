@@ -31,3 +31,8 @@ size_t PolledRoot::advance(MessageBuffer &buffer, size_t throttle_allocation)
 
   return progress;
 }
+
+size_t PolledRoot::count_entries() const
+{
+  return root->count_entries();
+}

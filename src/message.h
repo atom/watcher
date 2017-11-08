@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "result.h"
+#include "status.h"
 
 enum EntryKind
 {
@@ -27,6 +28,10 @@ using Entry = std::pair<std::string, EntryKind>;
 using ChannelID = uint_fast32_t;
 
 const ChannelID NULL_CHANNEL_ID = 0;
+
+using RequestID = uint_fast32_t;
+
+const RequestID NULL_REQUEST_ID = 0;
 
 enum FileSystemAction
 {
@@ -111,8 +116,9 @@ enum CommandAction
   COMMAND_POLLING_INTERVAL,
   COMMAND_POLLING_THROTTLE,
   COMMAND_DRAIN,
+  COMMAND_STATUS,
   COMMAND_MIN = COMMAND_ADD,
-  COMMAND_MAX = COMMAND_DRAIN
+  COMMAND_MAX = COMMAND_STATUS
 };
 
 using CommandID = uint_fast32_t;
@@ -137,6 +143,8 @@ public:
   const uint_fast32_t &get_arg() const { return arg; }
 
   const ChannelID &get_channel_id() const { return arg; }
+
+  const RequestID &get_request_id() const { return arg; }
 
   const bool &get_recursive() const { return recursive; }
 
@@ -209,6 +217,11 @@ public:
   }
 
   static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
+
+  static CommandPayloadBuilder status(RequestID request_id)
+  {
+    return CommandPayloadBuilder(COMMAND_STATUS, "", request_id, false, 1);
+  }
 
   CommandPayloadBuilder(CommandPayloadBuilder &&original) noexcept :
     id{original.id},
@@ -318,14 +331,39 @@ private:
   const bool fatal;
 };
 
+class StatusPayload
+{
+public:
+  StatusPayload(RequestID request_id, std::unique_ptr<Status> &&status);
+
+  StatusPayload(StatusPayload &&original) noexcept = default;
+
+  ~StatusPayload() = default;
+
+  const RequestID &get_request_id() const { return request_id; }
+
+  const Status &get_status() const { return *status; }
+
+  std::string describe() const;
+
+  StatusPayload(const StatusPayload &) = delete;
+  StatusPayload &operator=(const StatusPayload &) = delete;
+  StatusPayload &operator=(StatusPayload &&) = delete;
+
+private:
+  const RequestID request_id;
+  std::unique_ptr<Status> status;
+};
+
 enum MessageKind
 {
   MSG_FILESYSTEM,
   MSG_COMMAND,
   MSG_ACK,
   MSG_ERROR,
+  MSG_STATUS,
   MSG_MIN = MSG_FILESYSTEM,
-  MSG_MAX = MSG_ERROR
+  MSG_MAX = MSG_STATUS
 };
 
 class Message
@@ -343,6 +381,8 @@ public:
 
   explicit Message(ErrorPayload &&payload);
 
+  explicit Message(StatusPayload &&payload);
+
   Message(Message &&original) noexcept;
 
   ~Message();
@@ -354,6 +394,8 @@ public:
   const AckPayload *as_ack() const;
 
   const ErrorPayload *as_error() const;
+
+  const StatusPayload *as_status() const;
 
   std::string describe() const;
 
@@ -369,6 +411,7 @@ private:
     CommandPayload command_payload;
     AckPayload ack_payload;
     ErrorPayload error_payload;
+    StatusPayload status_payload;
     bool pending{false};
   };
 };
@@ -380,6 +423,8 @@ std::ostream &operator<<(std::ostream &stream, const CommandPayload &e);
 std::ostream &operator<<(std::ostream &stream, const AckPayload &e);
 
 std::ostream &operator<<(std::ostream &stream, const ErrorPayload &e);
+
+std::ostream &operator<<(std::ostream &stream, const StatusPayload &e);
 
 std::ostream &operator<<(std::ostream &stream, const Message &e);
 

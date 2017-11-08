@@ -12,8 +12,10 @@
 #include "log.h"
 #include "message.h"
 #include "nan/all_callback.h"
+#include "nan/functional_callback.h"
 #include "polling/polling_thread.h"
 #include "result.h"
+#include "status.h"
 #include "worker/worker_thread.h"
 
 using Nan::Callback;
@@ -31,6 +33,7 @@ using v8::Local;
 using v8::Number;
 using v8::Object;
 using v8::String;
+using v8::Uint32;
 using v8::Value;
 
 void handle_events_helper(uv_async_t * /*handle*/)
@@ -40,12 +43,14 @@ void handle_events_helper(uv_async_t * /*handle*/)
 
 Hub Hub::the_hub;
 
-Hub::Hub() : worker_thread(&event_handler), polling_thread(&event_handler)
+Hub::Hub() :
+  worker_thread(&event_handler),
+  polling_thread(&event_handler),
+  next_command_id{NULL_COMMAND_ID + 1},
+  next_channel_id{NULL_CHANNEL_ID + 1},
+  next_request_id{NULL_REQUEST_ID + 1}
 {
   int err;
-
-  next_command_id = NULL_COMMAND_ID + 1;
-  next_channel_id = NULL_CHANNEL_ID + 1;
 
   err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
   if (err != 0) return;
@@ -91,19 +96,29 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
   return r;
 }
 
+Result<> Hub::status(std::unique_ptr<Nan::Callback> &&status_callback)
+{
+  RequestID request_id = next_request_id;
+  next_request_id++;
+
+  unique_ptr<StatusReq> req{new StatusReq(move(status_callback))};
+
+  // Main thread statistics
+  req->status.pending_callback_count = pending_callbacks.size();
+  req->status.channel_callback_count = channel_callbacks.size();
+
+  status_reqs.emplace(request_id, move(req));
+
+  Result<> r = ok_result();
+  r &= send_command(worker_thread, CommandPayloadBuilder::status(request_id), noop_callback());
+  r &= send_command(polling_thread, CommandPayloadBuilder::status(request_id), noop_callback());
+  return r;
+}
+
 void Hub::handle_events()
 {
   handle_events_from(worker_thread);
   handle_events_from(polling_thread);
-}
-
-void Hub::collect_status(Status &status)
-{
-  status.pending_callback_count = pending_callbacks.size();
-  status.channel_callback_count = channel_callbacks.size();
-
-  worker_thread.collect_status(status);
-  polling_thread.collect_status(status);
 }
 
 Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<Nan::Callback> callback)
@@ -228,6 +243,37 @@ void Hub::handle_events_from(Thread &thread)
       continue;
     }
 
+    const StatusPayload *status = message.as_status();
+    if (status != nullptr) {
+      LOGGER << "Received status message " << message << "." << endl;
+
+      const RequestID &request_id = status->get_request_id();
+
+      auto req = status_reqs.find(request_id);
+      if (req == status_reqs.end()) {
+        LOGGER << "Unrecognized request ID " << request_id << "." << endl;
+        continue;
+      }
+
+      Status &s = req->second->status;
+      if (&thread == &worker_thread) {
+        s.assimilate_worker_status(status->get_status());
+      } else if (&thread == &polling_thread) {
+        s.assimilate_polling_status(status->get_status());
+      } else {
+        LOGGER << "Unknown thread." << endl;
+        continue;
+      }
+
+      if (s.complete()) {
+        handle_completed_status(*(req->second));
+        status_reqs.erase(req);
+        LOGGER << "Status request " << request_id << " has been completed." << endl;
+      }
+
+      continue;
+    }
+
     LOGGER << "Received unexpected message " << message << "." << endl;
   }
 
@@ -280,4 +326,91 @@ void Hub::handle_events_from(Thread &thread)
   }
 
   if (repeat) handle_events_from(thread);
+}
+
+void Hub::handle_completed_status(StatusReq &req)
+{
+  Status &status = req.status;
+
+  Local<Object> status_object = Nan::New<Object>();
+
+  // Main thread
+  Nan::Set(status_object,
+    Nan::New<String>("pendingCallbackCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.pending_callback_count)));
+  Nan::Set(status_object,
+    Nan::New<String>("channelCallbackCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.channel_callback_count)));
+
+  // Worker thread
+  Nan::Set(status_object,
+    Nan::New<String>("workerThreadState").ToLocalChecked(),
+    Nan::New<String>(status.worker_thread_state).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("workerThreadOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_thread_ok).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("workerInSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_in_size)));
+  Nan::Set(status_object,
+    Nan::New<String>("workerInOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_in_ok).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("workerOutSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_out_size)));
+  Nan::Set(status_object,
+    Nan::New<String>("workerOutOk").ToLocalChecked(),
+    Nan::New<String>(status.worker_out_ok).ToLocalChecked());
+
+  Nan::Set(status_object,
+    Nan::New<String>("workerSubscriptionCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_subscription_count)));
+#ifdef PLATFORM_MACOS
+  Nan::Set(status_object,
+    Nan::New<String>("workerRenameBufferSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_rename_buffer_size)));
+  Nan::Set(status_object,
+    Nan::New<String>("workerRecentFileCacheSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_recent_file_cache_size)));
+#endif
+#ifdef PLATFORM_LINUX
+  Nan::Set(status_object,
+    Nan::New<String>("workerWatchDescriptorCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_watch_descriptor_count)));
+  Nan::Set(status_object,
+    Nan::New<String>("workerChannelCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_channel_count)));
+  Nan::Set(status_object,
+    Nan::New<String>("workerCookieJarSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.worker_cookie_jar_size)));
+#endif
+
+  // Polling thread
+  Nan::Set(status_object,
+    Nan::New<String>("pollingThreadState").ToLocalChecked(),
+    Nan::New<String>(status.polling_thread_state).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("pollingThreadOk").ToLocalChecked(),
+    Nan::New<String>(status.polling_thread_ok).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("pollingInSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_in_size)));
+  Nan::Set(status_object,
+    Nan::New<String>("pollingInOk").ToLocalChecked(),
+    Nan::New<String>(status.polling_in_ok).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("pollingOutSize").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_out_size)));
+  Nan::Set(status_object,
+    Nan::New<String>("pollingOutOk").ToLocalChecked(),
+    Nan::New<String>(status.polling_out_ok).ToLocalChecked());
+  Nan::Set(status_object,
+    Nan::New<String>("pollingRootCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_root_count)));
+  Nan::Set(status_object,
+    Nan::New<String>("pollingEntryCount").ToLocalChecked(),
+    Nan::New<Uint32>(static_cast<uint32_t>(status.polling_entry_count)));
+
+  Local<Value> argv[] = {Nan::Null(), status_object};
+  req.callback->Call(2, argv);
 }
