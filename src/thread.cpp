@@ -282,28 +282,36 @@ Result<Thread::CommandOutcome> Thread::handle_remove_command(const CommandPayloa
 
 Result<Thread::CommandOutcome> Thread::handle_log_file_command(const CommandPayload *payload)
 {
-  Logger::to_file(payload->get_root().c_str());
+  string err = Logger::to_file(payload->get_root().c_str());
+  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+
   starter->set_logging(payload);
   return ok_result(ACK);
 }
 
 Result<Thread::CommandOutcome> Thread::handle_log_stderr_command(const CommandPayload *payload)
 {
-  Logger::to_stderr();
+  string err = Logger::to_stderr();
+  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+
   starter->set_logging(payload);
   return ok_result(ACK);
 }
 
 Result<Thread::CommandOutcome> Thread::handle_log_stdout_command(const CommandPayload *payload)
 {
-  Logger::to_stdout();
+  string err = Logger::to_stdout();
+  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+
   starter->set_logging(payload);
   return ok_result(ACK);
 }
 
 Result<Thread::CommandOutcome> Thread::handle_log_disable_command(const CommandPayload *payload)
 {
-  Logger::disable();
+  string err = Logger::disable();
+  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+
   starter->set_logging(payload);
   return ok_result(ACK);
 }
