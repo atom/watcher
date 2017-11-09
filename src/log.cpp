@@ -1,11 +1,13 @@
+#include <cerrno>
+#include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <uv.h>
 
 #include "log.h"
-
-#include <iomanip>
 
 using std::cerr;
 using std::cout;
@@ -13,7 +15,9 @@ using std::dec;
 using std::endl;
 using std::ofstream;
 using std::ostream;
+using std::ostringstream;
 using std::setw;
+using std::strerror;
 using std::string;
 using std::to_string;
 
@@ -35,6 +39,14 @@ class FileLogger : public Logger
 public:
   FileLogger(const char *filename) : log_stream{filename, std::ios::out | std::ios::app}
   {
+    if (!log_stream) {
+      int stream_errno = errno;
+
+      ostringstream msg;
+      msg << "Unable to log to " << filename << ": " << strerror(stream_errno);
+      err = msg.str();
+    }
+
     FileLogger::prefix(__FILE__, __LINE__);
     log_stream << "FileLogger opened." << endl;
   }
@@ -47,8 +59,11 @@ public:
 
   ostream &stream() override { return log_stream; }
 
+  string get_error() const override { return err; }
+
 private:
   ofstream log_stream;
+  string err;
 };
 
 class StderrLogger : public Logger
@@ -67,6 +82,15 @@ public:
   }
 
   ostream &stream() override { return cerr; }
+
+  string get_error() const override
+  {
+    if (!cerr) {
+      return "Unable to log to stderr";
+    }
+
+    return "";
+  }
 };
 
 class StdoutLogger : public Logger
@@ -85,6 +109,15 @@ public:
   }
 
   ostream &stream() override { return cout; }
+
+  string get_error() const override
+  {
+    if (!cout) {
+      return "Unable to log to stdout";
+    }
+
+    return "";
+  }
 };
 
 static uv_key_t current_logger_key;
@@ -110,34 +143,43 @@ Logger *Logger::current()
   return logger;
 }
 
-static void replace_logger(const Logger *new_logger)
+string replace_logger(const Logger *new_logger)
 {
+  string r = new_logger->get_error();
+  if (!r.empty()) {
+    if (new_logger != &the_null_logger) {
+      delete new_logger;
+    }
+    return r;
+  }
+
   Logger *prior = Logger::current();
   if (prior != &the_null_logger) {
     delete prior;
   }
 
   uv_key_set(&current_logger_key, (void *) new_logger);
+  return "";
 }
 
-void Logger::to_file(const char *filename)
+string Logger::to_file(const char *filename)
 {
-  replace_logger(new FileLogger(filename));
+  return replace_logger(new FileLogger(filename));
 }
 
-void Logger::to_stderr()
+string Logger::to_stderr()
 {
-  replace_logger(new StderrLogger());
+  return replace_logger(new StderrLogger());
 }
 
-void Logger::to_stdout()
+string Logger::to_stdout()
 {
-  replace_logger(new StdoutLogger());
+  return replace_logger(new StdoutLogger());
 }
 
-void Logger::disable()
+string Logger::disable()
 {
-  replace_logger(&the_null_logger);
+  return replace_logger(&the_null_logger);
 }
 
 string plural(long quantity, const string &singular_form, const string &plural_form)
