@@ -57,8 +57,8 @@ describe('configuration', function () {
         assert.match(contents, /FileLogger opened/)
       })
 
-      it('fails if the polling log file cannot be written', async function () {
-        await assert.isRejected(configure({pollingLog: badPath}), /No such file or directory/)
+      it('defers the check for a valid polling log file', async function () {
+        await configure({pollingLog: badPath})
       })
     })
 
