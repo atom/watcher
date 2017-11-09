@@ -8,6 +8,7 @@
 #include <nan.h>
 #include <v8.h>
 
+#include "../result.h"
 #include "functional_callback.h"
 
 class AllCallback
@@ -16,13 +17,15 @@ public:
   static std::shared_ptr<AllCallback> create(std::unique_ptr<Nan::Callback> &&done);
 
   ~AllCallback() = default;
-  AllCallback(const AllCallback &) = delete;
-  AllCallback(AllCallback &&) = delete;
 
   std::unique_ptr<Nan::Callback> create_callback();
 
+  void set_result(Result<> &&r);
+
   void fire_if_empty();
 
+  AllCallback(const AllCallback &) = delete;
+  AllCallback(AllCallback &&) = delete;
   AllCallback &operator=(const AllCallback &) = delete;
   AllCallback &operator=(AllCallback &&) = delete;
 

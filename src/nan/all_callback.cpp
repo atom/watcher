@@ -55,6 +55,18 @@ unique_ptr<Callback> AllCallback::create_callback()
   return fn_callback(functions.front());
 }
 
+void AllCallback::set_result(Result<> &&r)
+{
+  if (r.is_ok()) return;
+
+  if (Nan::New(error)->IsUndefined()) {
+    HandleScope scope;
+    Local<Value> l_error = Nan::Error(r.get_error().c_str());
+
+    error.Reset(l_error);
+  }
+}
+
 void AllCallback::fire_if_empty()
 {
   if (remaining > 0) return;
