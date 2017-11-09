@@ -8,13 +8,14 @@
 #include <utility>
 #include <uv.h>
 
+#include "errable.h"
 #include "log.h"
 #include "message.h"
 #include "polling/polling_thread.h"
 #include "result.h"
 #include "worker/worker_thread.h"
 
-class Hub
+class Hub : public Errable
 {
 public:
   static Hub &get() { return the_hub; }

@@ -52,10 +52,16 @@ Hub::Hub() :
 {
   int err;
 
-  err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
-  if (err != 0) return;
+  report_errable(worker_thread);
+  report_errable(polling_thread);
 
-  worker_thread.run();
+  err = uv_async_init(uv_default_loop(), &event_handler, handle_events_helper);
+  if (err != 0) {
+    report_uv_error(err);
+  }
+
+  report_if_error(worker_thread.run());
+  freeze();
 }
 
 Result<> Hub::watch(string &&root,
