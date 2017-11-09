@@ -40,7 +40,7 @@ public:
   FileLogger(const char *filename) : log_stream{filename, std::ios::out | std::ios::app}
   {
     if (!log_stream) {
-      errno_t stream_errno = errno;
+      int stream_errno = errno;
 
       ostringstream msg;
       msg << "Unable to log to " << filename << ": " << strerror(stream_errno);
