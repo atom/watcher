@@ -29,25 +29,25 @@ public:
   Result<> use_main_log_file(std::string &&main_log_file)
   {
     std::string r = Logger::to_file(main_log_file.c_str());
-    return r == "" ? ok_result() : error_result(std::move(r));
+    return r.empty() ? ok_result() : error_result(std::move(r));
   }
 
   Result<> use_main_log_stderr()
   {
     std::string r = Logger::to_stderr();
-    return r == "" ? ok_result() : error_result(std::move(r));
+    return r.empty() ? ok_result() : error_result(std::move(r));
   }
 
   Result<> use_main_log_stdout()
   {
     std::string r = Logger::to_stdout();
-    return r == "" ? ok_result() : error_result(std::move(r));
+    return r.empty() ? ok_result() : error_result(std::move(r));
   }
 
   Result<> disable_main_log()
   {
     std::string r = Logger::disable();
-    return r == "" ? ok_result() : error_result(std::move(r));
+    return r.empty() ? ok_result() : error_result(std::move(r));
   }
 
   Result<> use_worker_log_file(std::string &&worker_log_file, std::unique_ptr<Nan::Callback> callback)

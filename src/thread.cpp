@@ -283,7 +283,7 @@ Result<Thread::CommandOutcome> Thread::handle_remove_command(const CommandPayloa
 Result<Thread::CommandOutcome> Thread::handle_log_file_command(const CommandPayload *payload)
 {
   string err = Logger::to_file(payload->get_root().c_str());
-  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+  if (!err.empty()) return Result<CommandOutcome>::make_error(move(err));
 
   starter->set_logging(payload);
   return ok_result(ACK);
@@ -292,7 +292,7 @@ Result<Thread::CommandOutcome> Thread::handle_log_file_command(const CommandPayl
 Result<Thread::CommandOutcome> Thread::handle_log_stderr_command(const CommandPayload *payload)
 {
   string err = Logger::to_stderr();
-  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+  if (!err.empty()) return Result<CommandOutcome>::make_error(move(err));
 
   starter->set_logging(payload);
   return ok_result(ACK);
@@ -301,7 +301,7 @@ Result<Thread::CommandOutcome> Thread::handle_log_stderr_command(const CommandPa
 Result<Thread::CommandOutcome> Thread::handle_log_stdout_command(const CommandPayload *payload)
 {
   string err = Logger::to_stdout();
-  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+  if (!err.empty()) return Result<CommandOutcome>::make_error(move(err));
 
   starter->set_logging(payload);
   return ok_result(ACK);
@@ -310,7 +310,7 @@ Result<Thread::CommandOutcome> Thread::handle_log_stdout_command(const CommandPa
 Result<Thread::CommandOutcome> Thread::handle_log_disable_command(const CommandPayload *payload)
 {
   string err = Logger::disable();
-  if (err != "") return Result<CommandOutcome>::make_error(move(err));
+  if (!err.empty()) return Result<CommandOutcome>::make_error(move(err));
 
   starter->set_logging(payload);
   return ok_result(ACK);
