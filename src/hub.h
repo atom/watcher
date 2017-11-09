@@ -26,13 +26,29 @@ public:
   Hub &operator=(const Hub &) = delete;
   Hub &operator=(Hub &&) = delete;
 
-  void use_main_log_file(std::string &&main_log_file) { Logger::to_file(main_log_file.c_str()); }
+  Result<> use_main_log_file(std::string &&main_log_file)
+  {
+    std::string r = Logger::to_file(main_log_file.c_str());
+    return r == "" ? ok_result() : error_result(std::move(r));
+  }
 
-  void use_main_log_stderr() { Logger::to_stderr(); }
+  Result<> use_main_log_stderr()
+  {
+    std::string r = Logger::to_stderr();
+    return r == "" ? ok_result() : error_result(std::move(r));
+  }
 
-  void use_main_log_stdout() { Logger::to_stdout(); }
+  Result<> use_main_log_stdout()
+  {
+    std::string r = Logger::to_stdout();
+    return r == "" ? ok_result() : error_result(std::move(r));
+  }
 
-  void disable_main_log() { Logger::disable(); }
+  Result<> disable_main_log()
+  {
+    std::string r = Logger::disable();
+    return r == "" ? ok_result() : error_result(std::move(r));
+  }
 
   Result<> use_worker_log_file(std::string &&worker_log_file, std::unique_ptr<Nan::Callback> callback)
   {
