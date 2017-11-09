@@ -37,11 +37,11 @@ describe('configuration', function () {
   })
 
   it('fails if the main log file cannot be written', async function () {
-    await assert.isRejected(configure({mainLog: badPath}), /cannot be written/)
+    await assert.isRejected(configure({mainLog: badPath}), /No such file or directory/)
   })
 
   it('fails if the worker log file cannot be written', async function () {
-    await assert.isRejected(configure({workerLog: badPath}), /cannot be written/)
+    await assert.isRejected(configure({workerLog: badPath}), /No such file or directory/)
   })
 
   describe('for the polling thread', function () {
@@ -58,7 +58,7 @@ describe('configuration', function () {
       })
 
       it('fails if the polling log file cannot be written', async function () {
-        await assert.isRejected(configure({pollingLog: badPath}), /cannot be written/)
+        await assert.isRejected(configure({pollingLog: badPath}), /No such file or directory/)
       })
     })
 
@@ -75,7 +75,7 @@ describe('configuration', function () {
       it('fails if the polling log file cannot be written', async function () {
         await fixture.watch([], {poll: true}, () => {})
 
-        await assert.isRejected(configure({pollingLog: badPath}), /cannot be written/)
+        await assert.isRejected(configure({pollingLog: badPath}), /No such file or directory/)
       })
     })
   })
