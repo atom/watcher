@@ -65,48 +65,47 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
   shared_ptr<AllCallback> all = AllCallback::create(move(callback));
 
+  Result<> r = ok_result();
+
   if (main_log_disable) {
-    Hub::get().disable_main_log();
+    r &= Hub::get().disable_main_log();
   } else if (!main_log_file.empty()) {
-    Hub::get().use_main_log_file(move(main_log_file));
+    r &= Hub::get().use_main_log_file(move(main_log_file));
   } else if (main_log_stderr) {
-    Hub::get().use_main_log_stderr();
+    r &= Hub::get().use_main_log_stderr();
   } else if (main_log_stdout) {
-    Hub::get().use_main_log_stdout();
+    r &= Hub::get().use_main_log_stdout();
   }
 
-  Result<> r0 = ok_result();
   if (worker_log_disable) {
-    r0 = Hub::get().disable_worker_log(all->create_callback());
+    r &= Hub::get().disable_worker_log(all->create_callback());
   } else if (!worker_log_file.empty()) {
-    r0 = Hub::get().use_worker_log_file(move(worker_log_file), all->create_callback());
+    r &= Hub::get().use_worker_log_file(move(worker_log_file), all->create_callback());
   } else if (worker_log_stderr) {
-    r0 = Hub::get().use_worker_log_stderr(all->create_callback());
+    r &= Hub::get().use_worker_log_stderr(all->create_callback());
   } else if (worker_log_stdout) {
-    r0 = Hub::get().use_worker_log_stdout(all->create_callback());
+    r &= Hub::get().use_worker_log_stdout(all->create_callback());
   }
 
-  Result<> r1 = ok_result();
   if (polling_log_disable) {
-    r1 = Hub::get().disable_polling_log(all->create_callback());
+    r &= Hub::get().disable_polling_log(all->create_callback());
   } else if (!polling_log_file.empty()) {
-    r1 = Hub::get().use_polling_log_file(move(polling_log_file), all->create_callback());
+    r &= Hub::get().use_polling_log_file(move(polling_log_file), all->create_callback());
   } else if (polling_log_stderr) {
-    r1 = Hub::get().use_polling_log_stderr(all->create_callback());
+    r &= Hub::get().use_polling_log_stderr(all->create_callback());
   } else if (polling_log_stdout) {
-    r1 = Hub::get().use_polling_log_stdout(all->create_callback());
+    r &= Hub::get().use_polling_log_stdout(all->create_callback());
   }
 
-  Result<> r2 = ok_result();
   if (polling_interval > 0) {
-    r2 = Hub::get().set_polling_interval(polling_interval, all->create_callback());
+    r &= Hub::get().set_polling_interval(polling_interval, all->create_callback());
   }
 
-  Result<> r3 = ok_result();
   if (polling_throttle > 0) {
-    r3 = Hub::get().set_polling_throttle(polling_throttle, all->create_callback());
+    r &= Hub::get().set_polling_throttle(polling_throttle, all->create_callback());
   }
 
+  all->set_result(move(r));
   all->fire_if_empty();
 }
 
