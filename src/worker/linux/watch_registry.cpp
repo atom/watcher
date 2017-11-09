@@ -58,13 +58,14 @@ static ostream &operator<<(ostream &out, const inotify_event *event)
   return out;
 }
 
-WatchRegistry::WatchRegistry() : Errable("inotify watcher registry")
+WatchRegistry::WatchRegistry()
 {
   inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
   if (inotify_fd == -1) {
     report_error(errno_result("Unable to initialize inotify"));
   }
+  freeze();
 }
 
 WatchRegistry::~WatchRegistry()
@@ -76,8 +77,6 @@ WatchRegistry::~WatchRegistry()
 
 Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recursive, vector<string> &poll)
 {
-  if (!is_healthy()) return health_err_result<>();
-
   uint32_t mask = IN_ATTRIB | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_FROM
     | IN_MOVED_TO | IN_DONT_FOLLOW | IN_EXCL_UNLINK | IN_ONLYDIR;
 
@@ -163,8 +162,6 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
   using WDMap = unordered_multimap<int, WatchedDirectoryPtr>;
   using WDIter = WDMap::iterator;
 
-  if (!is_healthy()) return health_err_result<>();
-
   auto its = by_channel.equal_range(channel_id);
   set<int> wds;
   for (auto it = its.first; it != its.second; ++it) {
@@ -201,8 +198,6 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
 
 Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEffect &side)
 {
-  if (!is_healthy()) return health_err_result<>();
-
   const size_t BUFSIZE = 2048 * sizeof(inotify_event);
   char buf[BUFSIZE] __attribute__((aligned(__alignof__(struct inotify_event))));
   ssize_t result = 0;

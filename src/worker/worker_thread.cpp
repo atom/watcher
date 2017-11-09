@@ -18,7 +18,8 @@ WorkerThread::WorkerThread(uv_async_t *main_callback) :
   Thread("worker thread", main_callback),
   platform{WorkerPlatform::for_worker(this)}
 {
-  //
+  report_errable(*platform);
+  freeze();
 }
 
 // Definition must be here to see the full definition of WorkerPlatform.
@@ -26,8 +27,6 @@ WorkerThread::~WorkerThread() = default;
 
 Result<> WorkerThread::wake()
 {
-  if (!is_healthy()) return health_err_result();
-
   return platform->wake();
 }
 
@@ -54,7 +53,7 @@ Result<Thread::CommandOutcome> WorkerThread::handle_status_command(const Command
   unique_ptr<Status> status{new Status()};
 
   status->worker_thread_state = state_name();
-  status->worker_thread_ok = get_error();
+  status->worker_thread_ok = get_message();
   status->worker_in_size = get_in_queue_size();
   status->worker_in_ok = get_in_queue_error();
   status->worker_out_size = get_out_queue_size();

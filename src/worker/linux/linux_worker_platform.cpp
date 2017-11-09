@@ -23,11 +23,12 @@ using std::vector;
 class LinuxWorkerPlatform : public WorkerPlatform
 {
 public:
-  LinuxWorkerPlatform(WorkerThread *thread) :
-    WorkerPlatform(thread),
-    pipe("worker pipe"){
-      //
-    };
+  LinuxWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread)
+  {
+    report_errable(pipe);
+    report_errable(watch_registry);
+    freeze();
+  };
 
   // Inform the listen() loop that one or more commands are waiting from the main thread.
   Result<> wake() override { return pipe.signal(); }

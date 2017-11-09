@@ -1,17 +1,15 @@
 #ifndef PIPE_H
 #define PIPE_H
 
-#include <string>
-
 #include "../../errable.h"
 #include "../../result.h"
 
 // RAII wrapper for a Linux pipe created with pipe(2). We don't care about the actual data transmitted.
-class Pipe : public SyncErrable
+class Pipe : public Errable
 {
 public:
   // Construct a new Pipe identified in Result<> errors with a specified name.
-  explicit Pipe(std::string &&name);
+  Pipe();
 
   // Deallocate and close() the underlying pipe file descriptor.
   ~Pipe() override;

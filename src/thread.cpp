@@ -44,15 +44,15 @@ Thread::DispatchTable::DispatchTable()
 const Thread::DispatchTable Thread::command_handlers;
 
 Thread::Thread(std::string &&name, uv_async_t *main_callback, unique_ptr<ThreadStarter> starter) :
-  SyncErrable(move(name)),
+  name{move(name)},
   state{State::STOPPED},
   starter{move(starter)},
-  in(name + " input queue"),
-  out(name + " output queue"),
   main_callback{main_callback},
-  work_fn{bind(&Thread::start, this)} {
-    //
-  };
+  work_fn{bind(&Thread::start, this)}
+{
+  report_errable(in);
+  report_errable(out);
+};
 
 Result<> Thread::run()
 {
@@ -61,8 +61,7 @@ Result<> Thread::run()
 
   err = uv_thread_create(&uv_handle, thread_callback_helper, &work_fn);
   if (err != 0) {
-    report_uv_error(err);
-    return health_err_result();
+    return error_result(uv_strerror(err));
   }
 
   return ok_result();
@@ -70,8 +69,6 @@ Result<> Thread::run()
 
 Result<bool> Thread::send(Message &&message)
 {
-  if (!is_healthy()) return health_err_result().propagate<bool>();
-
   if (is_stopping()) {
     uv_thread_join(&uv_handle);
 
@@ -90,26 +87,25 @@ Result<bool> Thread::send(Message &&message)
       ostringstream m;
       m << "Non-command message " << message << " sent to a stopped thread";
 
-      return out.enqueue(Message::ack(message, false, m.str())).propagate(true);
+      out.enqueue(Message::ack(message, false, m.str()));
+      return ok_result(true);
     }
 
     LOGGER << "Processing offline command: " << *command << "." << endl;
     Result<OfflineCommandOutcome> r0 = handle_offline_command(command);
     LOGGER << "Result: " << r0 << "." << endl;
     if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
-      return out.enqueue(Message::ack(message, r0.propagate_as_void())).propagate(true);
+      out.enqueue(Message::ack(message, r0.propagate_as_void()));
+      return ok_result(true);
     }
 
     if (r0.get_value() == TRIGGER_RUN) {
-      Result<> r1 = in.enqueue(move(message));
-      if (r1.is_error()) return r1.propagate<bool>();
-
+      in.enqueue(move(message));
       return run().propagate(false);
     }
   }
 
-  Result<> r2 = in.enqueue(move(message));
-  if (r2.is_error()) return r2.propagate<bool>();
+  in.enqueue(move(message));
 
   if (is_running()) {
     return wake().propagate(false);
@@ -118,10 +114,8 @@ Result<bool> Thread::send(Message &&message)
   return ok_result(false);
 }
 
-Result<unique_ptr<vector<Message>>> Thread::receive_all()
+unique_ptr<vector<Message>> Thread::receive_all()
 {
-  if (!is_healthy()) return health_err_result<unique_ptr<vector<Message>>>();
-
   return out.accept_all();
 }
 
@@ -150,10 +144,7 @@ void Thread::start()
   // Artificially enqueue any messages that establish the thread's starting state.
   vector<Message> starter_messages = starter->get_messages();
   if (!starter_messages.empty()) {
-    Result<> sr = in.enqueue_all(starter_messages.begin(), starter_messages.end());
-    if (sr.is_error()) {
-      LOGGER << "Unable to enqueue starter messages: " << sr << "." << endl;
-    }
+    in.enqueue_all(starter_messages.begin(), starter_messages.end());
   }
 
   // Handle any commands that were enqueued while the thread was starting.
@@ -175,10 +166,7 @@ void Thread::start()
 
 Result<> Thread::emit(Message &&message)
 {
-  if (!is_healthy()) return health_err_result();
-
-  Result<> qr = out.enqueue(move(message));
-  if (qr.is_error()) return qr;
+  out.enqueue(move(message));
 
   int uv_err = uv_async_send(main_callback);
   if (uv_err != 0) {
@@ -201,11 +189,7 @@ Result<Thread::OfflineCommandOutcome> Thread::handle_offline_command(const Comma
 
 Result<size_t> Thread::handle_commands()
 {
-  Result<unique_ptr<vector<Message>>> pr = in.accept_all();
-  if (pr.is_error()) {
-    return pr.propagate<size_t>();
-  }
-  unique_ptr<vector<Message>> &accepted = pr.get_value();
+  unique_ptr<vector<Message>> accepted = in.accept_all();
   if (!accepted) {
     // No command messages to accept.
     return ok_result(static_cast<size_t>(0));
@@ -254,10 +238,7 @@ Result<size_t> Thread::handle_commands()
     mark_stopping();
 
     // Move any messages enqueued since we picked up this batch of commands into the dead letter office.
-    Result<unique_ptr<vector<Message>>> dr = in.accept_all();
-    if (dr.is_error()) dr.propagate<size_t>();
-
-    dead_letter_office = move(dr.get_value());
+    dead_letter_office = in.accept_all();
 
     // Notify the Hub if this thread has messages that need to be drained.
     if (dead_letter_office) {
@@ -350,6 +331,6 @@ string Thread::state_name()
 
 ostream &operator<<(ostream &out, const Thread &th)
 {
-  out << "Thread[" << th.get_source() << "]";
+  out << "Thread[" << th.name << "]";
   return out;
 }

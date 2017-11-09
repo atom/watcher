@@ -141,13 +141,7 @@ void Hub::handle_events_from(Thread &thread)
   Nan::HandleScope scope;
   bool repeat = true;
 
-  Result<unique_ptr<vector<Message>>> rr = thread.receive_all();
-  if (rr.is_error()) {
-    LOGGER << "Unable to receive messages from thread: " << rr << "." << endl;
-    return;
-  }
-
-  unique_ptr<vector<Message>> &accepted = rr.get_value();
+  unique_ptr<vector<Message>> accepted = thread.receive_all();
   if (!accepted) {
     // No events to process.
     return;

@@ -14,7 +14,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-Queue::Queue(string &&name) : Errable(move(name)), active{new vector<Message>}
+Queue::Queue() : active{new vector<Message>}
 {
   int err;
 
@@ -22,6 +22,7 @@ Queue::Queue(string &&name) : Errable(move(name)), active{new vector<Message>}
   if (err != 0) {
     report_uv_error(err);
   }
+  freeze();
 }
 
 Queue::~Queue()
@@ -29,30 +30,24 @@ Queue::~Queue()
   uv_mutex_destroy(&mutex);
 }
 
-Result<> Queue::enqueue(Message &&message)
+void Queue::enqueue(Message &&message)
 {
-  if (!is_healthy()) return health_err_result();
-
   Lock lock(mutex);
   active->push_back(move(message));
-  return ok_result();
 }
 
-Result<unique_ptr<vector<Message>>> Queue::accept_all()
+unique_ptr<vector<Message>> Queue::accept_all()
 {
-  if (!is_healthy()) return health_err_result<unique_ptr<vector<Message>>>();
-
-  Lock lock = {mutex};
+  Lock lock(mutex);
 
   if (active->empty()) {
     unique_ptr<vector<Message>> n;
-    return ok_result(move(n));
+    return n;
   }
 
   unique_ptr<vector<Message>> consumed = move(active);
   active.reset(new vector<Message>);
-
-  return ok_result(move(consumed));
+  return consumed;
 }
 
 size_t Queue::size()
