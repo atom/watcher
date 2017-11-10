@@ -70,6 +70,8 @@ Result<> Hub::watch(string &&root,
   unique_ptr<Callback> ack_callback,
   unique_ptr<Callback> event_callback)
 {
+  if (!check_async(ack_callback)) return ok_result();
+
   ChannelID channel_id = next_channel_id;
   next_channel_id++;
 
@@ -86,6 +88,8 @@ Result<> Hub::watch(string &&root,
 
 Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
 {
+  if (!check_async(ack_callback)) return ok_result();
+
   string root;
   shared_ptr<AllCallback> all = AllCallback::create(move(ack_callback));
 
@@ -104,6 +108,8 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
 
 Result<> Hub::status(std::unique_ptr<Nan::Callback> &&status_callback)
 {
+  if (!check_async(status_callback)) return ok_result();
+
   RequestID request_id = next_request_id;
   next_request_id++;
 
@@ -140,6 +146,17 @@ Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std:
   if (sr.is_error()) return sr.propagate();
   if (sr.get_value()) handle_events();
   return ok_result();
+}
+
+bool Hub::check_async(const std::unique_ptr<Nan::Callback> &callback)
+{
+  if (is_healthy()) return true;
+
+  Nan::HandleScope scope;
+  Local<Value> err = Nan::Error(get_message().c_str());
+  Local<Value> argv[] = {err};
+  callback->Call(1, argv);
+  return false;
 }
 
 void Hub::handle_events_from(Thread &thread)

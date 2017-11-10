@@ -22,6 +22,8 @@ public:
 
   virtual ~Errable() = default;
 
+  bool is_healthy() const { return message.empty(); }
+
   std::string get_message() const { return message.empty() ? "ok" : message; }
 
   // Generate a Result from the current error status of this resource. If it has entered an error state,
