@@ -53,7 +53,7 @@ public:
   Queue &operator=(Queue &&) = delete;
 
 private:
-  uv_mutex_t mutex;
+  uv_mutex_t mutex{};
   std::unique_ptr<std::vector<Message>> active;
 };
 

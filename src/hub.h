@@ -22,7 +22,7 @@ public:
 
   Hub(const Hub &) = delete;
   Hub(Hub &&) = delete;
-  ~Hub() = default;
+  ~Hub() override = default;
 
   Hub &operator=(const Hub &) = delete;
   Hub &operator=(Hub &&) = delete;

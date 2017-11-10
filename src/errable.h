@@ -54,7 +54,7 @@ protected:
   void freeze() { frozen = true; }
 
 private:
-  bool frozen;
+  bool frozen{false};
   std::string message;
 };
 
