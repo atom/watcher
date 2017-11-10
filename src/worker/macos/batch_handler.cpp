@@ -68,9 +68,7 @@ bool Event::skip_recursive_event()
 
   size_t last_sep = event_path.rfind('/');
   string parent_dir = event_path.substr(0, last_sep);
-  if (parent_dir == root_path()) return false;
-
-  return true;
+  return parent_dir != root_path();
 }
 
 void Event::collect_info()
