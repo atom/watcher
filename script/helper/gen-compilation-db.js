@@ -53,7 +53,7 @@ class CompilationDatabase {
   }
 }
 
-async function runNodeGyp () {
+function runNodeGyp () {
   const db = new CompilationDatabase()
 
   return new Promise((resolve, reject) => {
