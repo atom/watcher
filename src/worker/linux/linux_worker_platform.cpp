@@ -26,7 +26,7 @@ public:
   LinuxWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread)
   {
     report_errable(pipe);
-    report_errable(watch_registry);
+    report_errable(registry);
     freeze();
   };
 
