@@ -63,7 +63,7 @@ WatchRegistry::WatchRegistry()
   inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
   if (inotify_fd == -1) {
-    report_error(errno_result("Unable to initialize inotify"));
+    report_if_error(errno_result("Unable to initialize inotify"));
   }
   freeze();
 }
