@@ -4,8 +4,8 @@
 #include <iostream>
 #include <string>
 
-// Summarize the module's health. This includes information like the health of all Errable and SyncErrable
-// resources and the sizes of internal queues and buffers.
+// Summarize the module's health. This includes information like the health of all Errable resources and the sizes of
+// internal queues and buffers.
 class Status
 {
 public:

@@ -22,12 +22,12 @@
 //
 // For the most part, public methods are intended to be executed from the main thread. Protected and private methods
 // are meant to be called from the thread itself.
-class Thread : public SyncErrable
+class Thread : public Errable
 {
 public:
   // Construct a stopped Thread.
   //
-  // * `name` is used to mark status errors by the `Errable` superclass. It's accessible by `Thread::get_source()`.
+  // * `name` is used to mark status errors. It's accessible by `Thread::get_name()`.
   // * `main_callback` is used to trigger an async handle on the libuv event loop to consume any waiting messages
   //   on this thread's out queue via `Thread::receive_all()`.
   // * If provided, `starter` allows subclasses to customize configuration that can be manipulated offline (while the
@@ -59,7 +59,7 @@ public:
   // Accept any and all `Messages` that have been emitted by this thread since the last `Thread::receive_all()` call.
   // The output queue is emptied after this call returns. If no `Messages` are waiting, a null pointer is returned
   // instead.
-  Result<std::unique_ptr<std::vector<Message>>> receive_all();
+  std::unique_ptr<std::vector<Message>> receive_all();
 
   // Re-send any `Messages` that were sent between the acceptance of the message batch that caused the thread to
   // stop and the transition of the thread to the `STOPPING` phase. Note that this may cause the thread to immediately
@@ -189,12 +189,15 @@ protected:
   std::string state_name();
 
   // Access queue statistics for `Thread::handle_status_command()`.
-  std::string get_in_queue_error() { return in.get_error(); }
   size_t get_in_queue_size() { return in.size(); }
-  std::string get_out_queue_error() { return out.get_error(); }
+  std::string get_in_queue_error() { return in.get_message(); }
   size_t get_out_queue_size() { return out.size(); }
+  std::string get_out_queue_error() { return out.get_message(); }
 
 private:
+  // Diagnostic aid.
+  std::string name;
+
   // Phases of a thread's lifecycle.
   enum State
   {
@@ -226,13 +229,13 @@ private:
   // thread's `state` being set to `STOPPING` to signal this. Messages here are processed by a call to `Thread::drain()`
   // or the next call to `Thread::send()`.
   std::unique_ptr<std::vector<Message>> dead_letter_office;
+
+  friend std::ostream &operator<<(std::ostream &out, const Thread &th);
 };
 
 template <class InputIt>
 Result<bool> Thread::send_all(InputIt begin, InputIt end)
 {
-  if (!is_healthy()) return health_err_result<bool>();
-
   if (is_stopping()) {
     uv_thread_join(&uv_handle);
 
@@ -265,9 +268,7 @@ Result<bool> Thread::send_all(InputIt begin, InputIt end)
       if (r0.is_error() || r0.get_value() == OFFLINE_ACK) {
         acks.emplace_back(Message::ack(*it, r0.propagate_as_void()));
       } else if (r0.get_value() == TRIGGER_RUN) {
-        Result<> r1 = in.enqueue(std::move(*it));
-        if (r1.is_error()) return r1.propagate<bool>();
-
+        in.enqueue(std::move(*it));
         should_run = true;
       } else {
         std::ostringstream m;
@@ -277,8 +278,7 @@ Result<bool> Thread::send_all(InputIt begin, InputIt end)
     }
 
     if (!acks.empty()) {
-      Result<> r2 = out.enqueue_all(acks.begin(), acks.end());
-      if (r2.is_error()) return r2.propagate<bool>();
+      out.enqueue_all(acks.begin(), acks.end());
     }
 
     if (should_run) {
@@ -288,8 +288,7 @@ Result<bool> Thread::send_all(InputIt begin, InputIt end)
     return ok_result(!acks.empty());
   }
 
-  Result<> r3 = in.enqueue_all(begin, end);
-  if (r3.is_error()) return r3.template propagate<bool>();
+  in.enqueue_all(begin, end);
 
   if (is_running()) {
     return wake().propagate(false);
@@ -301,10 +300,7 @@ Result<bool> Thread::send_all(InputIt begin, InputIt end)
 template <class InputIt>
 Result<> Thread::emit_all(InputIt begin, InputIt end)
 {
-  if (!is_healthy()) return health_err_result();
-
-  Result<> qr = out.enqueue_all(begin, end);
-  if (qr.is_error()) return qr;
+  out.enqueue_all(begin, end);
 
   int uv_err = uv_async_send(main_callback);
   if (uv_err) {
@@ -313,7 +309,5 @@ Result<> Thread::emit_all(InputIt begin, InputIt end)
 
   return ok_result();
 }
-
-std::ostream &operator<<(std::ostream &out, const Thread &th);
 
 #endif

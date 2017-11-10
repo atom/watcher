@@ -49,14 +49,13 @@ public:
     if (err) {
       report_uv_error(err);
     }
+    freeze();
   };
 
   ~WindowsWorkerPlatform() override { uv_mutex_destroy(&thread_handle_mutex); }
 
   Result<> wake() override
   {
-    if (!is_healthy()) return health_err_result();
-
     Lock lock(thread_handle_mutex);
 
     if (!thread_handle) {
@@ -73,8 +72,6 @@ public:
 
   Result<> listen() override
   {
-    if (!is_healthy()) return health_err_result();
-
     {
       Lock lock(thread_handle_mutex);
 
@@ -88,9 +85,7 @@ public:
         DUPLICATE_SAME_ACCESS  // options
       );
       if (!success) {
-        Result<> r = windows_error_result<>("Unable to duplicate thread handle");
-        report_error(r);
-        return r;
+        return windows_error_result<>("Unable to duplicate thread handle");
       }
     }
 
@@ -98,8 +93,7 @@ public:
       SleepEx(INFINITE, true);
     }
 
-    report_error("listen loop ended unexpectedly");
-    return health_err_result();
+    return error_result("listen loop ended unexpectedly");
   }
 
   Result<bool> handle_add_command(CommandID command,
@@ -107,8 +101,6 @@ public:
     const string &root_path,
     bool recursive) override
   {
-    if (!is_healthy()) return health_err_result().propagate<bool>();
-
     // Convert the path to a wide-character string
     Result<wstring> convr = to_wchar(root_path);
     if (convr.is_error()) return convr.propagate<bool>();
@@ -156,8 +148,6 @@ public:
 
   Result<bool> handle_remove_command(CommandID command, ChannelID channel) override
   {
-    if (!is_healthy()) return health_err_result().propagate<bool>();
-
     auto it = subscriptions.find(channel);
     if (it == subscriptions.end()) {
       LOGGER << "Channel " << channel << " was already removed." << endl;
@@ -173,8 +163,6 @@ public:
 
   Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription *sub)
   {
-    if (!is_healthy()) return health_err_result();
-
     // Ensure that the subscription is valid.
     ChannelID channel = sub->get_channel();
     auto it = subscriptions.find(channel);

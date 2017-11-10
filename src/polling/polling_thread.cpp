@@ -30,7 +30,7 @@ PollingThread::PollingThread(uv_async_t *main_callback) :
   poll_interval{DEFAULT_POLL_INTERVAL},
   poll_throttle{DEFAULT_POLL_THROTTLE}
 {
-  //
+  freeze();
 }
 
 Result<> PollingThread::body()
@@ -51,12 +51,8 @@ Result<> PollingThread::body()
       return r.propagate_as_void();
     }
 
-    if (is_healthy()) {
-      LOGGER << "Sleeping for " << poll_interval.count() << "ms." << endl;
-      std::this_thread::sleep_for(poll_interval);
-    } else {
-      return health_err_result<>();
-    }
+    LOGGER << "Sleeping for " << poll_interval.count() << "ms." << endl;
+    std::this_thread::sleep_for(poll_interval);
   }
 }
 
@@ -236,7 +232,7 @@ Result<Thread::CommandOutcome> PollingThread::handle_status_command(const Comman
   unique_ptr<Status> status{new Status()};
 
   status->polling_thread_state = state_name();
-  status->polling_thread_ok = get_error();
+  status->polling_thread_ok = get_message();
   status->polling_in_size = get_in_queue_size();
   status->polling_in_ok = get_in_queue_error();
   status->polling_out_size = get_out_queue_size();

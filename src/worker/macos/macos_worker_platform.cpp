@@ -43,14 +43,12 @@ using std::unordered_map;
 class MacOSWorkerPlatform : public WorkerPlatform
 {
 public:
-  MacOSWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread){};
+  MacOSWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread) { freeze(); };
 
   ~MacOSWorkerPlatform() override = default;
 
   Result<> wake() override
   {
-    if (!is_healthy()) return health_err_result();
-
     if (command_source.empty() || run_loop.empty()) {
       return ok_result();
     }
@@ -63,8 +61,6 @@ public:
 
   Result<> listen() override
   {
-    if (!is_healthy()) return health_err_result();
-
     run_loop.set_from_get(CFRunLoopGetCurrent());
 
     CFRunLoopSourceContext command_context{
@@ -91,8 +87,6 @@ public:
     const string &root_path,
     bool recursive) override
   {
-    if (!is_healthy()) return health_err_result().propagate<bool>();
-
     ostream &logline = LOGGER << "Adding watcher for path " << root_path;
     if (!recursive) {
       logline << " (non-recursively)";
@@ -158,7 +152,6 @@ public:
 
   Result<bool> handle_remove_command(CommandID /*command_id*/, ChannelID channel_id) override
   {
-    if (!is_healthy()) return health_err_result().propagate<bool>();
     LOGGER << "Removing watcher for channel " << channel_id << "." << endl;
 
     auto maybe_sub = subscriptions.find(channel_id);

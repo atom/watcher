@@ -8,77 +8,54 @@
 
 #include "result.h"
 
-// Superclass for resources that can potentially enter an errored state.
+// Superclass for resources that can potentially fail to be constructed properly.
 //
-// Resources begin "healthy". If an operation necessary for the continued use of the
-// resource is unsuccessful (a file can't be opened, a thread can't be started), one of
-// the report_error() methods should be called with a message describing the failure
-// state.
+// While a resource is being constructed, if a required resource cannot be initialized correctly, call one of the
+// report_error() functions to mark it as "unhealthy". Before exiting the constructor, call freeze() to prevent further
+// modifications.
 //
-// All methods on the subclass should verify that is_health() returns true before
-// attempting to take any actions, and return early otherwise, indicating failure.
-//
-// External consumers of the resource can use get_error() to log the cause of the failure.
+// External consumers of the resource can use health_err_result() to log the cause of the failure.
 class Errable
 {
 public:
-  explicit Errable(std::string &&source);
-  Errable(const Errable &) = delete;
-  Errable(Errable &&) = delete;
+  Errable() = default;
+
   virtual ~Errable() = default;
 
-  virtual bool is_healthy();
-  virtual void report_error(std::string &&message);
+  bool is_healthy() const { return message.empty(); }
 
-  template <class V = void *>
-  void report_error(const Result<V> &result)
-  {
-    report_error(std::string(result.get_error()));
-  }
-
-  void report_uv_error(int err_code);
-
-  virtual std::string get_error();
+  std::string get_message() const { return message.empty() ? "ok" : message; }
 
   // Generate a Result from the current error status of this resource. If it has entered an error state,
-  // an errored Result will be created with its error message. Otherwise, an ok Result will be regurned.
-  template <class V = void *>
-  Result<V> health_err_result()
-  {
-    std::string m = get_error();
-    return Result<V>::make_error(std::move(m));
-  }
+  // an errored Result will be created with its error message. Otherwise, an ok Result will be returned.
+  Result<> health_err_result() const;
 
-  const std::string &get_source() const { return source; }
-
+  Errable(const Errable &) = delete;
+  Errable(Errable &&) = delete;
   Errable &operator=(const Errable &) = delete;
   Errable &operator=(Errable &&) = delete;
 
+protected:
+  void report_errable(const Errable &component);
+
+  void report_uv_error(int err_code);
+
+  void report_error(std::string &&message);
+
+  template <class V = void *>
+  void report_if_error(const Result<V> &result)
+  {
+    assert(!frozen);
+
+    if (result.is_ok()) return;
+    report_error(std::string(result.get_error()));
+  }
+
+  void freeze() { frozen = true; }
+
 private:
-  bool healthy;
-  std::string source;
+  bool frozen{false};
   std::string message;
-};
-
-// Thread-safe superclass for resources that can enter an errored state.
-class SyncErrable : public Errable
-{
-public:
-  explicit SyncErrable(std::string &&source);
-  SyncErrable(const SyncErrable &) = delete;
-  SyncErrable(SyncErrable &&) = delete;
-  ~SyncErrable() override;
-
-  bool is_healthy() override;
-  void report_error(std::string &&message) override;
-  std::string get_error() override;
-
-  SyncErrable &operator=(const SyncErrable &) = delete;
-  SyncErrable &operator=(SyncErrable &&) = delete;
-
-private:
-  bool lock_healthy;
-  uv_rwlock_t rwlock{};
 };
 
 #endif

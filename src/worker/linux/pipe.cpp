@@ -13,17 +13,19 @@ using std::string;
 
 const char WAKE = '!';
 
-Pipe::Pipe(string &&name) : SyncErrable(move(name)), read_fd{0}, write_fd{0}
+Pipe::Pipe() : read_fd{0}, write_fd{0}
 {
   int fds[2] = {0, 0};
   int err = pipe2(fds, O_CLOEXEC | O_NONBLOCK);
   if (err == -1) {
-    Errable::report_error<>(errno_result<>("Unable to open pipe"));
+    report_if_error<>(errno_result<>("Unable to open pipe"));
+    freeze();
     return;
   }
 
   read_fd = fds[0];
   write_fd = fds[1];
+  freeze();
 }
 
 Pipe::~Pipe()
@@ -34,8 +36,6 @@ Pipe::~Pipe()
 
 Result<> Pipe::signal()
 {
-  if (!is_healthy()) return Errable::health_err_result<>();
-
   ssize_t result = write(write_fd, &WAKE, sizeof(char));
   if (result == -1) {
     int write_errno = errno;
@@ -56,8 +56,6 @@ Result<> Pipe::signal()
 
 Result<> Pipe::consume()
 {
-  if (!is_healthy()) return Errable::health_err_result<>();
-
   const size_t BUFSIZE = 256;
   char buf[BUFSIZE];
   ssize_t result = 0;
