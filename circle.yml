@@ -1,6 +1,6 @@
 machine:
   xcode:
-    version: 8.3
+    version: 7.3
   environment:
     NVM_DIR: "${HOME}/.nvm"
     NODE_VERSION: "7.4.0"

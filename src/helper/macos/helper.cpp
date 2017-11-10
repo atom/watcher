@@ -8,19 +8,23 @@
 
 void SourceFnRegistry::callback(void *info)
 {
-  auto entry = reinterpret_cast<Entry *>(info);
-  FnRegistryAction action = entry->fn();
+  auto it_ptr = static_cast<Iter *>(info);
+  auto it = *it_ptr;
+  FnRegistryAction action = it->fn();
   if (action == FN_DISPOSE) {
-    entry->registry->fns.erase_after(entry->before);
+    it->registry->fns.erase(it);
+    delete it_ptr;
   }
 }
 
 void TimerFnRegistry::callback(CFRunLoopTimerRef timer, void *info)
 {
-  auto entry = reinterpret_cast<Entry *>(info);
-  FnRegistryAction action = entry->fn(timer);
+  auto it_ptr = reinterpret_cast<Iter *>(info);
+  auto it = *it_ptr;
+  FnRegistryAction action = it->fn(timer);
   if (action == FN_DISPOSE) {
-    entry->registry->fns.erase_after(entry->before);
+    it->registry->fns.erase(it);
+    delete it_ptr;
   }
 }
 
@@ -31,9 +35,11 @@ void EventStreamFnRegistry::callback(ConstFSEventStreamRef ref,
   const FSEventStreamEventFlags *event_flags,
   const FSEventStreamEventId *event_ids)
 {
-  auto entry = reinterpret_cast<Entry *>(info);
-  FnRegistryAction action = entry->fn(ref, num_events, event_paths, event_flags, event_ids);
+  auto it_ptr = reinterpret_cast<Iter *>(info);
+  auto it = *it_ptr;
+  FnRegistryAction action = it->fn(ref, num_events, event_paths, event_flags, event_ids);
   if (action == FN_DISPOSE) {
-    entry->registry->fns.erase_after(entry->before);
+    it->registry->fns.erase(it);
+    delete it_ptr;
   }
 }

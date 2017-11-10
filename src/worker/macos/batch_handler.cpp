@@ -4,7 +4,6 @@
 #include <cerrno>
 #include <iomanip>
 #include <iostream>
-#include <libgen.h>
 #include <memory>
 #include <string>
 #include <sys/stat.h>
@@ -67,12 +66,9 @@ bool Event::skip_recursive_event()
   if (is_recursive()) return false;
   if (event_path == root_path()) return false;
 
-  char parent_dir[PATH_MAX];
-  char *result = dirname_r(event_path.c_str(), parent_dir);
-  if (result == nullptr) return false;
-  if (root_path() == parent_dir) return false;
-
-  return true;
+  size_t last_sep = event_path.rfind('/');
+  string parent_dir = event_path.substr(0, last_sep);
+  return parent_dir != root_path();
 }
 
 void Event::collect_info()

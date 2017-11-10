@@ -2,8 +2,8 @@
 #define CFREF_H
 
 #include <CoreServices/CoreServices.h>
-#include <forward_list>
 #include <functional>
+#include <list>
 #include <utility>
 
 template <class T>
@@ -102,17 +102,12 @@ public:
 protected:
   struct Entry
   {
-    Entry(FnType &&fn, This *registry, typename std::forward_list<Entry>::const_iterator before) :
-      fn(std::move(fn)),
-      registry{registry},
-      before{before}
-    {}
+    Entry(FnType &&fn, This *registry) : fn(std::move(fn)), registry{registry} {}
 
     ~Entry() = default;
 
     FnType fn;
     This *registry;
-    typename std::forward_list<Entry>::const_iterator before;
 
     Entry(const Entry &) = delete;
     Entry(Entry &&) = delete;
@@ -122,7 +117,9 @@ protected:
 
   void *emplace_entry(FnType &&fn_addr);
 
-  std::forward_list<Entry> fns;
+  std::list<Entry> fns;
+
+  using Iter = typename std::list<Entry>::const_iterator;
 };
 
 class SourceFnRegistry : public FnRegistry<SourceFn, SourceFnRegistry>
@@ -178,18 +175,9 @@ public:
 template <class FnType, class This>
 void *FnRegistry<FnType, This>::create_info(FnType &&fn)
 {
-  Entry *previous_front = nullptr;
-  if (!fns.empty()) {
-    previous_front = &fns.front();
-  }
-
-  fns.emplace_front(std::move(fn), static_cast<This *>(this), fns.cbefore_begin());
-
-  if (previous_front != nullptr) {
-    previous_front->before = fns.cbegin();
-  }
-
-  return static_cast<void *>(&fns.front());
+  fns.emplace_front(std::move(fn), static_cast<This *>(this));
+  auto *it = new Iter(fns.cbegin());
+  return static_cast<void *>(it);
 }
 
 #endif
