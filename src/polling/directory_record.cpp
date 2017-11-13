@@ -97,7 +97,7 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   if (scan_err < 0) {
     if (scan_err == UV_ENOENT || scan_err == UV_ENOTDIR || scan_err == UV_EACCES) {
       if (was_present) {
-        it->get_buffer().deleted(move(dir), KIND_DIRECTORY);
+        entry_deleted(it, dir, KIND_DIRECTORY);
         was_present = false;
       }
     } else {
@@ -110,7 +110,7 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   }
 
   if (!was_present) {
-    it->get_buffer().created(string(dir), KIND_DIRECTORY);
+    entry_created(it, dir, KIND_DIRECTORY);
     was_present = true;
   }
 
