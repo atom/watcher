@@ -73,7 +73,11 @@ inline EntryKind kind_from_stat(const uv_stat_t &st)
   return KIND_UNKNOWN;
 }
 
-DirectoryRecord::DirectoryRecord(string &&prefix) : parent{nullptr}, name{move(prefix)}, populated{false}
+DirectoryRecord::DirectoryRecord(string &&prefix) :
+  parent{nullptr},
+  name{move(prefix)},
+  populated{false},
+  was_present{false}
 {
   //
 }
@@ -91,18 +95,23 @@ void DirectoryRecord::scan(BoundPollingIterator *it)
   string dir = path();
   int scan_err = uv_fs_scandir(nullptr, &scan_req.req, dir.c_str(), 0, nullptr);
   if (scan_err < 0) {
-    ostringstream msg;
-    msg << "Unable to scan directory " << dir << ": " << uv_strerror(scan_err);
-
     if (scan_err == UV_ENOENT || scan_err == UV_ENOTDIR || scan_err == UV_EACCES) {
-      // It's probably fine. Just log it.
-      // TODO: Maybe report a deletion if this is the top-level record?
-      LOGGER << msg.str() << "." << endl;
+      if (was_present) {
+        it->get_buffer().deleted(move(dir), KIND_DIRECTORY);
+        was_present = false;
+      }
     } else {
+      ostringstream msg;
+      msg << "Unable to scan directory " << dir << ": " << uv_strerror(scan_err);
       it->get_buffer().error(msg.str(), false);
     }
 
     return;
+  }
+
+  if (!was_present) {
+    it->get_buffer().created(string(dir), KIND_DIRECTORY);
+    was_present = true;
   }
 
   uv_dirent_t dirent{};
