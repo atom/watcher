@@ -29,6 +29,8 @@ public:
 
   virtual Result<bool> handle_remove_command(CommandID command, ChannelID channel) = 0;
 
+  virtual void handle_cache_size_command(size_t cache_size) {}
+
   virtual void populate_status(Status & /*status*/) {}
 
   Result<> handle_commands() { return thread->handle_commands().propagate_as_void(); }

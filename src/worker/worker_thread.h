@@ -32,6 +32,8 @@ private:
 
   Result<CommandOutcome> handle_remove_command(const CommandPayload *payload) override;
 
+  Result<CommandOutcome> handle_cache_size_command(const CommandPayload *payload) override;
+
   Result<CommandOutcome> handle_status_command(const CommandPayload *payload) override;
 
   std::unique_ptr<WorkerPlatform> platform;

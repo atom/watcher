@@ -296,7 +296,7 @@ void RecentFileCache::prune()
   LOGGER << "Cache currently contains " << plural(by_path.size(), "entry", "entries") << ". Pruning triggered." << endl;
 
   auto last = by_timestamp.begin();
-  for (int i = 0; i < to_remove && last != by_timestamp.end(); i++) {
+  for (size_t i = 0; i < to_remove && last != by_timestamp.end(); i++) {
     ++last;
   }
 

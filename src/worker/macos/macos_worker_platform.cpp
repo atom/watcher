@@ -165,6 +165,12 @@ public:
     return ok_result(true);
   }
 
+  void handle_cache_size_command(size_t cache_size) override
+  {
+    LOGGER << "Changing cache size to " << cache_size << "." << endl;
+    cache.resize(cache_size);
+  }
+
   void populate_status(Status &status) override
   {
     status.worker_subscription_count = subscriptions.size();

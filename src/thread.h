@@ -143,6 +143,9 @@ protected:
   // Configure the number of system calls to perform during each polling cycle.
   virtual Result<CommandOutcome> handle_polling_throttle_command(const CommandPayload *payload);
 
+  // Configure the number of stat() entries to cache on MacOS.
+  virtual Result<CommandOutcome> handle_cache_size_command(const CommandPayload *payload);
+
   // Respond to a prompt for thread-local status.
   virtual Result<CommandOutcome> handle_status_command(const CommandPayload *payload);
 
