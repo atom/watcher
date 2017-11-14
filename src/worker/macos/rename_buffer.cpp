@@ -93,17 +93,31 @@ bool RenameBuffer::observe_present_entry(Event &event,
       // The former end is the "from" end and the current end is the "to" end.
       logline << "completed pair " << *existing.entry << " => " << *present << ": Emitting rename event." << endl;
 
+      EntryKind kind = present->get_entry_kind();
+      string from_path(existing.entry->get_path());
+      string to_path(present->get_path());
+
       cache.evict(existing.entry);
-      event.message_buffer().renamed(
-        string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
+      if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
+        cache.update_for_rename(from_path, to_path);
+        update_for_rename(from_path, to_path);
+      }
+      event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
     } else if (existing.current && !current) {
       // The former end is the "to" end and the current end is the "from" end.
       logline << "completed pair " << *present << " => " << *existing.entry << ": Emitting rename event." << endl;
 
+      EntryKind kind = existing.entry->get_entry_kind();
+      string from_path(present->get_path());
+      string to_path(existing.entry->get_path());
+
       cache.evict(present);
-      event.message_buffer().renamed(
-        string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
+      if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
+        cache.update_for_rename(from_path, to_path);
+        update_for_rename(from_path, to_path);
+      }
+      event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
     } else {
       // Either both entries are still present (hardlink, re-used inode?) or both are missing (rapidly renamed and
