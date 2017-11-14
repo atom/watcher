@@ -132,6 +132,7 @@ string CommandPayload::describe() const
     case COMMAND_LOG_DISABLE: builder << "disable logging"; break;
     case COMMAND_POLLING_INTERVAL: builder << "polling interval " << arg; break;
     case COMMAND_POLLING_THROTTLE: builder << "polling throttle " << arg; break;
+    case COMMAND_CACHE_SIZE: builder << "cache size " << arg; break;
     case COMMAND_DRAIN: builder << "drain"; break;
     case COMMAND_STATUS: builder << "status request " << arg; break;
     default: builder << "!!action=" << action; break;
