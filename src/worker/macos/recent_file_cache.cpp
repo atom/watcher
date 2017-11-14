@@ -31,12 +31,6 @@ using std::static_pointer_cast;
 using std::string;
 using std::vector;
 
-// If the cache contains more than this many entries, any entries older than CACHE_AGEOFF will be purged.
-static const size_t CACHE_WATERMARK = 4096;
-
-// Entries older than this duration will be purged once the cache grows beyond CACHE_WATERMARK entries.
-static const minutes CACHE_AGEOFF = minutes(5);
-
 shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint)
 {
   struct stat path_stat
