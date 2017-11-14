@@ -71,14 +71,12 @@ public:
   RenameBuffer &operator=(RenameBuffer &&) = delete;
 
 private:
-  bool observe_present_entry(ChannelMessageBuffer &message_buffer,
+  bool observe_present_entry(Event &event,
     RecentFileCache &cache,
     const std::shared_ptr<PresentEntry> &present,
     bool current);
 
-  bool observe_absent(ChannelMessageBuffer &message_buffer,
-    RecentFileCache &cache,
-    const std::shared_ptr<AbsentEntry> &absent);
+  bool observe_absent(Event &event, RecentFileCache &cache, const std::shared_ptr<AbsentEntry> &absent);
 
   std::unordered_map<Key, RenameBufferEntry> observed_by_inode;
 };
