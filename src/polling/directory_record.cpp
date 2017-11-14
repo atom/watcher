@@ -15,7 +15,6 @@
 #include "polling_iterator.h"
 
 using std::dec;
-using std::endl;
 using std::hex;
 using std::move;
 using std::ostream;
