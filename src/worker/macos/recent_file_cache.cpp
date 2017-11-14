@@ -87,7 +87,7 @@ bool StatResult::could_be_rename_of(const StatResult &other) const
 
 bool StatResult::update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path)
 {
-  if (path.rfind(from_dir_path, 0) == 0) {
+  if (path.size() > from_dir_path.size() && path.rfind(from_dir_path, 0) == 0) {
     path = to_dir_path + path.substr(from_dir_path.size());
     return true;
   }
