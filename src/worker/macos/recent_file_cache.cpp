@@ -288,10 +288,10 @@ void RecentFileCache::apply()
 
 void RecentFileCache::prune()
 {
-  size_t to_remove = maximum_size - by_path.size();
-  if (to_remove <= 0) {
+  if (by_path.size() <= maximum_size) {
     return;
   }
+  size_t to_remove = by_path.size() - maximum_size;
 
   LOGGER << "Cache currently contains " << plural(by_path.size(), "entry", "entries") << ". Pruning triggered." << endl;
 
