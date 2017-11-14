@@ -67,6 +67,56 @@ const {EventMatcher} = require('../matcher');
           ))
         }
       })
+
+      it('understands rapid rename and deletion events', async function () {
+        const originalPath = fixture.watchPath('created.txt')
+        const finalPath = fixture.watchPath('final.txt')
+
+        await fs.writeFile(originalPath, 'contents\n')
+        await until('creation event arrives', matcher.allEvents(
+          {action: 'created', kind: 'file', path: originalPath}
+        ))
+
+        await fs.rename(originalPath, finalPath)
+        await fs.remove(finalPath)
+
+        if (process.platform === 'darwin') {
+          await until('creation and deletion events arrive', matcher.allEvents(
+            {action: 'deleted', kind: 'file', path: originalPath},
+            {action: 'created', kind: 'file', path: finalPath},
+            {action: 'deleted', kind: 'file', path: finalPath}
+          ))
+        } else {
+          await until('rename and deletion events arrive', matcher.allEvents(
+            {action: 'created', kind: 'file', path: originalPath},
+            {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath}
+          ))
+        }
+      })
+
+      it('understands rapid creation, rename, and deletion events', async function () {
+        const originalPath = fixture.watchPath('created.txt')
+        const finalPath = fixture.watchPath('final.txt')
+
+        await fs.writeFile(originalPath, 'contents\n')
+        await fs.rename(originalPath, finalPath)
+        await fs.remove(finalPath)
+
+        if (process.platform === 'darwin') {
+          await until('creation and deletion events arrive', matcher.allEvents(
+            {action: 'created', kind: 'file', path: originalPath},
+            {action: 'deleted', kind: 'file', path: originalPath},
+            {action: 'created', kind: 'file', path: finalPath},
+            {action: 'deleted', kind: 'file', path: finalPath}
+          ))
+        } else {
+          await until('creation, rename, and deletion events arrive', matcher.allEvents(
+            {action: 'created', kind: 'file', path: originalPath},
+            {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath},
+            {action: 'deleted', kind: 'file', path: finalPath}
+          ))
+        }
+      })
     }
 
     it('correlates rapid file rename events', async function () {
