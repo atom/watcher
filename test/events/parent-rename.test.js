@@ -35,7 +35,7 @@ describe('when a parent directory is renamed', function () {
     await fixture.after(this.currentTest)
   })
 
-  it('tracks the file rename', async function () {
+  it('tracks the file rename ^linux', async function () {
     const changedFile = fixture.watchPath('parent-1', 'file-1.txt')
     await fs.rename(finalFile, changedFile)
 
