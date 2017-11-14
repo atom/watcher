@@ -88,8 +88,8 @@ const {EventMatcher} = require('../matcher');
           ))
         } else {
           await until('rename and deletion events arrive', matcher.allEvents(
-            {action: 'created', kind: 'file', path: originalPath},
-            {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath}
+            {action: 'renamed', oldPath: originalPath, path: finalPath},
+            {action: 'deleted', path: finalPath}
           ))
         }
       })
