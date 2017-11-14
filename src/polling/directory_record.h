@@ -84,6 +84,10 @@ private:
   // against. Otherwise, we have nothing to compare against, so we shouldn't emit anything.
   bool populated;
 
+  // If true, this directory was present and scannable the last time it was encountered in the polling cycle. Used to
+  // prevent duplicate deletion events for missing directories.
+  bool was_present;
+
   // For great logging.
   friend std::ostream &operator<<(std::ostream &out, const DirectoryRecord &record)
   {
