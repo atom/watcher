@@ -92,6 +92,13 @@ public:
     return send_command(worker_thread, CommandPayloadBuilder::log_disable(), std::move(callback));
   }
 
+  Result<> worker_cache_size(size_t cache_size, std::unique_ptr<Nan::Callback> callback)
+  {
+    if (!check_async(callback)) return ok_result();
+
+    return send_command(worker_thread, CommandPayloadBuilder::cache_size(cache_size), std::move(callback));
+  }
+
   Result<> use_polling_log_file(std::string &&polling_log_file, std::unique_ptr<Nan::Callback> callback)
   {
     if (!check_async(callback)) return ok_result();

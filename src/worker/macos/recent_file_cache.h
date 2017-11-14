@@ -107,6 +107,10 @@ public:
 class RecentFileCache
 {
 public:
+  explicit RecentFileCache(size_t maximum_size);
+
+  ~RecentFileCache() = default;
+
   std::shared_ptr<StatResult> current_at_path(const std::string &path, bool file_hint, bool directory_hint);
 
   std::shared_ptr<StatResult> former_at_path(const std::string &path, bool file_hint, bool directory_hint);
@@ -123,9 +127,18 @@ public:
 
   void prepopulate(const std::string &root, size_t max);
 
+  void resize(size_t maximum_size);
+
   size_t size() { return by_path.size(); }
 
+  RecentFileCache(const RecentFileCache &) = delete;
+  RecentFileCache(RecentFileCache &&) = delete;
+  RecentFileCache &operator=(const RecentFileCache &) = delete;
+  RecentFileCache &operator=(RecentFileCache &&) = delete;
+
 private:
+  size_t maximum_size;
+
   std::map<std::string, std::shared_ptr<PresentEntry>> pending;
 
   std::unordered_map<std::string, std::shared_ptr<PresentEntry>> by_path;

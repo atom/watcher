@@ -40,10 +40,12 @@ using std::string;
 using std::unique_ptr;
 using std::unordered_map;
 
+const size_t DEFAULT_CACHE_SIZE = 4096;
+
 class MacOSWorkerPlatform : public WorkerPlatform
 {
 public:
-  MacOSWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread) { freeze(); };
+  MacOSWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread), cache{DEFAULT_CACHE_SIZE} { freeze(); };
 
   ~MacOSWorkerPlatform() override = default;
 
@@ -161,6 +163,12 @@ public:
     }
     subscriptions.erase(maybe_sub);
     return ok_result(true);
+  }
+
+  void handle_cache_size_command(size_t cache_size) override
+  {
+    LOGGER << "Changing cache size to " << cache_size << "." << endl;
+    cache.resize(cache_size);
   }
 
   void populate_status(Status &status) override

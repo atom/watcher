@@ -48,6 +48,12 @@ Result<Thread::CommandOutcome> WorkerThread::handle_remove_command(const Command
   return r.propagate(r.get_value() ? ACK : NOTHING);
 }
 
+Result<Thread::CommandOutcome> WorkerThread::handle_cache_size_command(const CommandPayload *payload)
+{
+  platform->handle_cache_size_command(payload->get_arg());
+  return ok_result(ACK);
+}
+
 Result<Thread::CommandOutcome> WorkerThread::handle_status_command(const CommandPayload *payload)
 {
   unique_ptr<Status> status{new Status()};

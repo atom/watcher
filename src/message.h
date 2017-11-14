@@ -115,6 +115,7 @@ enum CommandAction
   COMMAND_LOG_DISABLE,
   COMMAND_POLLING_INTERVAL,
   COMMAND_POLLING_THROTTLE,
+  COMMAND_CACHE_SIZE,
   COMMAND_DRAIN,
   COMMAND_STATUS,
   COMMAND_MIN = COMMAND_ADD,
@@ -214,6 +215,11 @@ public:
   static CommandPayloadBuilder polling_throttle(const uint_fast32_t &throttle)
   {
     return CommandPayloadBuilder(COMMAND_POLLING_THROTTLE, "", throttle, false, 1);
+  }
+
+  static CommandPayloadBuilder cache_size(uint_fast32_t maximum_size)
+  {
+    return CommandPayloadBuilder(COMMAND_CACHE_SIZE, "", maximum_size, false, 1);
   }
 
   static CommandPayloadBuilder drain() { return CommandPayloadBuilder(COMMAND_DRAIN, "", NULL_CHANNEL_ID, false, 1); }
