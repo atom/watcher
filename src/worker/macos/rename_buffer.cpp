@@ -127,10 +127,14 @@ bool RenameBuffer::observe_present_entry(Event &event,
 bool RenameBuffer::observe_absent(Event &event, RecentFileCache & /*cache*/, const std::shared_ptr<AbsentEntry> &absent)
 {
   LOGGER << "Unable to correlate rename from " << absent->get_path() << " without an inode." << endl;
-  if (event.flag_created()) {
+  if (event.flag_created() ^ event.flag_deleted()) {
+    // this entry was created just before being renamed or deleted just after being renamed.
     event.message_buffer().created(string(absent->get_path()), absent->get_entry_kind());
+    event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
+  } else if (!event.flag_created() && !event.flag_deleted()) {
+    // former must have been evicted from the cache.
+    event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
   }
-  event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
   return true;
 }
 
