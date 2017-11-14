@@ -30,6 +30,7 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   bool worker_log_disable = false;
   bool worker_log_stderr = false;
   bool worker_log_stdout = false;
+  uint_fast32_t worker_cache_size = 0;
 
   string polling_log_file;
   bool polling_log_disable = false;
@@ -54,6 +55,7 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!get_bool_option(options, "workerLogDisable", worker_log_disable)) return;
   if (!get_bool_option(options, "workerLogStderr", worker_log_stderr)) return;
   if (!get_bool_option(options, "workerLogStdout", worker_log_stdout)) return;
+  if (!get_uint_option(options, "workerCacheSize", worker_cache_size)) return;
 
   if (!get_string_option(options, "pollingLogFile", polling_log_file)) return;
   if (!get_bool_option(options, "pollingLogDisable", polling_log_disable)) return;
@@ -85,6 +87,10 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
     r &= Hub::get().use_worker_log_stderr(all->create_callback());
   } else if (worker_log_stdout) {
     r &= Hub::get().use_worker_log_stdout(all->create_callback());
+  }
+
+  if (worker_cache_size > 0) {
+    r &= Hub::get().worker_cache_size(worker_cache_size, all->create_callback());
   }
 
   if (polling_log_disable) {
