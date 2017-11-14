@@ -20,7 +20,7 @@ const {EventMatcher} = require('../matcher');
       await fixture.after(this.currentTest)
     })
 
-    it('emits a deletion event for the root move itself', async function () {
+    it('emits a deletion event for the root move itself ^windows ^linux', async function () {
       const oldRoot = fixture.watchPath()
       const newRoot = fixture.fixturePath('new-root')
 
@@ -31,7 +31,7 @@ const {EventMatcher} = require('../matcher');
       ))
     })
 
-    it('does not emit events within the new root', async function () {
+    it('does not emit events within the new root ^windows ^linux', async function () {
       const oldRoot = fixture.watchPath()
       const oldFile = fixture.watchPath('some-file.txt')
       const newRoot = fixture.fixturePath('new-root')
