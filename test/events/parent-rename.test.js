@@ -4,7 +4,7 @@ const {Fixture} = require('../helper')
 const {EventMatcher} = require('../matcher')
 
 // These cases interfere with the caches on MacOS, but other platforms should handle them correctly as well.
-describe.only('when a parent directory is renamed', function () {
+describe('when a parent directory is renamed', function () {
   let fixture, matcher
   let originalParentDir, originalFile
   let finalParentDir, finalFile
