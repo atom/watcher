@@ -25,13 +25,17 @@ RenameBufferEntry::RenameBufferEntry(RenameBufferEntry &&original) noexcept :
   entry(move(original.entry)),
   current{original.current},
   age{original.age}
-{}
+{
+  //
+}
 
 RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) :
   entry{std::move(entry)},
   current{current},
   age{0}
-{}
+{
+  //
+}
 
 bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
 {
@@ -46,23 +50,23 @@ bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
 
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
-    if (observe_present_entry(event.message_buffer(), cache, current_present, true)) handled = true;
+    if (observe_present_entry(event, cache, current_present, true)) handled = true;
   }
 
   if (former->is_present()) {
     shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
-    if (observe_present_entry(event.message_buffer(), cache, former_present, false)) handled = true;
+    if (observe_present_entry(event, cache, former_present, false)) handled = true;
   }
 
   if (former->is_absent() && current->is_absent()) {
     shared_ptr<AbsentEntry> current_absent = static_pointer_cast<AbsentEntry>(current);
-    if (observe_absent(event.message_buffer(), cache, current_absent)) handled = true;
+    if (observe_absent(event, cache, current_absent)) handled = true;
   }
 
   return handled;
 }
 
-bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
+bool RenameBuffer::observe_present_entry(Event &event,
   RecentFileCache &cache,
   const shared_ptr<PresentEntry> &present,
   bool current)
@@ -89,17 +93,29 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
       // The former end is the "from" end and the current end is the "to" end.
       logline << "completed pair " << *existing.entry << " => " << *present << ": Emitting rename event." << endl;
 
+      EntryKind kind = present->get_entry_kind();
+      string from_path(existing.entry->get_path());
+      string to_path(present->get_path());
+
       cache.evict(existing.entry);
-      message_buffer.renamed(
-        string(existing.entry->get_path()), string(present->get_path()), present->get_entry_kind());
+      if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
+        cache.update_for_rename(from_path, to_path);
+      }
+      event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
     } else if (existing.current && !current) {
       // The former end is the "to" end and the current end is the "from" end.
       logline << "completed pair " << *present << " => " << *existing.entry << ": Emitting rename event." << endl;
 
+      EntryKind kind = existing.entry->get_entry_kind();
+      string from_path(present->get_path());
+      string to_path(existing.entry->get_path());
+
       cache.evict(present);
-      message_buffer.renamed(
-        string(present->get_path()), string(existing.entry->get_path()), existing.entry->get_entry_kind());
+      if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
+        cache.update_for_rename(from_path, to_path);
+      }
+      event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
     } else {
       // Either both entries are still present (hardlink, re-used inode?) or both are missing (rapidly renamed and
@@ -124,13 +140,17 @@ bool RenameBuffer::observe_present_entry(ChannelMessageBuffer &message_buffer,
   return false;
 }
 
-bool RenameBuffer::observe_absent(ChannelMessageBuffer &message_buffer,
-  RecentFileCache & /*cache*/,
-  const std::shared_ptr<AbsentEntry> &absent)
+bool RenameBuffer::observe_absent(Event &event, RecentFileCache & /*cache*/, const std::shared_ptr<AbsentEntry> &absent)
 {
   LOGGER << "Unable to correlate rename from " << absent->get_path() << " without an inode." << endl;
-  message_buffer.created(string(absent->get_path()), absent->get_entry_kind());
-  message_buffer.deleted(string(absent->get_path()), absent->get_entry_kind());
+  if (event.flag_created() ^ event.flag_deleted()) {
+    // this entry was created just before being renamed or deleted just after being renamed.
+    event.message_buffer().created(string(absent->get_path()), absent->get_entry_kind());
+    event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
+  } else if (!event.flag_created() && !event.flag_deleted()) {
+    // former must have been evicted from the cache.
+    event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
+  }
   return true;
 }
 
