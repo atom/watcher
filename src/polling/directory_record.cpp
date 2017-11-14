@@ -272,7 +272,8 @@ size_t DirectoryRecord::count_entries() const
 DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, string &&name) :
   parent{parent},
   name(move(name)),
-  populated{false}
+  populated{false},
+  was_present{false}
 {
   //
 }
