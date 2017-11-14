@@ -100,7 +100,6 @@ bool RenameBuffer::observe_present_entry(Event &event,
       cache.evict(existing.entry);
       if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
         cache.update_for_rename(from_path, to_path);
-        update_for_rename(from_path, to_path);
       }
       event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
@@ -115,7 +114,6 @@ bool RenameBuffer::observe_present_entry(Event &event,
       cache.evict(present);
       if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
         cache.update_for_rename(from_path, to_path);
-        update_for_rename(from_path, to_path);
       }
       event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
@@ -199,11 +197,4 @@ shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageB
   }
 
   return aged;
-}
-
-void RenameBuffer::update_for_rename(const string &from_dir_path, const string &to_dir_path)
-{
-  for (auto &pair : observed_by_inode) {
-    pair.second.update_for_rename(from_dir_path, to_dir_path);
-  }
 }

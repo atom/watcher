@@ -23,11 +23,6 @@ public:
 
   ~RenameBufferEntry() = default;
 
-  bool update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path)
-  {
-    return entry->update_for_rename(from_dir_path, to_dir_path);
-  }
-
   RenameBufferEntry(const RenameBufferEntry &) = delete;
   RenameBufferEntry &operator=(const RenameBufferEntry &) = delete;
   RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
@@ -69,8 +64,6 @@ public:
     const std::shared_ptr<std::set<Key>> &keys);
 
   size_t size() { return observed_by_inode.size(); }
-
-  void update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path);
 
   RenameBuffer(const RenameBuffer &) = delete;
   RenameBuffer(RenameBuffer &&) = delete;
