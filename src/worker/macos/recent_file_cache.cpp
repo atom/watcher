@@ -198,6 +198,11 @@ string AbsentEntry::to_string(bool verbose) const
   return result.str();
 }
 
+RecentFileCache::RecentFileCache(size_t maximum_size) : maximum_size{maximum_size}
+{
+  //
+}
+
 shared_ptr<StatResult> RecentFileCache::current_at_path(const string &path, bool file_hint, bool directory_hint)
 {
   auto maybe_pending = pending.find(path);
@@ -289,28 +294,25 @@ void RecentFileCache::apply()
 
 void RecentFileCache::prune()
 {
-  if (by_path.size() <= CACHE_WATERMARK) {
+  size_t to_remove = maximum_size - by_path.size();
+  if (to_remove <= 0) {
     return;
   }
 
   LOGGER << "Cache currently contains " << plural(by_path.size(), "entry", "entries") << ". Pruning triggered." << endl;
 
-  time_point<steady_clock> oldest = steady_clock::now() - CACHE_AGEOFF;
+  auto last = by_timestamp.begin();
+  for (int i = 0; i < to_remove && last != by_timestamp.end(); i++) {
+    ++last;
+  }
 
-  auto to_keep = by_timestamp.upper_bound(oldest);
-  size_t prune_count = 0;
-  for (auto it = by_timestamp.begin(); it != to_keep && it != by_timestamp.end(); ++it) {
+  for (auto it = by_timestamp.begin(); it != last; ++it) {
     shared_ptr<PresentEntry> entry = it->second;
     by_path.erase(entry->get_path());
-
-    prune_count++;
   }
+  by_timestamp.erase(by_timestamp.begin(), last);
 
-  if (to_keep != by_timestamp.begin()) {
-    by_timestamp.erase(by_timestamp.begin(), to_keep);
-  }
-
-  LOGGER << "Pruned " << plural(prune_count, "entry", "entries") << ". " << plural(by_path.size(), "entry", "entries")
+  LOGGER << "Pruned " << plural(to_remove, "entry", "entries") << ". " << plural(by_path.size(), "entry", "entries")
          << " remain." << endl;
 }
 
@@ -318,10 +320,11 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
 {
   size_t count = 0;
   size_t entries = 0;
+  size_t bounded_max = max > maximum_size ? maximum_size : max;
   queue<string> next_roots;
   next_roots.push(root);
 
-  while (count < max && !next_roots.empty()) {
+  while (count < bounded_max && !next_roots.empty()) {
     string current_root(next_roots.front());
     next_roots.pop();
 
@@ -373,4 +376,10 @@ void RecentFileCache::prepopulate(const string &root, size_t max)
   apply();
 
   LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
+}
+
+void RecentFileCache::resize(size_t maximum_size)
+{
+  this->maximum_size = maximum_size;
+  prune();
 }
