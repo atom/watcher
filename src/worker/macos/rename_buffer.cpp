@@ -25,13 +25,17 @@ RenameBufferEntry::RenameBufferEntry(RenameBufferEntry &&original) noexcept :
   entry(move(original.entry)),
   current{original.current},
   age{original.age}
-{}
+{
+  //
+}
 
 RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) :
   entry{std::move(entry)},
   current{current},
   age{0}
-{}
+{
+  //
+}
 
 bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
 {
@@ -181,4 +185,11 @@ shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageB
   }
 
   return aged;
+}
+
+void RenameBuffer::update_for_rename(const string &from_dir_path, const string &to_dir_path)
+{
+  for (auto &pair : observed_by_inode) {
+    pair.second.update_for_rename(from_dir_path, to_dir_path);
+  }
 }

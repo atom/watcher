@@ -28,6 +28,8 @@ public:
 
   virtual bool could_be_rename_of(const StatResult &other) const;
 
+  bool update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path);
+
   const std::string &get_path() const;
 
   EntryKind get_entry_kind() const;
@@ -112,6 +114,8 @@ public:
   void evict(const std::string &path);
 
   void evict(const std::shared_ptr<PresentEntry> &entry);
+
+  void update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path);
 
   void apply();
 

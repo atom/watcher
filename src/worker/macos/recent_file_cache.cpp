@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "../../helper/common.h"
 #include "../../log.h"
@@ -23,10 +24,12 @@ using std::endl;
 using std::move;
 using std::ostream;
 using std::ostringstream;
+using std::pair;
 using std::queue;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
+using std::vector;
 
 // If the cache contains more than this many entries, any entries older than CACHE_AGEOFF will be purged.
 static const size_t CACHE_WATERMARK = 4096;
@@ -80,6 +83,16 @@ bool StatResult::has_changed_from(const StatResult &other) const
 bool StatResult::could_be_rename_of(const StatResult &other) const
 {
   return !kinds_are_different(entry_kind, other.entry_kind);
+}
+
+bool StatResult::update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path)
+{
+  if (path.rfind(from_dir_path, 0) == 0) {
+    path = to_dir_path + path.substr(from_dir_path.size());
+    return true;
+  }
+
+  return false;
 }
 
 const string &StatResult::get_path() const
@@ -239,6 +252,23 @@ void RecentFileCache::evict(const shared_ptr<PresentEntry> &entry)
   auto maybe = by_path.find(entry->get_path());
   if (maybe != by_path.end() && maybe->second == entry) {
     evict(entry->get_path());
+  }
+}
+
+void RecentFileCache::update_for_rename(const string &from_dir_path, const string &to_dir_path)
+{
+  vector<pair<string, string>> renames;
+
+  for (auto &each : by_path) {
+    if (each.second->update_for_rename(from_dir_path, to_dir_path)) {
+      renames.emplace_back(each.first, each.second->get_path());
+    }
+  }
+
+  for (auto &rename : renames) {
+    shared_ptr<PresentEntry> p = by_path[rename.first];
+    by_path.erase(rename.first);
+    by_path.emplace(rename.second, p);
   }
 }
 
