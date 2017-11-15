@@ -49,9 +49,6 @@ bool Event::update_for_rename(const string &from_dir_path, const string &to_dir_
   const string &stat_path = get_stat_path();
   if (stat_path.size() > from_dir_path.size() && stat_path.rfind(from_dir_path, 0) == 0) {
     updated_event_path = to_dir_path + stat_path.substr(from_dir_path.size());
-    LOGGER << "FROM " << stat_path << " TO " << updated_event_path << "\n"
-           << " from_dir_path=[" << from_dir_path << "]"
-           << " to_dir_path=[" << to_dir_path << "]" << endl;
     return true;
   }
 
