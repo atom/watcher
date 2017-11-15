@@ -31,7 +31,7 @@ public:
   RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
 
 private:
-  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, const std::string &event_path, bool current);
+  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, std::string event_path, bool current);
 
   std::shared_ptr<PresentEntry> entry;
   std::string event_path;

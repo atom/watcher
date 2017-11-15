@@ -29,9 +29,9 @@ RenameBufferEntry::RenameBufferEntry(RenameBufferEntry &&original) noexcept :
   //
 }
 
-RenameBufferEntry::RenameBufferEntry(shared_ptr<PresentEntry> entry, const string &event_path, bool current) :
+RenameBufferEntry::RenameBufferEntry(shared_ptr<PresentEntry> entry, string event_path, bool current) :
   entry{move(entry)},
-  event_path{event_path},
+  event_path{move(event_path)},
   current{current},
   age{0}
 {
