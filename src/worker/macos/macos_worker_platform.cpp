@@ -209,6 +209,7 @@ public:
     for (size_t i = 0; i < num_events; i++) {
       handler.event(string(paths[i]), event_flags[i]);
     }
+    handler.handle_deferred();
     cache.apply();
 
     shared_ptr<set<RenameBuffer::Key>> out = rename_buffer.flush_unmatched(message_buffer);

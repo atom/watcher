@@ -24,23 +24,48 @@ describe('when a parent directory is renamed', function () {
 
     matcher = new EventMatcher(fixture)
     await matcher.watch([], {})
-
-    await fs.rename(originalParentDir, finalParentDir)
-    await until('the rename event arrives', matcher.allEvents(
-      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir}
-    ))
   })
 
   afterEach(async function () {
     await fixture.after(this.currentTest)
   })
 
-  it('tracks the file rename ^linux', async function () {
+  it('tracks the file rename across event batches ^linux', async function () {
     const changedFile = fixture.watchPath('parent-1', 'file-1.txt')
+
+    await fs.rename(originalParentDir, finalParentDir)
+    await until('the rename event arrives', matcher.allEvents(
+      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir}
+    ))
+
     await fs.rename(finalFile, changedFile)
 
     await until('the rename event arrives', matcher.allEvents(
       {action: 'renamed', kind: 'file', oldPath: finalFile, path: changedFile}
+    ))
+  })
+
+  it('tracks the file rename within the same event batch ^linux', async function () {
+    const changedFile = fixture.watchPath('parent-1', 'file-1.txt')
+
+    await fs.rename(originalParentDir, finalParentDir)
+    await fs.rename(finalFile, changedFile)
+
+    await until('the rename events arrive', matcher.allEvents(
+      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir},
+      {action: 'renamed', kind: 'file', oldPath: finalFile, path: changedFile}
+    ))
+  })
+
+  it('tracks the file rename when the directory is renamed first ^linux', async function () {
+    const changedFile = fixture.watchPath('parent-0', 'file-1.txt')
+
+    await fs.rename(originalFile, changedFile)
+    await fs.rename(originalParentDir, finalParentDir)
+
+    await until('the rename events arrive', matcher.allEvents(
+      {action: 'renamed', kind: 'file', oldPath: originalFile, path: changedFile},
+      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir}
     ))
   })
 })
