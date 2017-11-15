@@ -15,6 +15,9 @@
 // Forward declaration to be able to accept an Event argument
 class Event;
 
+// Forward declaration to be able to accept a BatchHandler argument
+class BatchHandler;
+
 // Filesystem entry that was flagged as participating in a rename by a received filesystem event.
 class RenameBufferEntry
 {
@@ -28,9 +31,10 @@ public:
   RenameBufferEntry &operator=(RenameBufferEntry &&) = delete;
 
 private:
-  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current);
+  RenameBufferEntry(std::shared_ptr<PresentEntry> entry, const std::string &event_path, bool current);
 
   std::shared_ptr<PresentEntry> entry;
+  std::string event_path;
   bool current;
   size_t age;
 
@@ -50,7 +54,7 @@ public:
   // Observe a rename event for a filesystem event. Deduce the matching side of the rename, if possible,
   // based on the previous and currently observed state of the entry at that path. Return "true" if the event
   // is consumed, or "false" if it should be treated as something other than a rename.
-  bool observe_event(Event &event, RecentFileCache &cache);
+  bool observe_event(Event &event, BatchHandler &batch);
 
   // Enqueue creation and removal events for any buffer entries that have remained unpaired through two consecutive
   // event batches.
@@ -72,11 +76,11 @@ public:
 
 private:
   bool observe_present_entry(Event &event,
-    RecentFileCache &cache,
+    BatchHandler &batch,
     const std::shared_ptr<PresentEntry> &present,
     bool current);
 
-  bool observe_absent(Event &event, RecentFileCache &cache, const std::shared_ptr<AbsentEntry> &absent);
+  bool observe_absent(Event &event, BatchHandler &batch, const std::shared_ptr<AbsentEntry> &absent);
 
   std::unordered_map<Key, RenameBufferEntry> observed_by_inode;
 };

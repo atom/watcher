@@ -10,7 +10,6 @@
 
 #include "../../log.h"
 #include "batch_handler.h"
-#include "recent_file_cache.h"
 
 using std::endl;
 using std::move;
@@ -23,21 +22,23 @@ using std::vector;
 
 RenameBufferEntry::RenameBufferEntry(RenameBufferEntry &&original) noexcept :
   entry(move(original.entry)),
+  event_path(move(original.event_path)),
   current{original.current},
   age{original.age}
 {
   //
 }
 
-RenameBufferEntry::RenameBufferEntry(std::shared_ptr<PresentEntry> entry, bool current) :
-  entry{std::move(entry)},
+RenameBufferEntry::RenameBufferEntry(shared_ptr<PresentEntry> entry, const string &event_path, bool current) :
+  entry{move(entry)},
+  event_path{event_path},
   current{current},
   age{0}
 {
   //
 }
 
-bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
+bool RenameBuffer::observe_event(Event &event, BatchHandler &batch)
 {
   const shared_ptr<StatResult> &former = event.get_former();
   const shared_ptr<StatResult> &current = event.get_current();
@@ -50,24 +51,24 @@ bool RenameBuffer::observe_event(Event &event, RecentFileCache &cache)
 
   if (current->is_present()) {
     shared_ptr<PresentEntry> current_present = static_pointer_cast<PresentEntry>(current);
-    if (observe_present_entry(event, cache, current_present, true)) handled = true;
+    if (observe_present_entry(event, batch, current_present, true)) handled = true;
   }
 
   if (former->is_present()) {
     shared_ptr<PresentEntry> former_present = static_pointer_cast<PresentEntry>(former);
-    if (observe_present_entry(event, cache, former_present, false)) handled = true;
+    if (observe_present_entry(event, batch, former_present, false)) handled = true;
   }
 
   if (former->is_absent() && current->is_absent()) {
     shared_ptr<AbsentEntry> current_absent = static_pointer_cast<AbsentEntry>(current);
-    if (observe_absent(event, cache, current_absent)) handled = true;
+    if (observe_absent(event, batch, current_absent)) handled = true;
   }
 
   return handled;
 }
 
 bool RenameBuffer::observe_present_entry(Event &event,
-  RecentFileCache &cache,
+  BatchHandler &batch,
   const shared_ptr<PresentEntry> &present,
   bool current)
 {
@@ -77,7 +78,7 @@ bool RenameBuffer::observe_present_entry(Event &event,
   if (maybe_entry == observed_by_inode.end()) {
     // The first-seen half of this rename event. Buffer a new entry to be paired with the second half when or if it's
     // observed.
-    RenameBufferEntry entry(present, current);
+    RenameBufferEntry entry(present, event.get_event_path(), current);
     observed_by_inode.emplace(present->get_inode(), move(entry));
     logline << "first half " << *present << ": Remembering for later." << endl;
     return true;
@@ -94,12 +95,12 @@ bool RenameBuffer::observe_present_entry(Event &event,
       logline << "completed pair " << *existing.entry << " => " << *present << ": Emitting rename event." << endl;
 
       EntryKind kind = present->get_entry_kind();
-      string from_path(existing.entry->get_path());
-      string to_path(present->get_path());
+      string from_path(existing.event_path);
+      string to_path(event.get_event_path());
 
-      cache.evict(existing.entry);
+      event.cache().evict(existing.entry);
       if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
-        cache.update_for_rename(from_path, to_path);
+        batch.update_for_rename(from_path, to_path);
       }
       event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
@@ -108,18 +109,17 @@ bool RenameBuffer::observe_present_entry(Event &event,
       logline << "completed pair " << *present << " => " << *existing.entry << ": Emitting rename event." << endl;
 
       EntryKind kind = existing.entry->get_entry_kind();
-      string from_path(present->get_path());
-      string to_path(existing.entry->get_path());
+      string from_path(event.get_event_path());
+      string to_path(existing.event_path);
 
-      cache.evict(present);
+      event.cache().evict(present);
       if (kind == KIND_DIRECTORY || kind == KIND_UNKNOWN) {
-        cache.update_for_rename(from_path, to_path);
+        batch.update_for_rename(from_path, to_path);
       }
       event.message_buffer().renamed(move(from_path), move(to_path), kind);
       handled = true;
     } else {
-      // Either both entries are still present (hardlink, re-used inode?) or both are missing (rapidly renamed and
-      // deleted?) This could happen if the entry is renamed again between the lstat() calls, possibly.
+      // Both entries are still present (hardlink, re-used inode?).
       string existing_desc = existing.current ? " (current) " : " (former) ";
       string incoming_desc = current ? " (current) " : " (former) ";
 
@@ -140,16 +140,18 @@ bool RenameBuffer::observe_present_entry(Event &event,
   return false;
 }
 
-bool RenameBuffer::observe_absent(Event &event, RecentFileCache & /*cache*/, const std::shared_ptr<AbsentEntry> &absent)
+bool RenameBuffer::observe_absent(Event &event, BatchHandler & /*batch*/, const std::shared_ptr<AbsentEntry> &absent)
 {
-  LOGGER << "Unable to correlate rename from " << absent->get_path() << " without an inode." << endl;
+  const string &event_path = event.get_event_path();
+
+  LOGGER << "Unable to correlate rename from " << event_path << " without an inode." << endl;
   if (event.flag_created() ^ event.flag_deleted()) {
     // this entry was created just before being renamed or deleted just after being renamed.
-    event.message_buffer().created(string(absent->get_path()), absent->get_entry_kind());
-    event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
+    event.message_buffer().created(string(event_path), absent->get_entry_kind());
+    event.message_buffer().deleted(string(event_path), absent->get_entry_kind());
   } else if (!event.flag_created() && !event.flag_deleted()) {
     // former must have been evicted from the cache.
-    event.message_buffer().deleted(string(absent->get_path()), absent->get_entry_kind());
+    event.message_buffer().deleted(string(event_path), absent->get_entry_kind());
   }
   return true;
 }
@@ -176,6 +178,7 @@ shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageB
     if (keys->count(key) == 0) continue;
 
     RenameBufferEntry &existing = it.second;
+    const string &event_path = existing.event_path;
     shared_ptr<PresentEntry> entry = existing.entry;
 
     if (existing.age == 0u) {
@@ -185,9 +188,9 @@ shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageB
     }
 
     if (existing.current) {
-      message_buffer.created(string(entry->get_path()), entry->get_entry_kind());
+      message_buffer.created(string(event_path), entry->get_entry_kind());
     } else {
-      message_buffer.deleted(string(entry->get_path()), entry->get_entry_kind());
+      message_buffer.deleted(string(event_path), entry->get_entry_kind());
     }
     to_erase.push_back(key);
   }
