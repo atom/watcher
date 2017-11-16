@@ -3,6 +3,7 @@
 #include "libuv.h"
 #include <iomanip>
 #include <iostream>
+#include <sys/stat.h>
 
 using std::dec;
 using std::hex;
