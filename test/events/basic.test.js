@@ -78,7 +78,7 @@ const {EventMatcher} = require('../matcher');
       await fs.unlink(deletedPath)
 
       await until('the deletion event arrives', matcher.allEvents(
-        {action: 'deleted', path: deletedPath}
+        {action: 'deleted', kind: 'file', path: deletedPath}
       ))
     })
 
@@ -122,7 +122,7 @@ const {EventMatcher} = require('../matcher');
 
       await fs.rmdir(subdir)
       await until('directory deletion event arrives', matcher.allEvents(
-        {action: 'deleted', path: subdir}
+        {action: 'deleted', kind: 'directory', path: subdir}
       ))
     })
   })

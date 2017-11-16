@@ -54,7 +54,7 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(flagFile, 'flag 2')
 
       await until('the deletion event arrives', matcher.allEvents(
-        {action: 'deleted', path: insideFile}
+        {action: 'deleted', kind: 'file', path: insideFile}
       ))
     })
   })
