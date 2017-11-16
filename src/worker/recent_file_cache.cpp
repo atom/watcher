@@ -36,24 +36,27 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
 
   int lstat_err = uv_fs_lstat(nullptr, &lstat_req.req, path.c_str(), nullptr);
 
-  // Ignore lstat() errors on entries that:
-  // (a) we aren't allowed to see
-  // (b) are at paths with too many symlinks or looping symlinks
-  // (c) have names that are too long
-  // (d) have a path component that is (no longer) a directory
-  // Log any other errno that we see.
-  if (lstat_err != 0 && lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP
-    && lstat_err != UV_ENAMETOOLONG && lstat_err != ENOTDIR) {
-    LOGGER << "lstat(" << path << ") failed: " << uv_strerror(lstat_err) << "." << endl;
-  }
+  if (lstat_err != 0) {
+    // Ignore lstat() errors on entries that:
+    // (a) we aren't allowed to see
+    // (b) are at paths with too many symlinks or looping symlinks
+    // (c) have names that are too long
+    // (d) have a path component that is (no longer) a directory
+    // Log any other errno that we see.
+    if (lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP && lstat_err != UV_ENAMETOOLONG
+      && lstat_err != UV_ENOTDIR) {
+      LOGGER << "lstat(" << path << ") failed: " << uv_strerror(lstat_err) << "." << endl;
+    }
 
-  EntryKind guessed_kind = kind_from_stat(lstat_req.req.statbuf);
-  if (guessed_kind == KIND_UNKNOWN) {
+    EntryKind guessed_kind = KIND_UNKNOWN;
     if (file_hint && !directory_hint) guessed_kind = KIND_FILE;
     if (!file_hint && directory_hint) guessed_kind = KIND_DIRECTORY;
+    return shared_ptr<StatResult>(new AbsentEntry(move(path), guessed_kind));
   }
 
-  return shared_ptr<StatResult>(new AbsentEntry(move(path), guessed_kind));
+  uv_stat_t &stat = lstat_req.req.statbuf;
+  EntryKind kind = kind_from_stat(stat);
+  return shared_ptr<StatResult>(new PresentEntry(move(path), kind, stat.st_ino, stat.st_size));
 }
 
 bool StatResult::has_changed_from(const StatResult &other) const
