@@ -42,6 +42,8 @@ using std::unordered_map;
 
 const size_t DEFAULT_CACHE_SIZE = 4096;
 
+const size_t DEFAULT_CACHE_PREPOPULATION = 4096;
+
 class MacOSWorkerPlatform : public WorkerPlatform
 {
 public:
@@ -148,7 +150,7 @@ public:
 
     subscriptions.emplace(channel_id, Subscription(channel_id, recursive, string(root_path), move(event_stream)));
 
-    cache.prepopulate(root_path, 4096);
+    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION);
     return ok_result(true);
   }
 
