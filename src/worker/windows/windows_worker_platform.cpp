@@ -168,6 +168,12 @@ public:
     return ok_result(false);
   }
 
+  void handle_cache_size_command(size_t cache_size) override
+  {
+    LOGGER << "Changing cache size to " << cache_size << "." << endl;
+    cache.resize(cache_size);
+  }
+
   Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription *sub)
   {
     // Ensure that the subscription is valid.

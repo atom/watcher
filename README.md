@@ -67,6 +67,7 @@ await watcher.configure({
   mainLog: watcher.STDERR,
   workerLog: 'worker.log',
   pollingLog: 'polling.log',
+  workerCacheSize: 4096,
   pollingThrottle: 1000,
   pollingInterval: 100
 })
@@ -81,6 +82,8 @@ await watcher.configure({
 `workerLog` configures logging for the worker thread, which is used to interact with native operating system filesystem watching APIs. It accepts the same arguments as `mainLog` and also defaults to `watcher.DISABLE`.
 
 `pollingLog` configures logging for the polling thread, which polls the filesystem when the worker thread is unable to. The polling thread only launches when at least one path needs to be polled. `pollingLog` accepts the same arguments as `mainLog` and also defaults to `watcher.DISABLE`.
+
+`workerCacheSize` controls the number of recently seen stat results are cached within the worker thread. Increasing the cache size will improve the reliability of rename correlation and the entry kinds of deleted entries, but will consume more RAM. The default is `4096`.
 
 `pollingThrottle` controls the rough number of filesystem-touching system calls (`lstat()` and `readdir()`) performed by the polling thread on each polling cycle. Increasing the throttle will improve the timeliness of polled events, especially when watching large directory trees, but will consume more processor cycles and I/O bandwidth. The throttle defaults to `1000`.
 
