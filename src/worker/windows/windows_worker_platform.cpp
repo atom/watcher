@@ -215,14 +215,12 @@ public:
     MessageBuffer buffer;
     ChannelMessageBuffer messages(buffer, channel);
     size_t num_events = 0;
-    bool old_path_seen = false;
-    string old_path;
 
     while (true) {
       PFILE_NOTIFY_INFORMATION info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(base);
       num_events++;
 
-      Result<> pr = process_event_payload(info, sub, messages, old_path_seen, old_path);
+      Result<> pr = process_event_payload(info, sub, messages);
       if (pr.is_error()) {
         LOGGER << "Skipping entry " << pr << "." << endl;
       }
@@ -301,11 +299,7 @@ private:
     return out;
   }
 
-  Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info,
-    Subscription *sub,
-    ChannelMessageBuffer &messages,
-    bool &old_path_seen,
-    string &old_path)
+  Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info, Subscription *sub, ChannelMessageBuffer &messages)
   {
     ChannelID channel = sub->get_channel();
     wstring relpathw{info->FileName, info->FileNameLength / sizeof(WCHAR)};
@@ -347,16 +341,16 @@ private:
         break;
       case FILE_ACTION_RENAMED_OLD_NAME:
         logline << "FILE_ACTION_RENAMED_OLD_NAME " << kind << "." << endl;
-        old_path_seen = true;
-        old_path = move(path);
+        sub->set_old_path_seen(true);
+        sub->set_old_path(move(path));
         break;
       case FILE_ACTION_RENAMED_NEW_NAME:
         logline << "FILE_ACTION_RENAMED_NEW_NAME ";
-        if (old_path_seen) {
+        if (sub->was_old_path_seen()) {
           // Old name received first
           logline << kind << "." << endl;
-          messages.renamed(move(old_path), move(path), kind);
-          old_path_seen = false;
+          messages.renamed(string(sub->get_old_path()), move(path), kind);
+          sub->set_old_path_seen(false);
         } else {
           // No old name. Treat it as a creation
           logline << "(unpaired) " << kind << "." << endl;

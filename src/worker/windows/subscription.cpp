@@ -33,7 +33,8 @@ Subscription::Subscription(ChannelID channel,
   recursive{recursive},
   buffer_size{DEFAULT_BUFFER_SIZE},
   buffer{new BYTE[buffer_size]},
-  written{new BYTE[buffer_size]}
+  written{new BYTE[buffer_size]},
+  old_path_seen{false}
 {
   ZeroMemory(&overlapped, sizeof(OVERLAPPED));
   overlapped.hEvent = this;

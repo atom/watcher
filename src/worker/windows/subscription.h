@@ -4,6 +4,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "../../message.h"
 #include "../../result.h"
@@ -43,6 +44,14 @@ public:
 
   const bool &is_terminating() const { return terminating; }
 
+  const std::string &get_old_path() const { return old_path; }
+
+  void set_old_path(std::string &&old_path) { this->old_path = std::move(old_path); }
+
+  const bool &was_old_path_seen() const { return old_path_seen; }
+
+  void set_old_path_seen(bool old_path_seen) { this->old_path_seen = old_path_seen; }
+
 private:
   CommandID command;
   ChannelID channel;
@@ -57,6 +66,9 @@ private:
   DWORD buffer_size;
   std::unique_ptr<BYTE[]> buffer;
   std::unique_ptr<BYTE[]> written;
+
+  std::string old_path;
+  bool old_path_seen;
 };
 
 #endif
