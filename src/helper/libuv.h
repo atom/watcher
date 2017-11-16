@@ -24,6 +24,10 @@ inline std::ostream &operator<<(std::ostream &out, const uv_timespec_t &ts)
   return out << ts.tv_sec << "s " << ts.tv_nsec << "ns";
 }
 
+std::ostream &operator<<(std::ostream &out, const uv_stat_t &stat);
+
+std::ostream &operator<<(std::ostream &out, const FSReq &r);
+
 inline bool ts_not_equal(const uv_timespec_t &left, const uv_timespec_t &right)
 {
   return left.tv_sec != right.tv_sec || left.tv_nsec != right.tv_nsec;
