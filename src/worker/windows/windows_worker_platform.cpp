@@ -318,9 +318,14 @@ private:
     }
     string &path = u8r.get_value();
 
-    shared_ptr<StatResult> stat = cache.current_at_path(path, false, false);
-    if (stat->is_absent()) {
+    shared_ptr<StatResult> stat;
+    if (info->Action == FILE_ACTION_REMOVED || info->Action == FILE_ACTION_RENAMED_OLD_NAME) {
       stat = cache.former_at_path(path, false, false);
+    } else {
+      stat = cache.current_at_path(path, false, false);
+      if (stat->is_absent()) {
+        stat = cache.former_at_path(path, false, false);
+      }
     }
     EntryKind kind = stat->get_entry_kind();
 
