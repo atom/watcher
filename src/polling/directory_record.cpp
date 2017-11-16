@@ -14,8 +14,6 @@
 #include "directory_record.h"
 #include "polling_iterator.h"
 
-using std::dec;
-using std::hex;
 using std::move;
 using std::ostringstream;
 using std::set;
