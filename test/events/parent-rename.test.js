@@ -64,7 +64,7 @@ describe('when a parent directory is renamed', function () {
     await fs.rename(originalParentDir, finalParentDir)
 
     await until('the rename events arrive', matcher.allEvents(
-      {action: 'renamed', kind: 'file', oldPath: originalFile, path: changedFile},
+      {action: 'renamed', oldPath: originalFile, path: changedFile},
       {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir}
     ))
   })
