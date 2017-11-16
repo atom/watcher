@@ -10,7 +10,7 @@
 
 #include "../../message.h"
 #include "../../message_buffer.h"
-#include "recent_file_cache.h"
+#include "../recent_file_cache.h"
 
 // Forward declaration to be able to accept an Event argument
 class Event;

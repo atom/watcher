@@ -12,8 +12,8 @@
 
 #include "../../log.h"
 #include "../../message.h"
+#include "../recent_file_cache.h"
 #include "flags.h"
-#include "recent_file_cache.h"
 #include "rename_buffer.h"
 
 using std::dec;
