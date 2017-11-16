@@ -9,8 +9,8 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 #include <uv.h>
+#include <vector>
 
 #include "../helper/common.h"
 #include "../helper/libuv.h"
@@ -42,7 +42,8 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
   // (c) have names that are too long
   // (d) have a path component that is (no longer) a directory
   // Log any other errno that we see.
-  if (lstat_err != 0 && lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP && lstat_err != UV_ENAMETOOLONG && lstat_err != ENOTDIR) {
+  if (lstat_err != 0 && lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP
+    && lstat_err != UV_ENAMETOOLONG && lstat_err != ENOTDIR) {
     LOGGER << "lstat(" << path << ") failed: " << uv_strerror(lstat_err) << "." << endl;
   }
 

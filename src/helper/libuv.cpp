@@ -1,12 +1,12 @@
 #include <uv.h>
 
-#include <iostream>
-#include <iomanip>
 #include "libuv.h"
+#include <iomanip>
+#include <iostream>
 
-using std::ostream;
-using std::hex;
 using std::dec;
+using std::hex;
+using std::ostream;
 
 ostream &operator<<(ostream &out, const uv_stat_t &stat)
 {
