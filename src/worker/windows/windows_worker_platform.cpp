@@ -329,25 +329,43 @@ private:
     }
     EntryKind kind = stat->get_entry_kind();
 
+    ostream &logline = LOGGER;
+    logline << "Event at [" << path << "] ";
+
     switch (info->Action) {
-      case FILE_ACTION_ADDED: messages.created(move(path), kind); break;
-      case FILE_ACTION_MODIFIED: messages.modified(move(path), kind); break;
-      case FILE_ACTION_REMOVED: messages.deleted(move(path), kind); break;
+      case FILE_ACTION_ADDED:
+        logline << "FILE_ACTION_ADDED " << kind << "." << endl;
+        messages.created(move(path), kind);
+        break;
+      case FILE_ACTION_MODIFIED:
+        logline << "FILE_ACTION_MODIFIED " << kind << "." << endl;
+        messages.modified(move(path), kind);
+        break;
+      case FILE_ACTION_REMOVED:
+        logline << "FILE_ACTION_REMOVED " << kind << "." << endl;
+        messages.deleted(move(path), kind);
+        break;
       case FILE_ACTION_RENAMED_OLD_NAME:
+        logline << "FILE_ACTION_RENAMED_OLD_NAME " << kind << "." << endl;
         old_path_seen = true;
         old_path = move(path);
         break;
       case FILE_ACTION_RENAMED_NEW_NAME:
+        logline << "FILE_ACTION_RENAMED_NEW_NAME ";
         if (old_path_seen) {
           // Old name received first
+          logline << kind << "." << endl;
           messages.renamed(move(old_path), move(path), kind);
           old_path_seen = false;
         } else {
           // No old name. Treat it as a creation
+          logline << "(unpaired) " << kind << "." << endl;
           messages.created(move(path), kind);
         }
         break;
       default:
+        logline << " with unexpected action " << info->Action << "." << endl;
+
         ostringstream out;
         out << "Unexpected action " << info->Action << " reported by ReadDirectoryChangesW for " << path;
         return error_result(out.str());
