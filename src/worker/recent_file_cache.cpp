@@ -1,8 +1,6 @@
 #include "recent_file_cache.h"
 
-#include <cerrno>
 #include <chrono>
-#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -14,8 +12,9 @@
 #include <vector>
 #include <uv.h>
 
-#include "../../helper/common.h"
-#include "../../log.h"
+#include "../helper/common.h"
+#include "../helper/libuv.h"
+#include "../log.h"
 
 using std::chrono::minutes;
 using std::chrono::steady_clock;
@@ -33,40 +32,27 @@ using std::vector;
 
 shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint)
 {
-  struct stat path_stat
-  {};
+  FSReq lstat_req;
 
-  if (lstat(path.c_str(), &path_stat) != 0) {
-    errno_t stat_errno = errno;
+  int lstat_err = uv_fs_lstat(nullptr, &lstat_req.req, path.c_str(), nullptr);
 
-    // Ignore lstat() errors on entries that:
-    // (a) we aren't allowed to see
-    // (b) are at paths with too many symlinks or looping symlinks
-    // (c) have names that are too long
-    // (d) have a path component that is (no longer) a directory
-    // Log any other errno that we see.
-    if (stat_errno != ENOENT && stat_errno != EACCES && stat_errno != ELOOP && stat_errno != ENAMETOOLONG
-      && stat_errno != ENOTDIR) {
-      LOGGER << "lstat(" << path << ") failed: " << strerror(stat_errno) << "." << endl;
-    }
+  // Ignore lstat() errors on entries that:
+  // (a) we aren't allowed to see
+  // (b) are at paths with too many symlinks or looping symlinks
+  // (c) have names that are too long
+  // (d) have a path component that is (no longer) a directory
+  // Log any other errno that we see.
+  if (lstat_err != 0 && lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP && lstat_err != UV_ENAMETOOLONG && lstat_err != ENOTDIR) {
+    LOGGER << "lstat(" << path << ") failed: " << uv_strerror(lstat_err) << "." << endl;
+  }
 
-    EntryKind guessed_kind = KIND_UNKNOWN;
+  EntryKind guessed_kind = kind_from_stat(lstat_req.req.statbuf);
+  if (guessed_kind == KIND_UNKNOWN) {
     if (file_hint && !directory_hint) guessed_kind = KIND_FILE;
     if (!file_hint && directory_hint) guessed_kind = KIND_DIRECTORY;
-
-    return shared_ptr<StatResult>(new AbsentEntry(move(path), guessed_kind));
   }
 
-  // Derive the entry kind from the lstat() results.
-  EntryKind entry_kind = KIND_UNKNOWN;
-  if ((path_stat.st_mode & S_IFREG) != 0) {
-    entry_kind = KIND_FILE;
-  }
-  if ((path_stat.st_mode & S_IFDIR) != 0) {
-    entry_kind = KIND_DIRECTORY;
-  }
-
-  return shared_ptr<StatResult>(new PresentEntry(move(path), entry_kind, path_stat.st_ino, path_stat.st_size));
+  return shared_ptr<StatResult>(new AbsentEntry(move(path), guessed_kind));
 }
 
 bool StatResult::has_changed_from(const StatResult &other) const
@@ -105,7 +91,7 @@ ostream &operator<<(ostream &out, const StatResult &result)
   return out;
 }
 
-PresentEntry::PresentEntry(std::string &&path, EntryKind entry_kind, ino_t inode, off_t size) :
+PresentEntry::PresentEntry(std::string &&path, EntryKind entry_kind, uint64_t inode, uint64_t size) :
   StatResult(move(path), entry_kind),
   inode{inode},
   size{size},
@@ -137,12 +123,12 @@ bool PresentEntry::could_be_rename_of(const StatResult &other) const
   return inode == casted.get_inode() && !kinds_are_different(get_entry_kind(), casted.get_entry_kind());
 }
 
-ino_t PresentEntry::get_inode() const
+uint64_t PresentEntry::get_inode() const
 {
   return inode;
 }
 
-off_t PresentEntry::get_size() const
+uint64_t PresentEntry::get_size() const
 {
   return size;
 }
@@ -312,64 +298,61 @@ void RecentFileCache::prune()
 
 void RecentFileCache::prepopulate(const string &root, size_t max)
 {
-  size_t count = 0;
-  size_t entries = 0;
   size_t bounded_max = max > maximum_size ? maximum_size : max;
-  queue<string> next_roots;
-  next_roots.push(root);
-
-  while (count < bounded_max && !next_roots.empty()) {
-    string current_root(next_roots.front());
-    next_roots.pop();
-
-    DIR *dir = opendir(current_root.c_str());
-    if (dir == nullptr) {
-      errno_t opendir_errno = errno;
-      LOGGER << "Unable to open directory " << root << ": " << strerror(opendir_errno) << "." << endl;
-      LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
-      return;
-    }
-
-    errno = 0;
-    dirent *entry = readdir(dir);
-    while (entry != nullptr) {
-      string entry_name(entry->d_name, entry->d_namlen);
-
-      if (entry_name != "." && entry_name != "..") {
-        string entry_path(path_join(current_root, entry_name));
-
-        bool file_hint = (entry->d_type & DT_REG) == DT_REG;
-        bool dir_hint = (entry->d_type & DT_DIR) == DT_DIR;
-
-        shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint);
-        if (r->is_present()) {
-          entries++;
-          if (r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
-        }
-
-        count++;
-        if (count >= max) {
-          LOGGER << "Incompletely pre-populated cache with " << entries << " entries." << endl;
-          return;
-        }
-      }
-
-      errno = 0;
-      entry = readdir(dir);
-    }
-    errno_t readdir_errno = errno;
-    if (readdir_errno != 0) {
-      LOGGER << "Unable to read directory entry within " << root << ": " << strerror(readdir_errno) << "." << endl;
-    }
-
-    if (closedir(dir) != 0) {
-      errno_t closedir_errno = errno;
-      LOGGER << "Unable to close directory " << root << ": " << strerror(closedir_errno) << "." << endl;
-    }
-  }
+  size_t entries = prepopulate_helper(root, bounded_max);
   apply();
 
   LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
+}
+
+size_t RecentFileCache::prepopulate_helper(const string &root, size_t max)
+{
+  size_t count = 0;
+  size_t entries = 0;
+  queue<string> next_roots;
+  next_roots.push(root);
+
+  while (count < max && !next_roots.empty()) {
+    string current_root(next_roots.front());
+    next_roots.pop();
+
+    FSReq scan_req;
+
+    int scan_err = uv_fs_scandir(nullptr, &scan_req.req, current_root.c_str(), 0, nullptr);
+    if (scan_err < 0) {
+      LOGGER << "Unable to open directory " << current_root << ": " << uv_strerror(scan_err) << "." << endl;
+      continue;
+    }
+
+    uv_dirent_t dirent{};
+    int next_err = uv_fs_scandir_next(&scan_req.req, &dirent);
+    while (next_err == 0) {
+      string entry_name(dirent.name);
+      string entry_path(path_join(current_root, entry_name));
+
+      bool file_hint = dirent.type == UV_DIRENT_FILE;
+      bool dir_hint = dirent.type == UV_DIRENT_DIR;
+
+      shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint);
+      if (r->is_present()) {
+        entries++;
+        if (r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
+      }
+
+      count++;
+      if (count >= max) {
+        return entries;
+      }
+
+      next_err = uv_fs_scandir_next(&scan_req.req, &dirent);
+    }
+
+    if (next_err != UV_EOF) {
+      LOGGER << "Unable to list entries in directory " << current_root << ": " << uv_strerror(next_err) << "." << endl;
+    }
+  }
+
+  return entries;
 }
 
 void RecentFileCache::resize(size_t maximum_size)
