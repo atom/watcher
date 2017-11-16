@@ -135,7 +135,7 @@ const {EventMatcher} = require('../matcher');
       await fs.mkdir(reusedPath)
 
       await until('delete and create events arrive', matcher.allEvents(
-        {action: 'deleted', kind: 'file', path: reusedPath},
+        {action: 'deleted', path: reusedPath},
         {action: 'created', kind: 'directory', path: reusedPath}
       ))
     })
