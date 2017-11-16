@@ -9,10 +9,10 @@
 #include <queue>
 #include <sstream>
 #include <string>
-#include <sys/stat.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <uv.h>
 
 #include "../../helper/common.h"
 #include "../../log.h"

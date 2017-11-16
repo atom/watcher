@@ -1,4 +1,3 @@
-#include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -9,6 +8,7 @@
 #include <uv.h>
 
 #include "../helper/common.h"
+#include "../helper/libuv.h"
 #include "../log.h"
 #include "../message.h"
 #include "directory_record.h"
@@ -17,60 +17,10 @@
 using std::dec;
 using std::hex;
 using std::move;
-using std::ostream;
 using std::ostringstream;
 using std::set;
 using std::shared_ptr;
 using std::string;
-
-struct FSReq
-{
-  uv_fs_t req{};
-
-  FSReq() = default;
-  FSReq(const FSReq &) = delete;
-  FSReq(FSReq &&) = delete;
-  ~FSReq() { uv_fs_req_cleanup(&req); }
-
-  FSReq &operator=(const FSReq &) = delete;
-  FSReq &operator=(FSReq &&) = delete;
-};
-
-ostream &operator<<(ostream &out, const uv_timespec_t &ts)
-{
-  return out << ts.tv_sec << "s " << ts.tv_nsec << "ns";
-}
-
-ostream &operator<<(ostream &out, const uv_stat_t &stat)
-{
-  out << "[ino=" << stat.st_ino << " size=" << stat.st_size << " mode=" << hex << stat.st_mode << dec << " (";
-  if ((stat.st_mode & S_IFDIR) == S_IFDIR) out << " DIR";
-  if ((stat.st_mode & S_IFREG) == S_IFREG) out << " REG";
-  if ((stat.st_mode & S_IFLNK) == S_IFLNK) out << " LNK";
-  out << " ) atim=" << stat.st_atim << " mtim=" << stat.st_mtim << " birthtim=" << stat.st_birthtim << "]";
-  return out;
-}
-
-ostream &operator<<(ostream &out, const FSReq &r)
-{
-  if (r.req.result < 0) {
-    return out << "[" << uv_strerror(static_cast<int>(r.req.result)) << "]";
-  }
-
-  return out << r.req.statbuf;
-}
-
-inline bool ts_not_equal(const uv_timespec_t &left, const uv_timespec_t &right)
-{
-  return left.tv_sec != right.tv_sec || left.tv_nsec != right.tv_nsec;
-}
-
-inline EntryKind kind_from_stat(const uv_stat_t &st)
-{
-  if ((st.st_mode & S_IFDIR) == S_IFDIR) return KIND_DIRECTORY;
-  if ((st.st_mode & S_IFREG) == S_IFREG) return KIND_FILE;
-  return KIND_UNKNOWN;
-}
 
 DirectoryRecord::DirectoryRecord(string &&prefix) :
   parent{nullptr},
