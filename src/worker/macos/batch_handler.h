@@ -7,8 +7,8 @@
 
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "../recent_file_cache.h"
 #include "flags.h"
-#include "recent_file_cache.h"
 #include "rename_buffer.h"
 
 class BatchHandler;

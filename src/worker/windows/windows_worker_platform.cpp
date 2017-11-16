@@ -15,6 +15,7 @@
 #include "../../log.h"
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "../recent_file_cache.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
 #include "subscription.h"
@@ -34,14 +35,18 @@ using std::vector;
 using std::wostringstream;
 using std::wstring;
 
-static void CALLBACK command_perform_helper(__in ULONG_PTR payload);
+const size_t DEFAULT_CACHE_SIZE = 4096;
 
-static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped);
+const size_t DEFAULT_CACHE_PREPOPULATION = 1024;
+
+void CALLBACK command_perform_helper(__in ULONG_PTR payload);
+
+void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped);
 
 class WindowsWorkerPlatform : public WorkerPlatform
 {
 public:
-  WindowsWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread), thread_handle{0}
+  WindowsWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread), thread_handle{0}, cache{DEFAULT_CACHE_SIZE}
   {
     int err;
 
@@ -143,6 +148,8 @@ public:
         .propagate(false);
     }
 
+    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION);
+
     return ok_result(true);
   }
 
@@ -207,11 +214,13 @@ public:
     // Process received events.
     MessageBuffer buffer;
     ChannelMessageBuffer messages(buffer, channel);
+    size_t num_events = 0;
     bool old_path_seen = false;
     string old_path;
 
     while (true) {
       PFILE_NOTIFY_INFORMATION info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(base);
+      num_events++;
 
       Result<> pr = process_event_payload(info, sub, messages, old_path_seen, old_path);
       if (pr.is_error()) {
@@ -224,9 +233,17 @@ public:
       base += info->NextEntryOffset;
     }
 
+    cache.apply();
+    cache.prune();
+
     if (!messages.empty()) {
       Result<> er = emit_all(messages.begin(), messages.end());
-      if (er.is_error()) LOGGER << "Unable to emit messages: " << er << "." << endl;
+      if (er.is_error()) {
+        LOGGER << "Unable to emit messages: " << er << "." << endl;
+      } else {
+        LOGGER << "Filesystem event batch of size " << num_events << " completed. "
+               << plural(messages.size(), "message") << " produced." << endl;
+      }
     }
 
     return next.propagate_as_void();
@@ -290,25 +307,9 @@ private:
     bool &old_path_seen,
     string &old_path)
   {
-    EntryKind kind = KIND_UNKNOWN;
     ChannelID channel = sub->get_channel();
     wstring relpathw{info->FileName, info->FileNameLength / sizeof(WCHAR)};
     wstring pathw = sub->make_absolute(move(relpathw));
-
-    if (info->Action != FILE_ACTION_REMOVED && info->Action != FILE_ACTION_RENAMED_OLD_NAME) {
-      DWORD attrs = GetFileAttributesW(pathw.c_str());
-      if (attrs == INVALID_FILE_ATTRIBUTES) {
-        DWORD attr_err = GetLastError();
-        if (attr_err != ERROR_FILE_NOT_FOUND && attr_err != ERROR_PATH_NOT_FOUND && attr_err != ERROR_ACCESS_DENIED) {
-          LOGGER << windows_error_result<>("GetFileAttributesW failed", attr_err) << "." << endl;
-        }
-      } else if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
-        kind = KIND_DIRECTORY;
-      } else {
-        kind = KIND_FILE;
-      }
-      // TODO check against FILE_ATTRIBUTE_REPARSE_POINT to identify symlinks
-    }
 
     Result<string> u8r = to_utf8(pathw);
     if (u8r.is_error()) {
@@ -316,6 +317,17 @@ private:
       return ok_result();
     }
     string &path = u8r.get_value();
+
+    shared_ptr<StatResult> stat;
+    if (info->Action == FILE_ACTION_REMOVED || info->Action == FILE_ACTION_RENAMED_OLD_NAME) {
+      stat = cache.former_at_path(path, false, false);
+    } else {
+      stat = cache.current_at_path(path, false, false);
+      if (stat->is_absent()) {
+        stat = cache.former_at_path(path, false, false);
+      }
+    }
+    EntryKind kind = stat->get_entry_kind();
 
     switch (info->Action) {
       case FILE_ACTION_ADDED: messages.created(move(path), kind); break;
@@ -335,11 +347,11 @@ private:
           messages.created(move(path), kind);
         }
         break;
-      default: {
+      default:
         ostringstream out;
         out << "Unexpected action " << info->Action << " reported by ReadDirectoryChangesW for " << path;
         return error_result(out.str());
-      } break;
+        break;
     }
 
     return ok_result();
@@ -349,6 +361,8 @@ private:
   HANDLE thread_handle;
 
   map<ChannelID, Subscription *> subscriptions;
+
+  RecentFileCache cache;
 };
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)

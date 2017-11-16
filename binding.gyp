@@ -14,10 +14,12 @@
             "src/thread.cpp",
             "src/status.cpp",
             "src/worker/worker_thread.cpp",
+            "src/worker/recent_file_cache.cpp",
             "src/polling/directory_record.cpp",
             "src/polling/polled_root.cpp",
             "src/polling/polling_iterator.cpp",
             "src/polling/polling_thread.cpp",
+            "src/helper/libuv.cpp",
             "src/nan/all_callback.cpp",
             "src/nan/functional_callback.cpp",
             "src/nan/options.cpp"
@@ -34,7 +36,6 @@
                     "src/helper/common_posix.cpp",
                     "src/helper/macos/helper.cpp",
                     "src/worker/macos/macos_worker_platform.cpp",
-                    "src/worker/macos/recent_file_cache.cpp",
                     "src/worker/macos/batch_handler.cpp",
                     "src/worker/macos/rename_buffer.cpp",
                     "src/worker/macos/subscription.cpp"

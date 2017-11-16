@@ -16,11 +16,11 @@
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "../../result.h"
+#include "../recent_file_cache.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
 #include "batch_handler.h"
 #include "flags.h"
-#include "recent_file_cache.h"
 #include "rename_buffer.h"
 #include "subscription.h"
 

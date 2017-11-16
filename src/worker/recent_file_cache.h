@@ -2,16 +2,16 @@
 #define RECENT_FILE_CACHE_H
 
 #include <chrono>
-#include <dirent.h>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
-#include <sys/stat.h>
 #include <unordered_map>
 #include <utility>
+#include <uv.h>
 
-#include "../../message.h"
+#include "../helper/libuv.h"
+#include "../message.h"
 
 class StatResult
 {
@@ -54,7 +54,7 @@ std::ostream &operator<<(std::ostream &out, const StatResult &result);
 class PresentEntry : public StatResult
 {
 public:
-  PresentEntry(std::string &&path, EntryKind entry_kind, ino_t inode, off_t size);
+  PresentEntry(std::string &&path, EntryKind entry_kind, uint64_t inode, uint64_t size);
 
   ~PresentEntry() override = default;
 
@@ -64,9 +64,9 @@ public:
 
   bool could_be_rename_of(const StatResult &other) const override;
 
-  ino_t get_inode() const;
+  uint64_t get_inode() const;
 
-  off_t get_size() const;
+  uint64_t get_size() const;
 
   const std::chrono::time_point<std::chrono::steady_clock> &get_last_seen() const;
 
@@ -78,8 +78,8 @@ public:
   PresentEntry &operator=(PresentEntry &&) = delete;
 
 private:
-  ino_t inode;
-  off_t size;
+  uint64_t inode;
+  uint64_t size;
   std::chrono::time_point<std::chrono::steady_clock> last_seen;
 };
 
@@ -137,6 +137,8 @@ public:
   RecentFileCache &operator=(RecentFileCache &&) = delete;
 
 private:
+  size_t prepopulate_helper(const std::string &root, size_t max);
+
   size_t maximum_size;
 
   std::map<std::string, std::shared_ptr<PresentEntry>> pending;
