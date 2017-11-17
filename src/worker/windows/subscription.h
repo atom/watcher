@@ -51,7 +51,8 @@ public:
     this->old_path_seen = true;
   }
 
-  void clear_old_path() {
+  void clear_old_path()
+  {
     old_path.clear();
     old_path_kind = KIND_UNKNOWN;
     old_path_seen = false;
