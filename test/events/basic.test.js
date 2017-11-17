@@ -125,5 +125,28 @@ const {EventMatcher} = require('../matcher');
         {action: 'deleted', kind: 'directory', path: subdir}
       ))
     })
+
+    if (process.platform === 'win32') {
+      it('reports events with the long file name when possible', async function () {
+        const longName = fixture.watchPath('file-with-a-long-name.txt')
+        const shortName = fixture.watchPath('FILE-W~1.TXT')
+
+        const fd = await fs.open(longName, 'w')
+        await fs.close(fd)
+
+        await until('the creation event arrives', matcher.allEvents(
+          {action: 'created', kind: 'file', path: longName}
+        ))
+        assert.isTrue(matcher.noEvents(
+          {action: 'modified', kind: 'file', path: longName}
+        ))
+
+        await fs.appendFile(shortName, 'contents\n')
+        await until('the modification event arrives', matcher.allEvents(
+          {action: 'modified', kind: 'file', path: longName}
+        ))
+        assert.isTrue(matcher.noEvents({path: shortName}))
+      })
+    }
   })
 })
