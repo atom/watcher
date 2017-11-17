@@ -62,7 +62,7 @@ const {EventMatcher} = require('../matcher');
           ))
         } else {
           await until('creation and rename events arrive', matcher.orderedEvents(
-            {action: 'created', kind: 'file', path: originalPath},
+            {action: 'created', path: originalPath},
             {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath}
           ))
         }
@@ -111,9 +111,9 @@ const {EventMatcher} = require('../matcher');
           ))
         } else {
           await until('creation, rename, and deletion events arrive', matcher.allEvents(
-            {action: 'created', kind: 'file', path: originalPath},
-            {action: 'renamed', kind: 'file', oldPath: originalPath, path: finalPath},
-            {action: 'deleted', kind: 'file', path: finalPath}
+            {action: 'created', path: originalPath},
+            {action: 'renamed', oldPath: originalPath, path: finalPath},
+            {action: 'deleted', path: finalPath}
           ))
         }
       })
