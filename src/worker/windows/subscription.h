@@ -44,13 +44,24 @@ public:
 
   const bool &is_terminating() const { return terminating; }
 
+  void remember_old_path(std::string &&old_path, EntryKind kind)
+  {
+    this->old_path = std::move(old_path);
+    this->old_path_kind = kind;
+    this->old_path_seen = true;
+  }
+
+  void clear_old_path() {
+    old_path.clear();
+    old_path_kind = KIND_UNKNOWN;
+    old_path_seen = false;
+  }
+
   const std::string &get_old_path() const { return old_path; }
 
-  void set_old_path(std::string &&old_path) { this->old_path = std::move(old_path); }
+  const EntryKind &get_old_path_kind() const { return old_path_kind; }
 
   const bool &was_old_path_seen() const { return old_path_seen; }
-
-  void set_old_path_seen(bool old_path_seen) { this->old_path_seen = old_path_seen; }
 
 private:
   CommandID command;
@@ -68,6 +79,7 @@ private:
   std::unique_ptr<BYTE[]> written;
 
   std::string old_path;
+  EntryKind old_path_kind;
   bool old_path_seen;
 };
 

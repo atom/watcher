@@ -347,17 +347,20 @@ private:
         break;
       case FILE_ACTION_RENAMED_OLD_NAME:
         logline << "FILE_ACTION_RENAMED_OLD_NAME " << kind << "." << endl;
-        sub->set_old_path_seen(true);
-        sub->set_old_path(move(path));
+        sub->remember_old_path(move(path), kind);
         break;
       case FILE_ACTION_RENAMED_NEW_NAME:
         logline << "FILE_ACTION_RENAMED_NEW_NAME ";
         if (sub->was_old_path_seen()) {
           // Old name received first
+          if (kind == KIND_UNKNOWN) {
+            kind = sub->get_old_path_kind();
+          }
+
           logline << kind << "." << endl;
           cache.update_for_rename(sub->get_old_path(), path);
           messages.renamed(string(sub->get_old_path()), move(path), kind);
-          sub->set_old_path_seen(false);
+          sub->clear_old_path();
         } else {
           // No old name. Treat it as a creation
           logline << "(unpaired) " << kind << "." << endl;
