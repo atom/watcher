@@ -75,7 +75,8 @@ Result<wstring> to_long_path_try(const wstring &short_path, size_t bufsize, bool
 
   if (longpath_length == 0) {
     DWORD longpath_err = GetLastError();
-    if (longpath_err != ERROR_FILE_NOT_FOUND && longpath_err != ERROR_PATH_NOT_FOUND && longpath_err != ERROR_ACCESS_DENIED) {
+    if (longpath_err != ERROR_FILE_NOT_FOUND && longpath_err != ERROR_PATH_NOT_FOUND
+      && longpath_err != ERROR_ACCESS_DENIED) {
       return windows_error_result<wstring>("Unable to convert to long path", longpath_err);
     }
     return ok_result(wstring(short_path));
