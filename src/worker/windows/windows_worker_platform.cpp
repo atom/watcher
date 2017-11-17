@@ -355,6 +355,7 @@ private:
         if (sub->was_old_path_seen()) {
           // Old name received first
           logline << kind << "." << endl;
+          cache.update_for_rename(sub->get_old_path(), path);
           messages.renamed(string(sub->get_old_path()), move(path), kind);
           sub->set_old_path_seen(false);
         } else {
