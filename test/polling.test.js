@@ -25,7 +25,7 @@ describe('polling', function () {
       const s = await status()
       assert.equal(s.pollingThreadState, 'running')
 
-      await watcher.stop()
+      await watcher.getNativeWatcher().stop(false)
       await until(async () => (await status()).pollingThreadState === 'stopped')
     })
   })

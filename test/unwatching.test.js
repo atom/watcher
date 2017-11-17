@@ -29,7 +29,7 @@ describe('unwatching a directory', function () {
     await until('the event arrives', () => events.some(event => event.path === filePath))
     assert.isNull(error)
 
-    await watcher.stop()
+    await watcher.getNativeWatcher().stop(false)
     const eventCount = events.length
 
     await fs.writeFile(filePath, 'the modification')
@@ -46,10 +46,12 @@ describe('unwatching a directory', function () {
     const watcher = await fixture.watch([], {}, err => (error = err))
     assert.isNull(error)
 
-    await watcher.stop()
+    const native = watcher.getNativeWatcher()
+    await native.stop(false)
     assert.isNull(error)
+    assert.isNull(watcher.getNativeWatcher())
 
-    await watcher.stop()
+    await native.stop(false)
     assert.isNull(error)
   })
 })

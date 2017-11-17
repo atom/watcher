@@ -3,14 +3,12 @@ const fs = require('fs-extra')
 
 const {Fixture} = require('./helper')
 const {EventMatcher} = require('./matcher')
-const {watchPath} = require('../lib')
 
 describe('exported functions', function () {
   let fixture
 
   beforeEach(async function () {
     fixture = new Fixture()
-    fixture.createWatcherWith(watchPath)
     await fixture.before()
     await fixture.log()
   })

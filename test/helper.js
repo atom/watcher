@@ -5,18 +5,13 @@ const fs = require('fs-extra')
 const {CompositeDisposable} = require('event-kit')
 
 const {NativeWatcher} = require('../lib/native-watcher')
-const {configure, DISABLE} = require('../lib/binding')
+const {watchPath, configure, DISABLE} = require('../lib')
 
 class Fixture {
   constructor () {
     this.watchers = []
     this.subs = new CompositeDisposable()
-    this.createWatcher = async (watchRoot, options, callback) => {
-      const w = new NativeWatcher(watchRoot, options)
-      w.onDidChange(callback)
-      await w.start()
-      return w
-    }
+    this.createWatcher = watchPath
   }
 
   async before () {
@@ -44,10 +39,6 @@ class Fixture {
     })
   }
 
-  createWatcherWith (cb) {
-    this.createWatcher = cb
-  }
-
   fixturePath (...subPath) {
     return path.join(this.fixtureDir, ...subPath)
   }
@@ -58,7 +49,7 @@ class Fixture {
 
   async watch (subPath, options, callback) {
     const watchRoot = this.watchPath(...subPath)
-    const watcher = await this.createWatcher(watchRoot, options, events => callback(null, events))
+    const watcher = await watchPath(watchRoot, options, events => callback(null, events))
     this.subs.add(watcher.onDidError(err => callback(err)))
 
     this.watchers.push(watcher)
