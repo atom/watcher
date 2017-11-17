@@ -67,3 +67,34 @@ Result<wstring> to_wchar(const string &in)
 
   return ok_result(wstring(payload.get(), wlen - 1));
 }
+
+Result<wstring> to_long_path_try(const wstring &short_path, size_t bufsize, bool retry)
+{
+  unique_ptr<wchar_t[]> longpath_data(new wchar_t[bufsize]);
+  DWORD longpath_length = GetLongPathNameW(short_path.c_str(), longpath_data.get(), bufsize);
+
+  if (longpath_length == 0) {
+    DWORD longpath_err = GetLastError();
+    if (longpath_err != ERROR_FILE_NOT_FOUND && longpath_err != ERROR_PATH_NOT_FOUND
+      && longpath_err != ERROR_ACCESS_DENIED) {
+      return windows_error_result<wstring>("Unable to convert to long path", longpath_err);
+    }
+    return ok_result(wstring(short_path));
+  }
+
+  if (longpath_length > bufsize) {
+    longpath_data.reset(nullptr);
+    if (retry) {
+      return to_long_path_try(short_path, longpath_length, false);
+    }
+
+    return ok_result(wstring(short_path));
+  }
+
+  return ok_result(wstring(longpath_data.get(), longpath_length));
+}
+
+Result<wstring> to_long_path(const wstring &short_path)
+{
+  return to_long_path_try(short_path, short_path.size() + 1, true);
+}

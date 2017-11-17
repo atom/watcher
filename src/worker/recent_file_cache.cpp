@@ -69,9 +69,9 @@ bool StatResult::could_be_rename_of(const StatResult &other) const
   return !kinds_are_different(entry_kind, other.entry_kind);
 }
 
-bool StatResult::update_for_rename(const std::string &from_dir_path, const std::string &to_dir_path)
+bool StatResult::update_for_rename(const string &from_dir_path, const string &to_dir_path)
 {
-  if (path.size() > from_dir_path.size() && path.rfind(from_dir_path, 0) == 0) {
+  if (path.rfind(from_dir_path, 0) == 0) {
     path = to_dir_path + path.substr(from_dir_path.size());
     return true;
   }
@@ -256,7 +256,6 @@ void RecentFileCache::update_for_rename(const string &from_dir_path, const strin
 
   for (auto &rename : renames) {
     shared_ptr<PresentEntry> p = by_path[rename.first];
-    by_path.erase(rename.first);
     by_path.emplace(rename.second, p);
   }
 }

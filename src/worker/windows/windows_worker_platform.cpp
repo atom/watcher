@@ -309,7 +309,10 @@ private:
   {
     ChannelID channel = sub->get_channel();
     wstring relpathw{info->FileName, info->FileNameLength / sizeof(WCHAR)};
-    wstring pathw = sub->make_absolute(move(relpathw));
+    wstring shortpathw = sub->make_absolute(move(relpathw));
+    Result<wstring> longpathr = to_long_path(shortpathw);
+    if (longpathr.is_error()) return longpathr.propagate_as_void();
+    wstring &pathw = longpathr.get_value();
 
     Result<string> u8r = to_utf8(pathw);
     if (u8r.is_error()) {
