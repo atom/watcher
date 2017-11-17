@@ -256,7 +256,6 @@ void RecentFileCache::update_for_rename(const string &from_dir_path, const strin
 
   for (auto &rename : renames) {
     shared_ptr<PresentEntry> p = by_path[rename.first];
-    by_path.erase(rename.first);
     by_path.emplace(rename.second, p);
   }
 }
