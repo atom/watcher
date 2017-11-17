@@ -338,8 +338,10 @@ private:
         messages.created(move(path), kind);
         break;
       case FILE_ACTION_MODIFIED:
-        logline << "FILE_ACTION_MODIFIED " << kind << "." << endl;
-        messages.modified(move(path), kind);
+        if (kind != KIND_DIRECTORY) {
+          logline << "FILE_ACTION_MODIFIED " << kind << "." << endl;
+          messages.modified(move(path), kind);
+        }
         break;
       case FILE_ACTION_REMOVED:
         logline << "FILE_ACTION_REMOVED " << kind << "." << endl;
