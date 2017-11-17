@@ -221,14 +221,12 @@ public:
     MessageBuffer buffer;
     ChannelMessageBuffer messages(buffer, channel);
     size_t num_events = 0;
-    bool old_path_seen = false;
-    string old_path;
 
     while (true) {
       PFILE_NOTIFY_INFORMATION info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(base);
       num_events++;
 
-      Result<> pr = process_event_payload(info, sub, messages, old_path_seen, old_path);
+      Result<> pr = process_event_payload(info, sub, messages);
       if (pr.is_error()) {
         LOGGER << "Skipping entry " << pr << "." << endl;
       }
@@ -307,11 +305,7 @@ private:
     return out;
   }
 
-  Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info,
-    Subscription *sub,
-    ChannelMessageBuffer &messages,
-    bool &old_path_seen,
-    string &old_path)
+  Result<> process_event_payload(PFILE_NOTIFY_INFORMATION info, Subscription *sub, ChannelMessageBuffer &messages)
   {
     ChannelID channel = sub->get_channel();
     wstring relpathw{info->FileName, info->FileNameLength / sizeof(WCHAR)};
@@ -335,25 +329,47 @@ private:
     }
     EntryKind kind = stat->get_entry_kind();
 
+    ostream &logline = LOGGER;
+    logline << "Event at [" << path << "] ";
+
     switch (info->Action) {
-      case FILE_ACTION_ADDED: messages.created(move(path), kind); break;
-      case FILE_ACTION_MODIFIED: messages.modified(move(path), kind); break;
-      case FILE_ACTION_REMOVED: messages.deleted(move(path), kind); break;
+      case FILE_ACTION_ADDED:
+        logline << "FILE_ACTION_ADDED " << kind << "." << endl;
+        messages.created(move(path), kind);
+        break;
+      case FILE_ACTION_MODIFIED:
+        logline << "FILE_ACTION_MODIFIED " << kind << "." << endl;
+        messages.modified(move(path), kind);
+        break;
+      case FILE_ACTION_REMOVED:
+        logline << "FILE_ACTION_REMOVED " << kind << "." << endl;
+        messages.deleted(move(path), kind);
+        break;
       case FILE_ACTION_RENAMED_OLD_NAME:
-        old_path_seen = true;
-        old_path = move(path);
+        logline << "FILE_ACTION_RENAMED_OLD_NAME " << kind << "." << endl;
+        sub->remember_old_path(move(path), kind);
         break;
       case FILE_ACTION_RENAMED_NEW_NAME:
-        if (old_path_seen) {
+        logline << "FILE_ACTION_RENAMED_NEW_NAME ";
+        if (sub->was_old_path_seen()) {
           // Old name received first
-          messages.renamed(move(old_path), move(path), kind);
-          old_path_seen = false;
+          if (kind == KIND_UNKNOWN) {
+            kind = sub->get_old_path_kind();
+          }
+
+          logline << kind << "." << endl;
+          cache.update_for_rename(sub->get_old_path(), path);
+          messages.renamed(string(sub->get_old_path()), move(path), kind);
+          sub->clear_old_path();
         } else {
           // No old name. Treat it as a creation
+          logline << "(unpaired) " << kind << "." << endl;
           messages.created(move(path), kind);
         }
         break;
       default:
+        logline << " with unexpected action " << info->Action << "." << endl;
+
         ostringstream out;
         out << "Unexpected action " << info->Action << " reported by ReadDirectoryChangesW for " << path;
         return error_result(out.str());
