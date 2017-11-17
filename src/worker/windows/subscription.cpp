@@ -16,7 +16,7 @@ using std::string;
 using std::wostringstream;
 using std::wstring;
 
-const DWORD DEFAULT_BUFFER_SIZE = 1024 * 1024;
+const DWORD DEFAULT_BUFFER_SIZE = 128 * 1024;
 const DWORD NETWORK_BUFFER_SIZE = 64 * 1024;
 
 Subscription::Subscription(ChannelID channel,
