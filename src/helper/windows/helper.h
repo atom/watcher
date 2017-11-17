@@ -13,6 +13,9 @@ Result<std::string> to_utf8(const std::wstring &in);
 // Convert a utf8 string to a wide-character string.
 Result<std::wstring> to_wchar(const std::string &in);
 
+// Convert an 8.3 short path to a long path.
+Result<std::wstring> to_long_path(const std::wstring &short_path);
+
 template <class V = void *>
 Result<V> windows_error_result(const std::string &prefix)
 {
