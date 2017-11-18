@@ -44,7 +44,7 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
     // (d) have a path component that is (no longer) a directory
     // Log any other errno that we see.
     if (lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP && lstat_err != UV_ENAMETOOLONG
-      && lstat_err != UV_ENOTDIR) {
+      && lstat_err != UV_ENOTDIR && lstat_err != UV_EBUSY && lstat_err != UV_EPERM) {
       LOGGER << "lstat(" << path << ") failed: " << uv_strerror(lstat_err) << "." << endl;
     }
 
