@@ -121,7 +121,9 @@ public:
       NULL  // template file
     );
     if (root == INVALID_HANDLE_VALUE) {
-      return windows_error_result<bool>("Unable to open directory handle");
+      ostringstream msg;
+      msg << "Unable to open directory handle " << root_path;
+      return windows_error_result<bool>(msg.str());
     }
 
     // Allocate and persist the subscription
