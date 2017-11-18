@@ -150,7 +150,7 @@ public:
 
     subscriptions.emplace(channel_id, Subscription(channel_id, recursive, string(root_path), move(event_stream)));
 
-    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION);
+    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION, recursive);
     return ok_result(true);
   }
 

@@ -148,7 +148,7 @@ public:
         .propagate(false);
     }
 
-    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION);
+    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION, recursive);
 
     return ok_result(true);
   }
