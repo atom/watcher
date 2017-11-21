@@ -176,6 +176,7 @@ Result<> WatchRegistry::add(ChannelID channel_id,
       if (errno != 0) {
         return errno_result("Unable to iterate entries of directory " + absolute);
       }
+      closedir(dir);
     }
   }
 
