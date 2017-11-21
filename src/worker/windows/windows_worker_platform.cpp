@@ -408,7 +408,7 @@ void CALLBACK command_perform_helper(__in ULONG_PTR payload)
   platform->handle_commands();
 }
 
-static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped)
+void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped)
 {
   Subscription *sub = static_cast<Subscription *>(overlapped->hEvent);
   Result<> r = sub->get_platform()->handle_fs_event(error_code, num_bytes, sub);
