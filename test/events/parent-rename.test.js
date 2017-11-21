@@ -45,7 +45,7 @@ describe('when a parent directory is renamed', function () {
     ))
   })
 
-  it('tracks the file rename within the same event batch ^linux', async function () {
+  it('tracks the file rename within the same event batch', async function () {
     const changedFile = fixture.watchPath('parent-1', 'file-1.txt')
 
     await fs.rename(originalParentDir, finalParentDir)
@@ -57,7 +57,7 @@ describe('when a parent directory is renamed', function () {
     ))
   })
 
-  it('tracks the file rename when the directory is renamed first ^linux', async function () {
+  it('tracks the file rename when the file is renamed first', async function () {
     const changedFile = fixture.watchPath('parent-0', 'file-1.txt')
 
     await fs.rename(originalFile, changedFile)
