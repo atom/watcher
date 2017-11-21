@@ -42,6 +42,9 @@ public:
   // Access the watch descriptor that corresponds to this directory.
   int get_descriptor() { return wd; }
 
+  // Return true if this directory is the root of a recursively watched subtree.
+  bool is_root() { return parent == nullptr; }
+
   // Return the full absolute path to this directory.
   std::string get_absolute_path();
 
