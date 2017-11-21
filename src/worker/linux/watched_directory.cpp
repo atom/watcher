@@ -61,12 +61,19 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
   }
 
   if ((event.mask & (IN_DELETE_SELF | IN_UNMOUNT)) != 0u) {
-    buffer.deleted(channel_id, move(path), kind);
+    if (is_root()) {
+      side.remove_channel(channel_id);
+      buffer.deleted(channel_id, get_absolute_path(), KIND_DIRECTORY);
+    }
     return ok_result();
   }
 
   if ((event.mask & IN_MOVE_SELF) == IN_MOVE_SELF) {
     // directory itself was renamed
+    if (is_root()) {
+      side.remove_channel(channel_id);
+      buffer.deleted(channel_id, get_absolute_path(), KIND_DIRECTORY);
+    }
     return ok_result();
   }
 

@@ -21,7 +21,16 @@ void SideEffect::track_subdirectory(string subdir, ChannelID channel_id)
 
 void SideEffect::enact_in(const shared_ptr<WatchedDirectory> &parent, WatchRegistry *registry, MessageBuffer &messages)
 {
+  for (ChannelID channel_id : removed_roots) {
+    Result<> r = registry->remove(channel_id);
+    if (r.is_error()) messages.error(channel_id, string(r.get_error()), false);
+  }
+
   for (Subdirectory &subdir : subdirectories) {
+    if (removed_roots.find(subdir.channel_id) != removed_roots.end()) {
+      continue;
+    }
+
     vector<string> poll_roots;
     Result<> r = registry->add(subdir.channel_id, parent, subdir.basename, true, poll_roots);
     if (r.is_error()) messages.error(subdir.channel_id, string(r.get_error()), false);

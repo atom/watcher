@@ -2,6 +2,7 @@
 #define SIDE_EFFECT_H
 
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +27,9 @@ public:
 
   // Recursively watch a newly created subdirectory.
   void track_subdirectory(std::string subdir, ChannelID channel_id);
+
+  // Unsubscribe from a channel after this event has been handled.
+  void remove_channel(ChannelID channel_id) { removed_roots.insert(channel_id); }
 
   // Perform all enqueued actions.
   void enact_in(const std::shared_ptr<WatchedDirectory> &parent, WatchRegistry *registry, MessageBuffer &messages);
@@ -59,6 +63,8 @@ private:
   };
 
   std::vector<Subdirectory> subdirectories;
+
+  std::set<ChannelID> removed_roots;
 };
 
 #endif

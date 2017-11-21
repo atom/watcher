@@ -265,10 +265,13 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
         continue;
       }
 
+      vector<shared_ptr<WatchedDirectory>> watched_directories;
       for (auto it = its.first; it != its.second; ++it) {
-        SideEffect side;
-        shared_ptr<WatchedDirectory> watched_directory = it->second;
+        watched_directories.emplace_back(it->second);
+      }
 
+      for (shared_ptr<WatchedDirectory> &watched_directory : watched_directories) {
+        SideEffect side;
         Result<> r = watched_directory->accept_event(messages, jar, side, *event);
         if (r.is_error()) LOGGER << "Unable to process event: " << r << "." << endl;
         side.enact_in(watched_directory, this, messages);
