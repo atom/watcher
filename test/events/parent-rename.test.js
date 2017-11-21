@@ -30,7 +30,7 @@ describe('when a parent directory is renamed', function () {
     await fixture.after(this.currentTest)
   })
 
-  it('tracks the file rename across event batches ^linux', async function () {
+  it('tracks the file rename across event batches', async function () {
     const changedFile = fixture.watchPath('parent-1', 'file-1.txt')
 
     await fs.rename(originalParentDir, finalParentDir)
