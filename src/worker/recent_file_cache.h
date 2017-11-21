@@ -125,7 +125,7 @@ public:
 
   void prune();
 
-  void prepopulate(const std::string &root, size_t max);
+  void prepopulate(const std::string &root, size_t max, bool recursive);
 
   void resize(size_t maximum_size);
 
@@ -137,7 +137,7 @@ public:
   RecentFileCache &operator=(RecentFileCache &&) = delete;
 
 private:
-  size_t prepopulate_helper(const std::string &root, size_t max);
+  size_t prepopulate_helper(const std::string &root, size_t max, bool recursive);
 
   size_t maximum_size;
 

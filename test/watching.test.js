@@ -126,7 +126,7 @@ describe('watching a directory', function () {
     await parent.watch([], {})
 
     const child = new EventMatcher(fixture)
-    const nw = await child.watch(['subdir'], {})
+    const w = await child.watch(['subdir'], {})
 
     await fs.appendFile(rootFile, 'change 0\n')
     await fs.appendFile(subFile, 'change 0\n')
@@ -139,7 +139,7 @@ describe('watching a directory', function () {
       {path: subFile}
     ))
 
-    await nw.stop()
+    w.dispose()
     parent.reset()
 
     await fs.appendFile(rootFile, 'change 1\n')

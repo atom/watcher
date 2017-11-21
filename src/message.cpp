@@ -129,6 +129,8 @@ string CommandPayload::describe() const
       break;
     case COMMAND_REMOVE: builder << "remove channel " << arg; break;
     case COMMAND_LOG_FILE: builder << "log to file " << root; break;
+    case COMMAND_LOG_STDERR: builder << "log to stderr" << root; break;
+    case COMMAND_LOG_STDOUT: builder << "log to stdout" << root; break;
     case COMMAND_LOG_DISABLE: builder << "disable logging"; break;
     case COMMAND_POLLING_INTERVAL: builder << "polling interval " << arg; break;
     case COMMAND_POLLING_THROTTLE: builder << "polling throttle " << arg; break;

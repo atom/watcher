@@ -4,19 +4,13 @@ const path = require('path')
 const fs = require('fs-extra')
 const {CompositeDisposable} = require('event-kit')
 
-const {NativeWatcher} = require('../lib/native-watcher')
-const {configure, DISABLE} = require('../lib/binding')
+const {watchPath, configure, DISABLE} = require('../lib')
 
 class Fixture {
   constructor () {
     this.watchers = []
     this.subs = new CompositeDisposable()
-    this.createWatcher = async (watchRoot, options, callback) => {
-      const w = new NativeWatcher(watchRoot, options)
-      w.onDidChange(callback)
-      await w.start()
-      return w
-    }
+    this.createWatcher = watchPath
   }
 
   async before () {
@@ -24,11 +18,14 @@ class Fixture {
     this.fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
     this.watchDir = path.join(this.fixtureDir, 'root')
 
-    this.mainLogFile = path.join(this.fixtureDir, 'main.test.log')
-    this.workerLogFile = path.join(this.fixtureDir, 'worker.test.log')
-    this.pollingLogFile = path.join(this.fixtureDir, 'polling.test.log')
+    this.mainLogFile = path.join(this.fixtureDir, 'logs', 'main.test.log')
+    this.workerLogFile = path.join(this.fixtureDir, 'logs', 'worker.test.log')
+    this.pollingLogFile = path.join(this.fixtureDir, 'logs', 'polling.test.log')
 
-    await fs.mkdirs(this.watchDir)
+    await Promise.all([
+      fs.mkdirs(this.watchDir),
+      fs.mkdirs(path.join(this.fixtureDir, 'logs'))
+    ])
     return Promise.all([
       [this.mainLogFile, this.workerLogFile, this.pollingLogFile].map(fname => {
         fs.unlink(fname, {encoding: 'utf8'}).catch(() => '')
@@ -44,10 +41,6 @@ class Fixture {
     })
   }
 
-  createWatcherWith (cb) {
-    this.createWatcher = cb
-  }
-
   fixturePath (...subPath) {
     return path.join(this.fixtureDir, ...subPath)
   }
@@ -58,7 +51,7 @@ class Fixture {
 
   async watch (subPath, options, callback) {
     const watchRoot = this.watchPath(...subPath)
-    const watcher = await this.createWatcher(watchRoot, options, events => callback(null, events))
+    const watcher = await watchPath(watchRoot, options, events => callback(null, events))
     this.subs.add(watcher.onDidError(err => callback(err)))
 
     this.watchers.push(watcher)

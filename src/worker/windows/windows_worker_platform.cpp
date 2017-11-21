@@ -121,7 +121,9 @@ public:
       NULL  // template file
     );
     if (root == INVALID_HANDLE_VALUE) {
-      return windows_error_result<bool>("Unable to open directory handle");
+      ostringstream msg;
+      msg << "Unable to open directory handle " << root_path;
+      return windows_error_result<bool>(msg.str());
     }
 
     // Allocate and persist the subscription
@@ -148,7 +150,7 @@ public:
         .propagate(false);
     }
 
-    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION);
+    cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION, recursive);
 
     return ok_result(true);
   }
@@ -341,9 +343,12 @@ private:
         messages.created(move(path), kind);
         break;
       case FILE_ACTION_MODIFIED:
+        logline << "FILE_ACTION_MODIFIED " << kind;
         if (kind != KIND_DIRECTORY) {
-          logline << "FILE_ACTION_MODIFIED " << kind << "." << endl;
+          logline << "." << endl;
           messages.modified(move(path), kind);
+        } else {
+          logline << " (ignored)." << endl;
         }
         break;
       case FILE_ACTION_REMOVED:
@@ -403,7 +408,7 @@ void CALLBACK command_perform_helper(__in ULONG_PTR payload)
   platform->handle_commands();
 }
 
-static void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped)
+void CALLBACK event_helper(DWORD error_code, DWORD num_bytes, LPOVERLAPPED overlapped)
 {
   Subscription *sub = static_cast<Subscription *>(overlapped->hEvent);
   Result<> r = sub->get_platform()->handle_fs_event(error_code, num_bytes, sub);

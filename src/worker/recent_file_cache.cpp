@@ -44,7 +44,7 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
     // (d) have a path component that is (no longer) a directory
     // Log any other errno that we see.
     if (lstat_err != UV_ENOENT && lstat_err != UV_EACCES && lstat_err != UV_ELOOP && lstat_err != UV_ENAMETOOLONG
-      && lstat_err != UV_ENOTDIR) {
+      && lstat_err != UV_ENOTDIR && lstat_err != UV_EBUSY && lstat_err != UV_EPERM) {
       LOGGER << "lstat(" << path << ") failed: " << uv_strerror(lstat_err) << "." << endl;
     }
 
@@ -299,16 +299,16 @@ void RecentFileCache::prune()
          << " remain." << endl;
 }
 
-void RecentFileCache::prepopulate(const string &root, size_t max)
+void RecentFileCache::prepopulate(const string &root, size_t max, bool recursive)
 {
   size_t bounded_max = max > maximum_size ? maximum_size : max;
-  size_t entries = prepopulate_helper(root, bounded_max);
+  size_t entries = prepopulate_helper(root, bounded_max, recursive);
   apply();
 
   LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
 }
 
-size_t RecentFileCache::prepopulate_helper(const string &root, size_t max)
+size_t RecentFileCache::prepopulate_helper(const string &root, size_t max, bool recursive)
 {
   size_t count = 0;
   size_t entries = 0;
@@ -339,7 +339,7 @@ size_t RecentFileCache::prepopulate_helper(const string &root, size_t max)
       shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint);
       if (r->is_present()) {
         entries++;
-        if (r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
+        if (recursive && r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
       }
 
       count++;
