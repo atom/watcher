@@ -4,7 +4,6 @@ const path = require('path')
 const fs = require('fs-extra')
 const {CompositeDisposable} = require('event-kit')
 
-const {NativeWatcher} = require('../lib/native-watcher')
 const {watchPath, configure, DISABLE} = require('../lib')
 
 class Fixture {
