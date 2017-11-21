@@ -19,11 +19,14 @@ class Fixture {
     this.fixtureDir = await fs.mkdtemp(path.join(rootDir, 'watched-'))
     this.watchDir = path.join(this.fixtureDir, 'root')
 
-    this.mainLogFile = path.join(this.fixtureDir, 'main.test.log')
-    this.workerLogFile = path.join(this.fixtureDir, 'worker.test.log')
-    this.pollingLogFile = path.join(this.fixtureDir, 'polling.test.log')
+    this.mainLogFile = path.join(this.fixtureDir, 'logs', 'main.test.log')
+    this.workerLogFile = path.join(this.fixtureDir, 'logs', 'worker.test.log')
+    this.pollingLogFile = path.join(this.fixtureDir, 'logs', 'polling.test.log')
 
-    await fs.mkdirs(this.watchDir)
+    await Promise.all([
+      fs.mkdirs(this.watchDir),
+      fs.mkdirs(path.join(this.fixtureDir, 'logs'))
+    ])
     return Promise.all([
       [this.mainLogFile, this.workerLogFile, this.pollingLogFile].map(fname => {
         fs.unlink(fname, {encoding: 'utf8'}).catch(() => '')
