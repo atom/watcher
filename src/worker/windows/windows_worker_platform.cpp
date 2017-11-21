@@ -343,9 +343,12 @@ private:
         messages.created(move(path), kind);
         break;
       case FILE_ACTION_MODIFIED:
+        logline << "FILE_ACTION_MODIFIED " << kind;
         if (kind != KIND_DIRECTORY) {
-          logline << "FILE_ACTION_MODIFIED " << kind << "." << endl;
+          logline << "." << endl;
           messages.modified(move(path), kind);
+        } else {
+          logline << " (ignored)." << endl;
         }
         break;
       case FILE_ACTION_REMOVED:
