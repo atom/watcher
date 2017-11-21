@@ -29,15 +29,29 @@ public:
   // will be accumulated into the `poll` vector.
   //
   // `root` must name a directory if `recursive` is `true`.
-  Result<> add(ChannelID channel_id, const std::string &root, bool recursive, std::vector<std::string> &poll);
+  Result<> add(ChannelID channel_id, const std::string &root, bool recursive, std::vector<std::string> &poll)
+  {
+    return add(channel_id, nullptr, root, recursive, poll);
+  }
+
+  // Begin watching path beneath an existing WatchedDirectory. If `recursive` is `true`, recursively watch all
+  // subdirectories as well. If inotify watch descriptors are exhausted before the entire directory tree can be watched,
+  // the unsuccessfully watched roots will be accumulated into the `poll` vector.
+  //
+  // `root` must name a directory if `recursive` is `true`.
+  Result<> add(ChannelID channel_id,
+    const std::shared_ptr<WatchedDirectory> &parent,
+    const std::string &name,
+    bool recursive,
+    std::vector<std::string> &poll);
 
   // Uninstall inotify watchers used to deliver events on a specified channel.
   Result<> remove(ChannelID channel_id);
 
   // Interpret all inotify events created since the previous call to consume(), until the
   // read() call would block. Buffer messages corresponding to each inotify event. Use the
-  // CookieJar to match pairs of rename events and the SideEffect to enqueue side effects.
-  Result<> consume(MessageBuffer &messages, CookieJar &jar, SideEffect &side);
+  // CookieJar to match pairs of rename events across event batches.
+  Result<> consume(MessageBuffer &messages, CookieJar &jar);
 
   // Return the file descriptor that should be polled to wake up when inotify events are
   // available.
