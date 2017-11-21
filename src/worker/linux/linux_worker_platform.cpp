@@ -64,12 +64,9 @@ public:
 
       if ((to_poll[1].revents & (POLLIN | POLLERR)) != 0u) {
         MessageBuffer messages;
-        SideEffect side;
 
-        Result<> cr = registry.consume(messages, jar, side);
+        Result<> cr = registry.consume(messages, jar);
         if (cr.is_error()) LOGGER << cr << endl;
-
-        side.enact_in(&registry, messages);
 
         if (!messages.empty()) {
           Result<> er = emit_all(messages.begin(), messages.end());

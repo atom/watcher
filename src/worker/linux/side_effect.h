@@ -1,6 +1,7 @@
 #ifndef SIDE_EFFECT_H
 #define SIDE_EFFECT_H
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,6 +13,8 @@
 class WatchRegistry;
 
 class MessageBuffer;
+
+class WatchedDirectory;
 
 // Record additional actions that should be triggered by inotify events received in the course of a single notification
 // cycle.
@@ -25,7 +28,7 @@ public:
   void track_subdirectory(std::string subdir, ChannelID channel_id);
 
   // Perform all enqueued actions.
-  void enact_in(WatchRegistry *registry, MessageBuffer &messages);
+  void enact_in(const std::shared_ptr<WatchedDirectory> &parent, WatchRegistry *registry, MessageBuffer &messages);
 
   SideEffect(const SideEffect &other) = delete;
   SideEffect(SideEffect &&other) = delete;
@@ -35,13 +38,24 @@ public:
 private:
   struct Subdirectory
   {
-    Subdirectory(std::string &&path, ChannelID channel_id) : path(std::move(path)), channel_id{channel_id}
+    Subdirectory(std::string &&basename, ChannelID channel_id) : basename(std::move(basename)), channel_id{channel_id}
     {
       //
     }
 
-    std::string path;
+    Subdirectory(Subdirectory &&original) : basename{std::move(original.basename)}, channel_id{original.channel_id}
+    {
+      //
+    }
+
+    ~Subdirectory() = default;
+
+    std::string basename;
     ChannelID channel_id;
+
+    Subdirectory(const Subdirectory &) = delete;
+    Subdirectory &operator=(const Subdirectory &) = delete;
+    Subdirectory &operator=(Subdirectory &&) = delete;
   };
 
   std::vector<Subdirectory> subdirectories;

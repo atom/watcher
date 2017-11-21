@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 #include <sys/inotify.h>
 #include <sys/types.h>
@@ -22,11 +23,16 @@
 
 using std::endl;
 using std::ostream;
+using std::ostringstream;
 using std::set;
 using std::shared_ptr;
 using std::string;
 using std::unordered_multimap;
 using std::vector;
+
+using WatchedDirectoryPtr = shared_ptr<WatchedDirectory>;
+using WDMap = unordered_multimap<int, WatchedDirectoryPtr>;
+using WDIter = WDMap::iterator;
 
 static ostream &operator<<(ostream &out, const inotify_event *event)
 {
@@ -75,46 +81,69 @@ WatchRegistry::~WatchRegistry()
   }
 }
 
-Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recursive, vector<string> &poll)
+Result<> WatchRegistry::add(ChannelID channel_id,
+  const shared_ptr<WatchedDirectory> &parent,
+  const string &name,
+  bool recursive,
+  vector<string> &poll)
 {
   uint32_t mask = IN_ATTRIB | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_FROM
     | IN_MOVED_TO | IN_DONT_FOLLOW | IN_EXCL_UNLINK | IN_ONLYDIR;
 
-  ostream &logline = LOGGER << "Watching path [" << root << "]";
+  ostringstream absolute_builder;
+  if (parent) {
+    absolute_builder << parent->get_absolute_path() << "/";
+  }
+  absolute_builder << name;
+  string absolute = absolute_builder.str();
+
+  ostream &logline = LOGGER << "Watching path [" << absolute << "]";
   if (!recursive) logline << " (non-recursively)";
   logline << "." << endl;
 
-  int wd = inotify_add_watch(inotify_fd, root.c_str(), mask);
+  int wd = inotify_add_watch(inotify_fd, absolute.c_str(), mask);
   if (wd == -1) {
     int watch_errno = errno;
 
     if (watch_errno == ENOENT || watch_errno == EACCES) {
-      LOGGER << "Directory " << root << " is no longer accessible. Ignoring." << endl;
+      LOGGER << "Directory " << absolute << " is no longer accessible. Ignoring." << endl;
       return ok_result();
     }
 
     if (watch_errno == ENOSPC) {
-      LOGGER << "Falling back to polling for directory " << root << "." << endl;
-      poll.push_back(root);
+      LOGGER << "Falling back to polling for directory " << absolute << "." << endl;
+      poll.push_back(absolute);
       return ok_result();
     }
 
     return errno_result("Unable to watch directory", watch_errno);
   }
 
-  LOGGER << "Assigned watch descriptor " << wd << " at [" << root << "] on channel " << channel_id << "." << endl;
+  LOGGER << "Assigned watch descriptor " << wd << " at [" << absolute << "] on channel " << channel_id << "." << endl;
 
-  shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, string(root), recursive));
+  auto range = by_wd.equal_range(wd);
+  bool updated = false;
+  for (auto existing = range.first; existing != range.second; ++existing) {
+    shared_ptr<WatchedDirectory> &other = existing->second;
+    if (other->get_channel_id() == channel_id) {
+      assert(parent != nullptr);
+      updated = true;
+      other->was_renamed(parent, name);
+    }
+  }
+  if (updated) return ok_result();
 
-  by_wd.insert({wd, watched_dir});
-  by_channel.insert({channel_id, watched_dir});
+  shared_ptr<WatchedDirectory> watched_dir(new WatchedDirectory(wd, channel_id, parent, string(name), recursive));
+
+  by_wd.emplace(wd, watched_dir);
+  by_channel.emplace(channel_id, watched_dir);
 
   if (recursive) {
-    DIR *dir = opendir(root.c_str());
+    DIR *dir = opendir(absolute.c_str());
     if (dir == nullptr) {
       int open_errno = errno;
       if (open_errno != EACCES && open_errno != ENOENT && open_errno != ENOTDIR) {
-        return errno_result("Unable to recurse into directory " + root, open_errno);
+        return errno_result("Unable to recurse into directory " + absolute, open_errno);
       }
     } else {
       errno = 0;
@@ -126,21 +155,18 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
           entry = readdir(dir);
           continue;
         }
-        string subdir(root);
-        subdir += "/";
-        subdir += basename;
 
 #ifdef _DIRENT_HAVE_D_TYPE
         if (entry->d_type == DT_DIR || entry->d_type == DT_UNKNOWN) {
-          Result<> add_r = add(channel_id, subdir, recursive, poll);
+          Result<> add_r = add(channel_id, watched_dir, basename, recursive, poll);
           if (add_r.is_error()) {
-            LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
+            LOGGER << "Unable to recurse into " << absolute << "/" << basename << ": " << add_r << "." << endl;
           }
         }
 #else
-        Result<> add_r = add(channel_id, subdir, recursive, poll);
+        Result<> add_r = add(channel_id, watched_dir, basename, recursive, poll);
         if (add_r.is_error()) {
-          LOGGER << "Unable to recurse into " << subdir << ": " << add_r << "." << endl;
+          LOGGER << "Unable to recurse into " << absolute << "/" << basename << ": " << add_r << "." << endl;
         }
 #endif
 
@@ -148,7 +174,7 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
         entry = readdir(dir);
       }
       if (errno != 0) {
-        return errno_result("Unable to iterate entries of directory " + root);
+        return errno_result("Unable to iterate entries of directory " + absolute);
       }
       closedir(dir);
     }
@@ -159,10 +185,6 @@ Result<> WatchRegistry::add(ChannelID channel_id, const string &root, bool recur
 
 Result<> WatchRegistry::remove(ChannelID channel_id)
 {
-  using WatchedDirectoryPtr = shared_ptr<WatchedDirectory>;
-  using WDMap = unordered_multimap<int, WatchedDirectoryPtr>;
-  using WDIter = WDMap::iterator;
-
   auto its = by_channel.equal_range(channel_id);
   set<int> wds;
   for (auto it = its.first; it != its.second; ++it) {
@@ -197,7 +219,7 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
   return ok_result();
 }
 
-Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEffect &side)
+Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
 {
   const size_t BUFSIZE = 2048 * sizeof(inotify_event);
   char buf[BUFSIZE] __attribute__((aligned(__alignof__(struct inotify_event))));
@@ -244,12 +266,12 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, SideEff
       }
 
       for (auto it = its.first; it != its.second; ++it) {
+        SideEffect side;
         shared_ptr<WatchedDirectory> watched_directory = it->second;
 
         Result<> r = watched_directory->accept_event(messages, jar, side, *event);
-        if (r.is_error()) {
-          LOGGER << "Unable to process event: " << r << "." << endl;
-        }
+        if (r.is_error()) LOGGER << "Unable to process event: " << r << "." << endl;
+        side.enact_in(watched_directory, this, messages);
       }
     }
   }
