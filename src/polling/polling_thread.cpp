@@ -53,6 +53,7 @@ Result<> PollingThread::body()
       return r.propagate_as_void();
     }
 
+    t.stop();
     LOGGER << "Polling cycle complete in " << t << ". Sleeping for " << poll_interval.count() << "ms." << endl;
     std::this_thread::sleep_for(poll_interval);
   }
