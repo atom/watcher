@@ -1,6 +1,7 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <chrono>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -39,5 +40,37 @@ std::string plural(long quantity, const std::string &singular_form, const std::s
 std::string plural(long quantity, const std::string &singular_form);
 
 #define LOGGER (Logger::current()->prefix(__FILE__, __LINE__)->stream())
+
+class Timer
+{
+public:
+  Timer();
+
+  ~Timer() = default;
+
+  void stop();
+
+  std::string format_duration() const;
+
+  Timer(const Timer &) = delete;
+  Timer(Timer &&) = delete;
+  Timer &operator=(const Timer &) = delete;
+  Timer &operator=(Timer &&) = delete;
+
+private:
+  size_t measure_duration() const
+  {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+  }
+
+  std::chrono::time_point<std::chrono::steady_clock> start;
+
+  size_t duration;
+};
+
+inline std::ostream &operator<<(std::ostream &out, const Timer &t)
+{
+  return out << t.format_duration();
+}
 
 #endif

@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -10,6 +11,7 @@
 #include "log.h"
 
 using std::cerr;
+using std::chrono::steady_clock;
 using std::cout;
 using std::dec;
 using std::endl;
@@ -201,4 +203,39 @@ string plural(long quantity, const string &singular_form)
 {
   string plural_form(singular_form + "s");
   return plural(quantity, singular_form, plural_form);
+}
+
+Timer::Timer()
+{
+  start = steady_clock::now();
+}
+
+void Timer::stop()
+{
+  duration = measure_duration();
+}
+
+string Timer::format_duration() const
+{
+  size_t total = duration;
+  if (total == 0) {
+    total = measure_duration();
+  }
+
+  size_t milliseconds = total;
+  size_t seconds = milliseconds / 1000;
+  milliseconds -= (seconds * 1000);
+
+  size_t minutes = seconds / 60;
+  seconds -= (minutes * 60);
+
+  size_t hours = minutes / 60;
+  minutes -= (hours * 60);
+
+  ostringstream out;
+  if (hours > 0) out << plural(hours, "hour") << ' ';
+  if (minutes > 0) out << plural(minutes, "minute") << ' ';
+  if (seconds > 0) out << plural(seconds, "second") << ' ';
+  out << plural(milliseconds, "millisecond") << " (" << total << "ms)";
+  return out.str();
 }
