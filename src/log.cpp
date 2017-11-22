@@ -205,9 +205,9 @@ string plural(long quantity, const string &singular_form)
   return plural(quantity, singular_form, plural_form);
 }
 
-Timer::Timer()
+Timer::Timer() : start{steady_clock::now()}, duration{0}
 {
-  start = steady_clock::now();
+  //
 }
 
 void Timer::stop()
