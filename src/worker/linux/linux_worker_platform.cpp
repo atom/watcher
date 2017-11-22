@@ -1,3 +1,4 @@
+#include <iostream>
 #include <memory>
 #include <poll.h>
 #include <string>
@@ -15,6 +16,7 @@
 #include "watch_registry.h"
 
 using std::endl;
+using std::ostream;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -84,7 +86,14 @@ public:
     const string &root_path,
     bool recursive) override
   {
+    Timer t;
     vector<string> poll;
+
+    ostream &logline = LOGGER << "Adding watcher for path " << root_path;
+    if (!recursive) {
+      logline << " (non-recursively)";
+    }
+    logline << " at channel " << channel << "." << endl;
 
     Result<> r = registry.add(channel, string(root_path), recursive, poll);
     if (r.is_error()) return r.propagate<bool>();
@@ -98,9 +107,14 @@ public:
           CommandPayloadBuilder::add(channel, move(poll_root), recursive, poll.size()).build());
       }
 
+      t.stop();
+      LOGGER << "Watcher for path " << root_path << " and " << plural(poll.size(), "polled watch root") << " added in "
+             << t << "." << endl;
       return emit_all(poll_messages.begin(), poll_messages.end()).propagate(false);
     }
 
+    t.stop();
+    LOGGER << "Watcher for path " << root_path << " added in " << t << "." << endl;
     return ok_result(true);
   }
 
