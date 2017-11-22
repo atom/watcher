@@ -280,6 +280,7 @@ void RecentFileCache::prune()
   if (by_path.size() <= maximum_size) {
     return;
   }
+  Timer t;
   size_t to_remove = by_path.size() - maximum_size;
 
   LOGGER << "Cache currently contains " << plural(by_path.size(), "entry", "entries") << ". Pruning triggered." << endl;
@@ -295,17 +296,21 @@ void RecentFileCache::prune()
   }
   by_timestamp.erase(by_timestamp.begin(), last);
 
-  LOGGER << "Pruned " << plural(to_remove, "entry", "entries") << ". " << plural(by_path.size(), "entry", "entries")
-         << " remain." << endl;
+  t.stop();
+  LOGGER << "Pruned " << plural(to_remove, "entry", "entries") << " in " << t << ". "
+         << plural(by_path.size(), "entry", "entries") << " remain." << endl;
 }
 
 void RecentFileCache::prepopulate(const string &root, size_t max, bool recursive)
 {
+  Timer t;
+
   size_t bounded_max = max > maximum_size ? maximum_size : max;
   size_t entries = prepopulate_helper(root, bounded_max, recursive);
   apply();
 
-  LOGGER << "Pre-populated cache with " << entries << " entries." << endl;
+  t.stop();
+  LOGGER << "Pre-populated cache with " << entries << " entries in " << t << "." << endl;
 }
 
 size_t RecentFileCache::prepopulate_helper(const string &root, size_t max, bool recursive)
