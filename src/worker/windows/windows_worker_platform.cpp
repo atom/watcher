@@ -178,6 +178,8 @@ public:
 
   Result<> handle_fs_event(DWORD error_code, DWORD num_bytes, Subscription *sub)
   {
+    Timer t;
+
     // Ensure that the subscription is valid.
     ChannelID channel = sub->get_channel();
     auto it = subscriptions.find(channel);
@@ -247,7 +249,8 @@ public:
       if (er.is_error()) {
         LOGGER << "Unable to emit messages: " << er << "." << endl;
       } else {
-        LOGGER << "Filesystem event batch of size " << num_events << " completed. "
+        t.stop();
+        LOGGER << "Filesystem event batch of size " << num_events << " completed in " << t << ". "
                << plural(messages.size(), "message") << " produced." << endl;
       }
     }
