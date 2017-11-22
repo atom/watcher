@@ -221,14 +221,24 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
 
 Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
 {
+  Timer t;
   const size_t BUFSIZE = 2048 * sizeof(inotify_event);
   char buf[BUFSIZE] __attribute__((aligned(__alignof__(struct inotify_event))));
   ssize_t result = 0;
+  size_t batch_count = 0;
+  size_t event_count = 0;
 
   while (true) {
     result = read(inotify_fd, &buf, BUFSIZE);
 
-    if (result <= 0) jar.flush_oldest_batch(messages);
+    if (result <= 0) {
+      jar.flush_oldest_batch(messages);
+
+      t.stop();
+      LOGGER << plural(batch_count, "filesystem event batch", "filesystem event batches") << " containing "
+             << plural(event_count, "event") << " completed. " << plural(messages.size(), "message") << " produced in "
+             << t << "." << endl;
+    }
 
     if (result < 0) {
       int read_errno = errno;
@@ -246,6 +256,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
     }
 
     // At least one inotify event to read.
+    batch_count++;
     char *current = buf;
     inotify_event *event = nullptr;
     while (current < buf + result) {
@@ -264,6 +275,8 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
         LOGGER << "Received event for unknown watch descriptor " << event->wd << "." << endl;
         continue;
       }
+
+      event_count++;
 
       vector<shared_ptr<WatchedDirectory>> watched_directories;
       for (auto it = its.first; it != its.second; ++it) {

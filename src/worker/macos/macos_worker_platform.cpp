@@ -197,6 +197,7 @@ public:
     auto **paths = reinterpret_cast<char **>(event_paths);
     MessageBuffer buffer;
     ChannelMessageBuffer message_buffer(buffer, channel_id);
+    Timer t;
 
     LOGGER << "Filesystem event batch of size " << num_events << " received." << endl;
     auto sub = subscriptions.find(channel_id);
@@ -246,9 +247,10 @@ public:
       LOGGER << "Unable to emit filesystem event messages: " << er << "." << endl;
       return FN_KEEP;
     }
+    t.stop();
 
     LOGGER << "Filesystem event batch of size " << num_events << " completed. "
-           << plural(message_buffer.size(), "message") << " produced." << endl;
+           << plural(message_buffer.size(), "message") << " produced in " << t << "." << endl;
     cache.prune();
 
     return FN_KEEP;

@@ -36,6 +36,8 @@ PollingThread::PollingThread(uv_async_t *main_callback) :
 Result<> PollingThread::body()
 {
   while (true) {
+    Timer t;
+
     LOGGER << "Handling commands." << endl;
     Result<size_t> cr = handle_commands();
     if (cr.is_error()) {
@@ -51,7 +53,8 @@ Result<> PollingThread::body()
       return r.propagate_as_void();
     }
 
-    LOGGER << "Sleeping for " << poll_interval.count() << "ms." << endl;
+    t.stop();
+    LOGGER << "Polling cycle complete in " << t << ". Sleeping for " << poll_interval.count() << "ms." << endl;
     std::this_thread::sleep_for(poll_interval);
   }
 }
