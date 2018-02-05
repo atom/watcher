@@ -126,6 +126,66 @@ const {EventMatcher} = require('../matcher');
       ))
     })
 
+    it('when a symlink is created', async function () {
+      const originalName = fixture.watchPath('original-file.txt')
+      const symlinkName = fixture.watchPath('symlink.txt')
+      await fs.writeFile(originalName, 'contents\n')
+
+      await until('file creation event arrives', matcher.allEvents(
+        {action: 'created', kind: 'file', path: originalName}
+      ))
+
+      await fs.symlink(originalName, symlinkName)
+
+      await until('symlink creation event arrives', matcher.allEvents(
+        {action: 'created', kind: 'symlink', path: symlinkName}
+      ))
+    })
+
+    it('when a symlink is deleted', async function () {
+      const originalName = fixture.watchPath('original-file.txt')
+      const symlinkName = fixture.watchPath('symlink.txt')
+      await fs.writeFile(originalName, 'contents\n')
+      await fs.symlink(originalName, symlinkName)
+
+      await until('file and symlink creation events arrive', matcher.allEvents(
+        {action: 'created', kind: 'file', path: originalName},
+        {action: 'created', kind: 'symlink', path: symlinkName}
+      ))
+
+      await fs.unlink(symlinkName)
+
+      await until('symlink deletion event arrives', matcher.allEvents(
+        {action: 'deleted', kind: 'symlink', path: symlinkName}
+      ))
+    })
+
+    it('when a symlink is renamed', async function () {
+      const targetName = fixture.watchPath('target.txt')
+      const originalName = fixture.watchPath('original.txt')
+      const finalName = fixture.watchPath('final.txt')
+      await fs.writeFile(targetName, 'contents\n')
+      await fs.symlink(targetName, originalName)
+
+      await until('file and symlink creation events arrive', matcher.allEvents(
+        {action: 'created', kind: 'file', path: targetName},
+        {action: 'created', kind: 'symlink', path: originalName}
+      ))
+
+      fs.rename(originalName, finalName)
+
+      if (poll) {
+        await until('symlink deletion and creation arrive', matcher.allEvents(
+          {action: 'deleted', kind: 'symlink', path: originalName},
+          {action: 'created', kind: 'symlink', path: finalName}
+        ))
+      } else {
+        await until('rename event arrives', matcher.allEvents(
+          {action: 'renamed', kind: 'symlink', oldPath: originalName, path: finalName}
+        ))
+      }
+    })
+
     if (process.platform === 'win32') {
       it('reports events with the long file name when possible', async function () {
         const longName = fixture.watchPath('file-with-a-long-name.txt')
