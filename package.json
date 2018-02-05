@@ -12,7 +12,7 @@
     "format:cpp": "script/c++-format",
     "format:js": "standard --fix",
     "build:debug": "node --harmony script/helper/gen-compilation-db.js rebuild --debug",
-    "test": "mocha --require test/global.js --require mocha-stress --recursive --harmony",
+    "test": "mocha",
     "test:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js --require mocha-stress --recursive",
     "test:gdb": "gdb --args node --harmony ./node_modules/.bin/_mocha --require test/global.js --require mocha-stress --recursive",
     "ci:appveyor": "npm run test -- --fgrep ^windows --invert --reporter mocha-appveyor-reporter --reporter-options appveyorBatchSize=5 --timeout 30000",

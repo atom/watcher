@@ -1,0 +1,4 @@
+--require test/global.js
+--require mocha-stress
+--recursive
+--harmony
