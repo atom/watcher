@@ -34,6 +34,8 @@ public:
 
   bool flag_directory() { return (flags & IS_DIRECTORY) != 0; }
 
+  bool flag_symlink() { return (flags & IS_SYMLINK) != 0; }
+
   bool is_recursive();
 
   const std::string &root_path();
