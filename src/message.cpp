@@ -30,6 +30,7 @@ ostream &operator<<(ostream &out, EntryKind kind)
   switch (kind) {
     case KIND_FILE: out << "file"; break;
     case KIND_DIRECTORY: out << "directory"; break;
+    case KIND_SYMLINK: out << "symlink"; break;
     case KIND_UNKNOWN: out << "unknown"; break;
     default: out << "!! EntryKind=" << static_cast<int>(kind);
   }
