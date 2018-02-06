@@ -35,6 +35,7 @@ inline bool ts_not_equal(const uv_timespec_t &left, const uv_timespec_t &right)
 
 inline EntryKind kind_from_stat(const uv_stat_t &st)
 {
+  if ((st.st_mode & S_IFLNK) == S_IFLNK) return KIND_SYMLINK;
   if ((st.st_mode & S_IFDIR) == S_IFDIR) return KIND_DIRECTORY;
   if ((st.st_mode & S_IFREG) == S_IFREG) return KIND_FILE;
   return KIND_UNKNOWN;
