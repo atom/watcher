@@ -37,7 +37,7 @@ const w = await watcher.watchPath('/var/log', {}, events => {
     // Absolute path to the filesystem entry that was touched
     console.log(`Event path: ${event.path}`)
 
-    // "file", "directory", or "unknown"
+    // "file", "directory", "symlink", or "unknown"
     console.log(`Event entry kind: ${event.kind}`)
 
     if (event.action === 'renamed') {
@@ -111,7 +111,7 @@ The _options_ argument configures the nature of the watch. Pass `{}` to accept t
 The _callback_ argument will be called repeatedly with each batch of filesystem events that are delivered until the [`.dispose() method`](#pathwatcherdispose) is called. Event batches are `Arrays` containing objects with the following keys:
 
 * `action`: a `String` describing the filesystem action that occurred. One of `"created"`, `"modified"`, `"deleted"`, or `"renamed"`.
-* `kind`: a `String` distinguishing the type of filesystem entry that was acted upon, if known. One of `"file"`, `"directory"`, or `"unknown"`.
+* `kind`: a `String` distinguishing the type of filesystem entry that was acted upon, if known. One of `"file"`, `"directory"`, `"symlink"`, or `"unknown"`.
 * `path`: a `String` containing the absolute path to the filesystem entry that was acted upon. In the event of a rename, this is the _new_ path of the entry.
 * `oldPath`: a `String` containing the former absolute path of a renamed filesystem entry. Omitted when action is not `"renamed"`.
 

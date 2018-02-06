@@ -68,9 +68,9 @@ bool Event::skip_recursive_event()
 void Event::collect_info()
 {
   if (!former) {
-    former = cache().former_at_path(event_path, flag_file(), flag_directory());
+    former = cache().former_at_path(event_path, flag_file(), flag_directory(), flag_symlink());
   }
-  current = cache().current_at_path(get_stat_path(), flag_file(), flag_directory());
+  current = cache().current_at_path(get_stat_path(), flag_file(), flag_directory(), flag_symlink());
 }
 
 bool Event::should_defer()

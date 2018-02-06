@@ -10,6 +10,7 @@
 #include "../../errable.h"
 #include "../../message_buffer.h"
 #include "../../result.h"
+#include "../recent_file_cache.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 #include "watched_directory.h"
@@ -50,8 +51,9 @@ public:
 
   // Interpret all inotify events created since the previous call to consume(), until the
   // read() call would block. Buffer messages corresponding to each inotify event. Use the
-  // CookieJar to match pairs of rename events across event batches.
-  Result<> consume(MessageBuffer &messages, CookieJar &jar);
+  // CookieJar to match pairs of rename events across event batches and the RecentFileCache to
+  // identify symlinks without doing a stat for every event.
+  Result<> consume(MessageBuffer &messages, CookieJar &jar, RecentFileCache &cache);
 
   // Return the file descriptor that should be polled to wake up when inotify events are
   // available.

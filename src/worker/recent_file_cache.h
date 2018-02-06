@@ -16,7 +16,7 @@
 class StatResult
 {
 public:
-  static std::shared_ptr<StatResult> at(std::string &&path, bool file_hint, bool directory_hint);
+  static std::shared_ptr<StatResult> at(std::string &&path, bool file_hint, bool directory_hint, bool symlink_hint);
 
   virtual ~StatResult() = default;
 
@@ -111,9 +111,15 @@ public:
 
   ~RecentFileCache() = default;
 
-  std::shared_ptr<StatResult> current_at_path(const std::string &path, bool file_hint, bool directory_hint);
+  std::shared_ptr<StatResult> current_at_path(const std::string &path,
+    bool file_hint,
+    bool directory_hint,
+    bool symlink_hint);
 
-  std::shared_ptr<StatResult> former_at_path(const std::string &path, bool file_hint, bool directory_hint);
+  std::shared_ptr<StatResult> former_at_path(const std::string &path,
+    bool file_hint,
+    bool directory_hint,
+    bool symlink_hint);
 
   void evict(const std::string &path);
 

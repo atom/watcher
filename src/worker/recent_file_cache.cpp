@@ -30,7 +30,7 @@ using std::static_pointer_cast;
 using std::string;
 using std::vector;
 
-shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint)
+shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint, bool symlink_hint)
 {
   FSReq lstat_req;
 
@@ -49,8 +49,9 @@ shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool direct
     }
 
     EntryKind guessed_kind = KIND_UNKNOWN;
-    if (file_hint && !directory_hint) guessed_kind = KIND_FILE;
-    if (!file_hint && directory_hint) guessed_kind = KIND_DIRECTORY;
+    if (symlink_hint) guessed_kind = KIND_SYMLINK;
+    if (file_hint && !directory_hint && !symlink_hint) guessed_kind = KIND_FILE;
+    if (!file_hint && directory_hint && !symlink_hint) guessed_kind = KIND_DIRECTORY;
     return shared_ptr<StatResult>(new AbsentEntry(move(path), guessed_kind));
   }
 
@@ -187,27 +188,34 @@ RecentFileCache::RecentFileCache(size_t maximum_size) : maximum_size{maximum_siz
   //
 }
 
-shared_ptr<StatResult> RecentFileCache::current_at_path(const string &path, bool file_hint, bool directory_hint)
+shared_ptr<StatResult> RecentFileCache::current_at_path(const string &path,
+  bool file_hint,
+  bool directory_hint,
+  bool symlink_hint)
 {
   auto maybe_pending = pending.find(path);
   if (maybe_pending != pending.end()) {
     return maybe_pending->second;
   }
 
-  shared_ptr<StatResult> stat_result = StatResult::at(string(path), file_hint, directory_hint);
+  shared_ptr<StatResult> stat_result = StatResult::at(string(path), file_hint, directory_hint, symlink_hint);
   if (stat_result->is_present()) {
     pending.emplace(path, static_pointer_cast<PresentEntry>(stat_result));
   }
   return stat_result;
 }
 
-shared_ptr<StatResult> RecentFileCache::former_at_path(const string &path, bool file_hint, bool directory_hint)
+shared_ptr<StatResult> RecentFileCache::former_at_path(const string &path,
+  bool file_hint,
+  bool directory_hint,
+  bool symlink_hint)
 {
   auto maybe = by_path.find(path);
   if (maybe == by_path.end()) {
     EntryKind kind = KIND_UNKNOWN;
-    if (file_hint && !directory_hint) kind = KIND_FILE;
-    if (!file_hint && directory_hint) kind = KIND_DIRECTORY;
+    if (symlink_hint) kind = KIND_SYMLINK;
+    if (file_hint && !directory_hint && !symlink_hint) kind = KIND_FILE;
+    if (!file_hint && directory_hint && !symlink_hint) kind = KIND_DIRECTORY;
 
     return shared_ptr<StatResult>(new AbsentEntry(string(path), kind));
   }
@@ -338,10 +346,11 @@ size_t RecentFileCache::prepopulate_helper(const string &root, size_t max, bool 
       string entry_name(dirent.name);
       string entry_path(path_join(current_root, entry_name));
 
+      bool symlink_hint = dirent.type == UV_DIRENT_LINK;
       bool file_hint = dirent.type == UV_DIRENT_FILE;
       bool dir_hint = dirent.type == UV_DIRENT_DIR;
 
-      shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint);
+      shared_ptr<StatResult> r = current_at_path(entry_path, file_hint, dir_hint, symlink_hint);
       if (r->is_present()) {
         entries++;
         if (recursive && r->get_entry_kind() == KIND_DIRECTORY) next_roots.push(entry_path);
