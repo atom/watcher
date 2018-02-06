@@ -16,6 +16,7 @@
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "../../result.h"
+#include "../recent_file_cache.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 #include "watch_registry.h"
@@ -219,7 +220,7 @@ Result<> WatchRegistry::remove(ChannelID channel_id)
   return ok_result();
 }
 
-Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
+Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, RecentFileCache &cache)
 {
   Timer t;
   const size_t BUFSIZE = 2048 * sizeof(inotify_event);
@@ -285,7 +286,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar)
 
       for (shared_ptr<WatchedDirectory> &watched_directory : watched_directories) {
         SideEffect side;
-        Result<> r = watched_directory->accept_event(messages, jar, side, *event);
+        Result<> r = watched_directory->accept_event(messages, jar, side, cache, *event);
         if (r.is_error()) LOGGER << "Unable to process event: " << r << "." << endl;
         side.enact_in(watched_directory, this, messages);
       }

@@ -9,6 +9,7 @@
 
 #include "../../message_buffer.h"
 #include "../../result.h"
+#include "../recent_file_cache.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 
@@ -26,7 +27,11 @@ public:
 
   // Interpret a single inotify event. Buffer messages, store or resolve rename Cookies from the CookieJar, and
   // enqueue SideEffects based on the event's mask.
-  Result<> accept_event(MessageBuffer &buffer, CookieJar &jar, SideEffect &side, const inotify_event &event);
+  Result<> accept_event(MessageBuffer &buffer,
+    CookieJar &jar,
+    SideEffect &side,
+    RecentFileCache &cache,
+    const inotify_event &event);
 
   // A parent WatchedDirectory reported that this directory was renamed. Update our internal state immediately so
   // that events on child paths will be reported with the correct path.

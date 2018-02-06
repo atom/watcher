@@ -7,6 +7,7 @@
 #include "../../message.h"
 #include "../../message_buffer.h"
 #include "../../result.h"
+#include "../recent_file_cache.h"
 #include "cookie_jar.h"
 #include "side_effect.h"
 #include "watched_directory.h"
@@ -33,11 +34,21 @@ WatchedDirectory::WatchedDirectory(int wd,
 Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
   CookieJar &jar,
   SideEffect &side,
+  RecentFileCache &cache,
   const inotify_event &event)
 {
-  EntryKind kind = (event.mask & IN_ISDIR) == IN_ISDIR ? KIND_DIRECTORY : KIND_FILE;
   string basename{event.name};
   string path = absolute_event_path(event);
+
+  bool dir_hint = (event.mask & IN_ISDIR) == IN_ISDIR;
+
+  // Read or refresh the cached lstat() entry primarily to determine if this entry is a symlink or not.
+  shared_ptr<StatResult> stat = cache.former_at_path(path, !dir_hint, dir_hint, false);
+  if (stat->is_absent()) {
+    stat = cache.current_at_path(path, !dir_hint, dir_hint, false);
+    cache.apply();
+  }
+  EntryKind kind = stat->get_entry_kind();
 
   if ((event.mask & IN_CREATE) == IN_CREATE) {
     // create entry inside directory
@@ -50,6 +61,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
 
   if ((event.mask & IN_DELETE) == IN_DELETE) {
     // delete entry inside directory
+    cache.evict(path);
     buffer.deleted(channel_id, move(path), kind);
     return ok_result();
   }
@@ -63,6 +75,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
   if ((event.mask & (IN_DELETE_SELF | IN_UNMOUNT)) != 0u) {
     if (is_root()) {
       side.remove_channel(channel_id);
+      cache.evict(get_absolute_path());
       buffer.deleted(channel_id, get_absolute_path(), KIND_DIRECTORY);
     }
     return ok_result();
@@ -72,6 +85,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
     // directory itself was renamed
     if (is_root()) {
       side.remove_channel(channel_id);
+      cache.evict(get_absolute_path());
       buffer.deleted(channel_id, get_absolute_path(), KIND_DIRECTORY);
     }
     return ok_result();
@@ -79,6 +93,7 @@ Result<> WatchedDirectory::accept_event(MessageBuffer &buffer,
 
   if ((event.mask & IN_MOVED_FROM) == IN_MOVED_FROM) {
     // rename source for directory or entry inside directory
+    cache.evict(path);
     jar.moved_from(buffer, channel_id, event.cookie, move(path), kind);
     return ok_result();
   }

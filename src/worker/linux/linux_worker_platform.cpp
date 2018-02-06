@@ -8,6 +8,7 @@
 #include "../../log.h"
 #include "../../message.h"
 #include "../../result.h"
+#include "../recent_file_cache.h"
 #include "../worker_platform.h"
 #include "../worker_thread.h"
 #include "cookie_jar.h"
@@ -21,11 +22,13 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
+const size_t DEFAULT_CACHE_SIZE = 4096;
+
 // Platform-specific worker implementation for Linux systems.
 class LinuxWorkerPlatform : public WorkerPlatform
 {
 public:
-  LinuxWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread)
+  LinuxWorkerPlatform(WorkerThread *thread) : WorkerPlatform(thread), cache{DEFAULT_CACHE_SIZE}
   {
     report_errable(pipe);
     report_errable(registry);
@@ -67,7 +70,7 @@ public:
       if ((to_poll[1].revents & (POLLIN | POLLERR)) != 0u) {
         MessageBuffer messages;
 
-        Result<> cr = registry.consume(messages, jar);
+        Result<> cr = registry.consume(messages, jar, cache);
         if (cr.is_error()) LOGGER << cr << endl;
 
         if (!messages.empty()) {
@@ -128,6 +131,7 @@ private:
   Pipe pipe;
   WatchRegistry registry;
   CookieJar jar;
+  RecentFileCache cache;
 };
 
 unique_ptr<WorkerPlatform> WorkerPlatform::for_worker(WorkerThread *thread)
