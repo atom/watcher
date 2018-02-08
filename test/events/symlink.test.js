@@ -41,4 +41,42 @@ describe('watching beneath symlinked directories', function () {
       until('real path event arrives', realMatcher.allEvents({action: 'created', kind: 'file', path: realFile}))
     ])
   })
+
+  it("doesn't die horribly on a symlink loop", async function () {
+    const parentDir = fixture.watchPath('parent')
+    const subDir = fixture.watchPath('parent', 'child')
+    const linkName = fixture.watchPath('parent', 'child', 'turtles')
+    const fileName = fixture.watchPath('parent', 'file.txt')
+
+    await fs.mkdirs(subDir)
+    await fs.symlink(parentDir, linkName)
+
+    const matcher = new EventMatcher(fixture)
+    await matcher.watch([''], {})
+
+    await fs.writeFile(fileName, 'contents\n')
+
+    await until('creation event arrives', matcher.allEvents(
+      {action: 'created', kind: 'file', path: fileName}
+    ))
+  })
+
+  it("doesn't die horribly on a broken symlink", async function () {
+    const targetName = fixture.watchPath('target.txt')
+    const linkName = fixture.watchPath('symlink.txt')
+    const fileName = fixture.watchPath('file.txt')
+
+    await fs.writeFile(targetName, 'original\n')
+    await fs.symlink(targetName, linkName)
+    await fs.unlink(targetName)
+
+    const matcher = new EventMatcher(fixture)
+    await matcher.watch([''], {})
+
+    await fs.writeFile(fileName, 'stuff\n')
+
+    await until('creation event arrives', matcher.allEvents(
+      {action: 'created', kind: 'file', path: fileName}
+    ))
+  })
 })
