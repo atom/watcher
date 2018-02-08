@@ -115,6 +115,29 @@ describe('NativeWatcherRegistry', function () {
     assert.strictEqual(watcher.native, EXISTING)
   })
 
+  it('is case sensitive', async function () {
+    const LOWER = new MockNative('lower')
+    const UPPER = new MockNative('upper')
+
+    const lowerPath = absolute('existing', 'path')
+    const upperPath = absolute('EXISTING', 'PATH')
+
+    createNative = dir => {
+      if (dir === lowerPath) return LOWER
+      if (dir === upperPath) return UPPER
+      return new MockNative('nope')
+    }
+
+    const lw = new MockWatcher(lowerPath)
+    await registry.attach(lw)
+
+    const uw = new MockWatcher(upperPath)
+    await registry.attach(uw)
+
+    assert.strictEqual(lw.native, LOWER)
+    assert.strictEqual(uw.native, UPPER)
+  })
+
   it('attaches to an existing NativeWatcher on a parent directory', async function () {
     const EXISTING = new MockNative('existing')
     const parentDir = absolute('existing', 'path')
