@@ -44,8 +44,8 @@ Result<wstring> to_wchar(const string &in)
 {
   size_t wlen = MultiByteToWideChar(CP_UTF8,  // code page
     0,  // flags
-    in.c_str(),  // source string data
-    -1,  // source string length (null-terminated)
+    in.data(),  // source string data
+    in.size(),  // source string length (null-terminated)
     0,  // output buffer
     0  // output buffer size
   );
@@ -56,8 +56,8 @@ Result<wstring> to_wchar(const string &in)
   unique_ptr<WCHAR[]> payload(new WCHAR[wlen]);
   size_t conv_success = MultiByteToWideChar(CP_UTF8,  // code page
     0,  // flags,
-    in.c_str(),  // source string data
-    -1,  // source string length (null-terminated)
+    in.data(),  // source string data
+    in.size(),  // source string length (null-terminated)
     payload.get(),  // output buffer
     wlen  // output buffer size (in bytes)
   );
@@ -65,7 +65,7 @@ Result<wstring> to_wchar(const string &in)
     return windows_error_result<wstring>("Unable to convert string to wide string");
   }
 
-  return ok_result(wstring(payload.get(), wlen - 1));
+  return ok_result(wstring(payload.get(), wlen));
 }
 
 Result<wstring> to_long_path_try(const wstring &short_path, size_t bufsize, bool retry)
