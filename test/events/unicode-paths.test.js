@@ -12,16 +12,20 @@ describe('paths with extended utf8 characters', function () {
     await fixture.log()
   })
 
+  afterEach(async function () {
+    await fixture.after(this.currentTest)
+  })
+
   it('creates watches and reports event paths', async function () {
     // Thanks, http://www.i18nguy.com/unicode/supplementary-test.html
     // I sure hope these don't mean anything really obscene!
-    const rootDir = fixture.watchPath('𠜎 𠜱 𠝹 𠱓 𠱸 ')
-    const fileName = fixture.watchPath('𠜎 𠜱 𠝹 𠱓 𠱸 ', '𢵧 𢺳 𣲷 𤓓')
+    const rootDir = fixture.watchPath('𠜎')
+    const fileName = fixture.watchPath('𠜎', '𤓓')
 
-    await fs.mkdir(rootDir)
+    await fs.mkdirs(rootDir)
 
     const matcher = new EventMatcher(fixture)
-    await matcher.watch(['𠜎 𠜱 𠝹 𠱓 𠱸 '], {})
+    await matcher.watch(['𠜎'], {})
 
     await fs.writeFile(fileName, 'wat\n')
 
