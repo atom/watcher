@@ -217,6 +217,11 @@ public:
       return emit_fatal_error(sub, windows_error_result<>("Completion callback error", error_code));
     }
 
+    if (num_bytes == 0) {
+      LOGGER << "Empty event batch received." << endl;
+      return reschedule(sub);
+    }
+
     // Schedule the next completion callback.
     BYTE *base = sub->get_written(num_bytes);
     Result<> next = reschedule(sub);
