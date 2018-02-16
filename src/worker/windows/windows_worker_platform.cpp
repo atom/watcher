@@ -75,25 +75,28 @@ public:
     return ok_result();
   }
 
-  Result<> listen() override
+  Result<> init() override
   {
-    {
-      Lock lock(thread_handle_mutex);
+    Lock lock(thread_handle_mutex);
 
-      HANDLE pseudo_handle = GetCurrentThread();
-      BOOL success = DuplicateHandle(GetCurrentProcess(),  // Source process
-        pseudo_handle,  // Source handle
-        GetCurrentProcess(),  // Destination process
-        &thread_handle,  // Destination handle
-        0,  // Desired access
-        FALSE,  // Inheritable by new processes
-        DUPLICATE_SAME_ACCESS  // options
-      );
-      if (!success) {
-        return windows_error_result<>("Unable to duplicate thread handle");
-      }
+    HANDLE pseudo_handle = GetCurrentThread();
+    BOOL success = DuplicateHandle(GetCurrentProcess(),  // Source process
+      pseudo_handle,  // Source handle
+      GetCurrentProcess(),  // Destination process
+      &thread_handle,  // Destination handle
+      0,  // Desired access
+      FALSE,  // Inheritable by new processes
+      DUPLICATE_SAME_ACCESS  // options
+    );
+    if (!success) {
+      return windows_error_result<>("Unable to duplicate thread handle");
     }
 
+    return ok_result();
+  }
+
+  Result<> listen() override
+  {
     while (true) {
       SleepEx(INFINITE, true);
     }
