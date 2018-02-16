@@ -1,5 +1,6 @@
 #include <cerrno>
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -182,6 +183,22 @@ string Logger::to_stdout()
 string Logger::disable()
 {
   return replace_logger(&the_null_logger);
+}
+
+string Logger::from_env(const char *varname)
+{
+  const char *value = std::getenv(varname);
+  if (!value) {
+    return replace_logger(&the_null_logger);
+  }
+
+  if (!std::strcmp("stdout", value)) {
+    return to_stdout();
+  }
+  if (!std::strcmp("stderr", value)) {
+    return to_stderr();
+  }
+  return to_file(value);
 }
 
 string plural(long quantity, const string &singular_form, const string &plural_form)

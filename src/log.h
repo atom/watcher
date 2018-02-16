@@ -19,6 +19,8 @@ public:
 
   static std::string disable();
 
+  static std::string from_env(const char *varname);
+
   Logger() = default;
 
   virtual ~Logger() = default;
