@@ -10,15 +10,12 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-ThreadStarter::ThreadStarter() : logging(new CommandPayload(CommandPayloadBuilder::log_disable().build()))
-{
-  //
-}
-
 vector<Message> ThreadStarter::get_messages()
 {
   vector<Message> results;
-  results.emplace_back(wrap_command(logging));
+  if (logging) {
+    results.emplace_back(wrap_command(logging));
+  }
   return results;
 }
 

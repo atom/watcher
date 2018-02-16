@@ -9,7 +9,7 @@
 class ThreadStarter
 {
 public:
-  ThreadStarter();
+  ThreadStarter() = default;
   ThreadStarter(const ThreadStarter &) = delete;
   ThreadStarter(ThreadStarter &&) = delete;
   ~ThreadStarter() = default;
