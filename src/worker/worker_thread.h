@@ -26,6 +26,8 @@ public:
 private:
   Result<> wake() override;
 
+  Result<> init() override;
+
   Result<> body() override;
 
   Result<CommandOutcome> handle_add_command(const CommandPayload *payload) override;

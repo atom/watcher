@@ -148,6 +148,9 @@ void Thread::start()
     in.enqueue_all(starter_messages.begin(), starter_messages.end());
   }
 
+  // Initialize any state necessary to call command handler methods.
+  Result<> ir = init();
+
   // Handle any commands that were enqueued while the thread was starting.
   Result<size_t> cr = handle_commands();
   if (cr.is_error()) {

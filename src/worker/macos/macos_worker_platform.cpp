@@ -63,7 +63,7 @@ public:
     return ok_result();
   }
 
-  Result<> listen() override
+  Result<> init() override
   {
     run_loop.set_from_get(CFRunLoopGetCurrent());
 
@@ -82,6 +82,11 @@ public:
     command_source.set_from_create(CFRunLoopSourceCreate(kCFAllocatorDefault, 1, &command_context));
     CFRunLoopAddSource(run_loop.get(), command_source.get(), kCFRunLoopDefaultMode);
 
+    return ok_result();
+  }
+
+  Result<> listen() override
+  {
     CFRunLoopRun();
     return ok_result();
   }

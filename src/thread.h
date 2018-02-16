@@ -68,13 +68,17 @@ public:
 
 protected:
   // Invoked on the newly created thread. Responsible for performing thread startup, consuming any `ThreadStart`
-  // initialization and transitioning to the `RUNNING` phase. Calls `Thread::body()` to perform subclass-defined
-  // work, which subclasses should override with their main message loop. Transitions the thread to the `STOPPED`
-  // phase just before existing.
+  // initialization and transitioning to the `RUNNING` phase. Calls `Thread::init()` to perform any one-time setup,
+  // handles any messages that were enqueued while the thread was starting, then calls `Thread::body()` to perform
+  // subclass-defined work, which subclasses should override with their main message loop. Transitions the thread to the
+  // `STOPPED` phase just before existing.
   void start();
 
-  // Override to perform the primary message loop of a subclass. Call `Thread::mark_stopping()` and to stop the thread
-  // in an orderly fashion.
+  // Override to perform thread state initialization that must occur before any messages are handled.
+  virtual Result<> init() { return ok_result(); }
+
+  // Override to perform the primary message loop of a subclass. Call `Thread::mark_stopping()` and return to stop the
+  // thread in an orderly fashion.
   virtual Result<> body() { return ok_result(); }
 
   // Override to hint that `Thread::body()` should wake from sleep and call `Thread::handle_commands()` to accept
