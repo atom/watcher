@@ -52,8 +52,6 @@ Hub::Hub() :
 {
   int err;
 
-  Logger::from_env("WATCHER_LOG_MAIN");
-
   report_errable(worker_thread);
   report_errable(polling_thread);
 

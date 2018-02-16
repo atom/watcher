@@ -188,7 +188,7 @@ string Logger::disable()
 string Logger::from_env(const char *varname)
 {
   const char *value = std::getenv(varname);
-  if (!value) {
+  if (value == nullptr) {
     return replace_logger(&the_null_logger);
   }
 

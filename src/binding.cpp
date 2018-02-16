@@ -186,6 +186,8 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
 
 void initialize(Local<Object> exports)
 {
+  Logger::from_env("WATCHER_LOG_MAIN");
+
   LOGGER << "Initializing module" << endl;
 
   Nan::Set(exports,
