@@ -30,6 +30,11 @@ Result<> WorkerThread::wake()
   return platform->wake();
 }
 
+Result<> WorkerThread::init()
+{
+  return platform->init();
+}
+
 Result<> WorkerThread::body()
 {
   return platform->listen();

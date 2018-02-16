@@ -20,6 +20,8 @@ public:
 
   virtual Result<> wake() = 0;
 
+  virtual Result<> init() { return ok_result(); }
+
   virtual Result<> listen() = 0;
 
   virtual Result<bool> handle_add_command(CommandID command,
