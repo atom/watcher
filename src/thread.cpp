@@ -150,6 +150,9 @@ void Thread::start()
 
   // Initialize any state necessary to call command handler methods.
   Result<> ir = init();
+  if (ir.is_error()) {
+    LOGGER << "Unable to initialize thread: " << ir << "." << endl;
+  }
 
   // Handle any commands that were enqueued while the thread was starting.
   Result<size_t> cr = handle_commands();
