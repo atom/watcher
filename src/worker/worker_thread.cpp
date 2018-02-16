@@ -32,6 +32,8 @@ Result<> WorkerThread::wake()
 
 Result<> WorkerThread::init()
 {
+  Logger::from_env("WATCHER_LOG_WORKER");
+
   return platform->init();
 }
 

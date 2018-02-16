@@ -33,6 +33,13 @@ PollingThread::PollingThread(uv_async_t *main_callback) :
   freeze();
 }
 
+Result<> PollingThread::init()
+{
+  Logger::from_env("WATCHER_LOG_POLLING");
+
+  return ok_result();
+}
+
 Result<> PollingThread::body()
 {
   while (true) {
