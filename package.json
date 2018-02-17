@@ -12,6 +12,7 @@
     "format:cpp": "script/c++-format",
     "format:js": "standard --fix",
     "build:debug": "node --harmony script/helper/gen-compilation-db.js rebuild --debug",
+    "build:atom": "electron-rebuild --version 1.7.11",
     "test": "mocha",
     "test:lldb": "lldb -- node --harmony ./node_modules/.bin/_mocha --require test/global.js --require mocha-stress --recursive",
     "test:gdb": "gdb --args node --harmony ./node_modules/.bin/_mocha --require test/global.js --require mocha-stress --recursive",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "chai": "4.0.2",
     "chai-as-promised": "7.1.1",
+    "electron-rebuild": "^1.7.3",
     "mocha": "3.4.2",
     "mocha-appveyor-reporter": "^0.4.0",
     "mocha-junit-reporter": "^1.13.0",

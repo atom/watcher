@@ -8,6 +8,7 @@
 #include "nan/all_callback.h"
 #include "nan/options.h"
 
+using std::endl;
 using std::move;
 using std::shared_ptr;
 using std::string;
@@ -185,6 +186,10 @@ void status(const Nan::FunctionCallbackInfo<Value> &info)
 
 void initialize(Local<Object> exports)
 {
+  Logger::from_env("WATCHER_LOG_MAIN");
+
+  LOGGER << "Initializing module" << endl;
+
   Nan::Set(exports,
     Nan::New<String>("configure").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked());

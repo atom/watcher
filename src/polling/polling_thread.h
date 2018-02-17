@@ -37,6 +37,9 @@ public:
 private:
   Result<> body() override;
 
+  // Perform pre-command initialization.
+  Result<> init() override;
+
   // Perform a single polling cycle.
   Result<> cycle();
 
