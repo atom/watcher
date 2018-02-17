@@ -192,10 +192,10 @@ string Logger::from_env(const char *varname)
     return replace_logger(&the_null_logger);
   }
 
-  if (!std::strcmp("stdout", value)) {
+  if (std::strcmp("stdout", value) != 0) {
     return to_stdout();
   }
-  if (!std::strcmp("stderr", value)) {
+  if (std::strcmp("stderr", value) != 0) {
     return to_stderr();
   }
   return to_file(value);

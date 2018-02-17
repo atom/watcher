@@ -8,11 +8,11 @@
 #include "nan/all_callback.h"
 #include "nan/options.h"
 
+using std::endl;
 using std::move;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
-using std::endl;
 using v8::Function;
 using v8::FunctionTemplate;
 using v8::Local;
