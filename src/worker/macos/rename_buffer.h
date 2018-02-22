@@ -60,11 +60,12 @@ public:
   // event batches.
   //
   // Return the collection of unpaired Keys that were created during this run.
-  std::shared_ptr<std::set<Key>> flush_unmatched(ChannelMessageBuffer &message_buffer);
+  std::shared_ptr<std::set<Key>> flush_unmatched(ChannelMessageBuffer &message_buffer, RecentFileCache &cache);
 
   // Enqueue creation and removal events for buffer entries that map to any of the listed keys. Return the collection
   // of unpaired Keys that were aged, but not processed, during this run.
   std::shared_ptr<std::set<Key>> flush_unmatched(ChannelMessageBuffer &message_buffer,
+    RecentFileCache &cache,
     const std::shared_ptr<std::set<Key>> &keys);
 
   size_t size() { return observed_by_inode.size(); }

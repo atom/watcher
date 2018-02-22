@@ -156,7 +156,8 @@ bool RenameBuffer::observe_absent(Event &event, BatchHandler & /*batch*/, const 
   return true;
 }
 
-shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer)
+shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer,
+  RecentFileCache &cache)
 {
   shared_ptr<set<Key>> all(new set<Key>);
 
@@ -164,10 +165,11 @@ shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageB
     all->insert(it.first);
   }
 
-  return flush_unmatched(message_buffer, all);
+  return flush_unmatched(message_buffer, cache, all);
 }
 
 shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageBuffer &message_buffer,
+  RecentFileCache &cache,
   const shared_ptr<set<Key>> &keys)
 {
   shared_ptr<set<Key>> aged(new set<Key>);
@@ -191,6 +193,7 @@ shared_ptr<set<RenameBuffer::Key>> RenameBuffer::flush_unmatched(ChannelMessageB
       message_buffer.created(string(event_path), entry->get_entry_kind());
     } else {
       message_buffer.deleted(string(event_path), entry->get_entry_kind());
+      cache.evict(event_path);
     }
     to_erase.push_back(key);
   }
