@@ -233,7 +233,7 @@ Result<> WatchRegistry::consume(MessageBuffer &messages, CookieJar &jar, RecentF
     result = read(inotify_fd, &buf, BUFSIZE);
 
     if (result <= 0) {
-      jar.flush_oldest_batch(messages);
+      jar.flush_oldest_batch(messages, cache);
 
       t.stop();
       LOGGER << plural(batch_count, "filesystem event batch", "filesystem event batches") << " containing "

@@ -10,6 +10,7 @@
 
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "../recent_file_cache.h"
 
 // Remember a path that was observed in an IN_MOVED_FROM inotify event until its corresponding IN_MOVED_TO event
 // is observed, or until it times out.
@@ -57,8 +58,8 @@ public:
   // exists.
   std::unique_ptr<Cookie> yoink(uint32_t cookie);
 
-  // Age off all Cookies within this batch by buffering them as deletion events.
-  void flush(MessageBuffer &messages);
+  // Age off all Cookies within this batch by buffering them as deletion events. Evict them from the cache.
+  void flush(MessageBuffer &messages, RecentFileCache &cache);
 
   bool empty() const { return from_paths.empty(); }
 
@@ -104,7 +105,7 @@ public:
 
   // Buffer deletion events for any Cookies that have not been matched within `max_batches` CookieBatches. Add a
   // fresh CookieBatch to capture the next cycle of rename events.
-  void flush_oldest_batch(MessageBuffer &messages);
+  void flush_oldest_batch(MessageBuffer &messages, RecentFileCache &cache);
 
   CookieJar(const CookieJar &other) = delete;
   CookieJar(CookieJar &&other) = delete;

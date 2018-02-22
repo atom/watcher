@@ -7,6 +7,7 @@
 
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "../recent_file_cache.h"
 #include "cookie_jar.h"
 
 using std::move;
@@ -60,10 +61,11 @@ unique_ptr<Cookie> CookieBatch::yoink(uint32_t cookie)
   return c;
 }
 
-void CookieBatch::flush(MessageBuffer &messages)
+void CookieBatch::flush(MessageBuffer &messages, RecentFileCache &cache)
 {
   for (auto &pair : from_paths) {
     Cookie dup(move(pair.second));
+    cache.evict(dup.get_from_path());
     messages.deleted(dup.get_channel_id(), dup.get_from_path(), dup.get_kind());
   }
   from_paths.clear();
@@ -123,11 +125,11 @@ void CookieJar::moved_to(MessageBuffer &messages,
   messages.renamed(channel_id, from->get_from_path(), move(new_path), kind);
 }
 
-void CookieJar::flush_oldest_batch(MessageBuffer &messages)
+void CookieJar::flush_oldest_batch(MessageBuffer &messages, RecentFileCache &cache)
 {
   if (batches.empty()) return;
 
-  batches.front().flush(messages);
+  batches.front().flush(messages, cache);
   batches.pop_front();
   batches.emplace_back();
 }
