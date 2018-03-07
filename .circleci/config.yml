@@ -4,9 +4,7 @@ defaults: &defaults
   macos:
     xcode: 8.3.3
   environment:
-  - NVM_DIR: "${HOME}/.nvm"
   - NODE_VERSION: "7.9.0"
-  - PATH: "${PATH}:/usr/local/opt/llvm/bin"
 
 jobs:
   build:
@@ -18,9 +16,11 @@ jobs:
         command: |
           brew update
           brew install nvm llvm
+          export PATH=${PATH}:/usr/local/opt/llvm/bin
     - run:
         name: install node.js with nvm
         command: |
+          export NVM_DIR=$(pwd)/.nvm
           mkdir -p ${NVM_DIR}
           echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
           nvm install ${NODE_VERSION}
@@ -29,12 +29,19 @@ jobs:
     - persist_to_workspace:
         root: .
         paths:
+        - .nvm
         - node_modules
         - build
 
   test:
     <<: *defaults
     steps:
+    - run:
+        name: prepare environment
+        command: |
+          echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
+          export PATH=${PATH}:/usr/local/opt/llvm/bin
+          export NVM_DIR=$(pwd)/.nvm
     - checkout
     - attach_workspace:
         at: .
@@ -47,6 +54,12 @@ jobs:
   lint:
     <<: *defaults
     steps:
+    - run:
+        name: prepare environment
+        command: |
+          echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
+          export PATH=${PATH}:/usr/local/opt/llvm/bin
+          export NVM_DIR=$(pwd)/.nvm
     - checkout
     - attach_workspace:
         at: .
