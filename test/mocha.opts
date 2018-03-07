@@ -2,3 +2,4 @@
 --require mocha-stress
 --recursive
 --harmony
+--exit
