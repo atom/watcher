@@ -1,32 +1,32 @@
 language: node_js
 node_js:
-- 7.4.0
+- 7.9.0
 sudo: false
 dist: trusty
-
 addons:
   apt:
     packages:
     - clang-3.9
     - build-essential
-
 git:
   depth: 10
-
-branches:
-  only:
-  - master
-
-script:
-- npm run ci:travis
-- npm run lint:js
-
 env:
   global:
   - CC=clang
   - CXX=clang++
   - npm_config_clang=1
-
+  - secure: rBW+3CfuKKohLPy525/A1W6YezUQ7jxTGauYaDcugwa/jFJciO8xHJUJSBtT0HXL0sxYPGKCeN9uDgp1emMVOON0yYqQu3ia6aWJjrIWh1WQoMgaj67almNzVm8fDEbL17dw57fw3q1hGPmUxeFToIvVYhcTAVMVNfGBjQs5X9gpxOuGvUdd8uDhv/avVTKW5RLXAL9mznfCWeCnsEwMunr4le0FdyJvk2xxd05aj2Xw9VlYzV82e1dazSlbz3eb/QgghG10uuRF2LZyO4k7X82NBBpWml9RM3NwE7NBW1Awqakdd9bBIxmknAZwGQjEEqw2D8DDO1A/qnERhkE9KNIkpOv9wRyZUIFHE3UWZiOIhDPJifGKe5JV8EzGJ6lwePvA7jJxlQJOYXtOKzt91H9gZLIucYtOlMJHc/vo2ZzmhYRblDcQUf1+FSaFyiaC+GH1bJt/MYWYwmCkQSyp8rfKjPGdoTdZ1uyploFWIBuMFmN/X5cniMlhXddmWu8e2HUffpJch7CeFNujwqYrf8TJr7v+YxlWkqUfWIiXlRS1qHy3JsK1D+h11a+FvPLyfVdRLlKtmVmI4kqkxuU6UsVFaKYOBO2XYrXdcaAp3ZX4wdEoQdcwoE+n/72P2vQJVSStLspaK+yr52Vg5wje5EuUbIyLJDzBIqi9H5gjwmM=
+branches:
+  only:
+  - master
+  - "/^greenkeeper/.*$/"
+before_install:
+- npm install -g npm@latest greenkeeper-lockfile@1
+before_script: greenkeeper-lockfile-update
+script:
+- npm run ci:travis
+- npm run lint:js
+after_script: greenkeeper-lockfile-upload
 notifications:
   email:
     on_success: never

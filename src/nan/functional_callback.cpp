@@ -3,9 +3,9 @@
 #include <nan.h>
 #include <v8.h>
 
+#include "async_callback.h"
 #include "functional_callback.h"
 
-using Nan::Callback;
 using Nan::FunctionCallback;
 using Nan::FunctionCallbackInfo;
 using std::unique_ptr;
@@ -35,7 +35,7 @@ void _fn_callback_helper(const FunctionCallbackInfo<Value> &info)
   (*fn)(info);
 }
 
-unique_ptr<Callback> fn_callback(FnCallback &fn)
+unique_ptr<AsyncCallback> fn_callback(const char *async_name, FnCallback &fn)
 {
   Nan::HandleScope scope;
 
@@ -44,13 +44,13 @@ unique_ptr<Callback> fn_callback(FnCallback &fn)
   Local<ArrayBuffer> fn_addr =
     ArrayBuffer::New(Isolate::GetCurrent(), static_cast<void *>(payload), sizeof(FnCallback *));
   Local<Function> wrapper = Nan::New<Function>(_fn_callback_helper, fn_addr);
-  return unique_ptr<Callback>(new Callback(wrapper));
+  return unique_ptr<AsyncCallback>(new AsyncCallback(async_name, wrapper));
 }
 
-unique_ptr<Callback> noop_callback()
+unique_ptr<AsyncCallback> noop_callback()
 {
   Nan::HandleScope scope;
 
   Local<Function> wrapper = Nan::New<Function>(_noop_callback_helper);
-  return unique_ptr<Callback>(new Callback(wrapper));
+  return unique_ptr<AsyncCallback>(new AsyncCallback("@atom/watcher:noop", wrapper));
 }

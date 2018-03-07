@@ -36,22 +36,22 @@
   "author": "GitHub",
   "license": "MIT",
   "devDependencies": {
-    "chai": "4.0.2",
+    "chai": "4.1.2",
     "chai-as-promised": "7.1.1",
-    "electron-rebuild": "^1.7.3",
-    "mocha": "3.4.2",
-    "mocha-appveyor-reporter": "^0.4.0",
-    "mocha-junit-reporter": "^1.13.0",
-    "mocha-stress": "^1.0.0",
-    "shell-quote": "^1.6.1",
-    "standard": "10.0.2",
-    "temp": "^0.8.3",
-    "test-until": "^1.1.1"
+    "electron-rebuild": "1.7.3",
+    "mocha": "5.0.4",
+    "mocha-appveyor-reporter": "0.4.0",
+    "mocha-junit-reporter": "1.17.0",
+    "mocha-stress": "1.0.0",
+    "shell-quote": "1.6.1",
+    "standard": "11.0.0",
+    "temp": "0.8.3",
+    "test-until": "1.1.1"
   },
   "dependencies": {
     "event-kit": "^2.4.0",
-    "fs-extra": "^4.0.0",
-    "nan": "2.6.2"
+    "fs-extra": "^5.0.0",
+    "nan": "2.9.2"
   },
   "standard": {
     "globals": [

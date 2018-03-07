@@ -12,13 +12,13 @@
 #include "log.h"
 #include "message.h"
 #include "nan/all_callback.h"
+#include "nan/async_callback.h"
 #include "nan/functional_callback.h"
 #include "polling/polling_thread.h"
 #include "result.h"
 #include "status.h"
 #include "worker/worker_thread.h"
 
-using Nan::Callback;
 using std::endl;
 using std::map;
 using std::move;
@@ -67,8 +67,8 @@ Hub::Hub() :
 Result<> Hub::watch(string &&root,
   bool poll,
   bool recursive,
-  unique_ptr<Callback> ack_callback,
-  unique_ptr<Callback> event_callback)
+  unique_ptr<AsyncCallback> ack_callback,
+  unique_ptr<AsyncCallback> event_callback)
 {
   if (!check_async(ack_callback)) return ok_result();
 
@@ -86,7 +86,7 @@ Result<> Hub::watch(string &&root,
     worker_thread, CommandPayloadBuilder::add(channel_id, move(root), recursive, 1), move(ack_callback));
 }
 
-Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
+Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<AsyncCallback> &&ack_callback)
 {
   if (!check_async(ack_callback)) return ok_result();
 
@@ -94,8 +94,11 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
   shared_ptr<AllCallback> all = AllCallback::create(move(ack_callback));
 
   Result<> r = ok_result();
-  r &= send_command(worker_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback());
-  r &= send_command(polling_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback());
+  r &= send_command(
+    worker_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback("@atom/watcher:hub.unwatch.worker"));
+  r &= send_command(polling_thread,
+    CommandPayloadBuilder::remove(channel_id),
+    all->create_callback("@atom/worker:hub.unwatch.polling"));
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {
@@ -106,7 +109,7 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<Callback> &&ack_callback)
   return r;
 }
 
-Result<> Hub::status(std::unique_ptr<Nan::Callback> &&status_callback)
+Result<> Hub::status(std::unique_ptr<AsyncCallback> &&status_callback)
 {
   if (!check_async(status_callback)) return ok_result();
 
@@ -133,7 +136,7 @@ void Hub::handle_events()
   handle_events_from(polling_thread);
 }
 
-Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<Nan::Callback> callback)
+Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std::unique_ptr<AsyncCallback> callback)
 {
   CommandID command_id = next_command_id;
   builder.set_id(command_id);
@@ -148,14 +151,14 @@ Result<> Hub::send_command(Thread &thread, CommandPayloadBuilder &&builder, std:
   return ok_result();
 }
 
-bool Hub::check_async(const std::unique_ptr<Nan::Callback> &callback)
+bool Hub::check_async(const std::unique_ptr<AsyncCallback> &callback)
 {
   if (is_healthy()) return true;
 
   Nan::HandleScope scope;
   Local<Value> err = Nan::Error(get_message().c_str());
   Local<Value> argv[] = {err};
-  callback->Call(1, argv);
+  callback->SyncCall(1, argv);
   return false;
 }
 
@@ -185,7 +188,7 @@ void Hub::handle_events_from(Thread &thread)
         continue;
       }
 
-      unique_ptr<Callback> callback = move(maybe_callback->second);
+      unique_ptr<AsyncCallback> callback = move(maybe_callback->second);
       pending_callbacks.erase(maybe_callback);
 
       ChannelID channel_id = ack->get_channel_id();
@@ -299,7 +302,7 @@ void Hub::handle_events_from(Thread &thread)
       LOGGER << "Ignoring unexpected filesystem event channel " << channel_id << "." << endl;
       continue;
     }
-    shared_ptr<Callback> callback = maybe_callback->second;
+    shared_ptr<AsyncCallback> callback = maybe_callback->second;
 
     LOGGER << "Dispatching " << js_events.size() << " event(s) on channel " << channel_id << " to the node callback."
            << endl;
@@ -325,7 +328,7 @@ void Hub::handle_events_from(Thread &thread)
       LOGGER << "Error reported for unexpected channel " << channel_id << "." << endl;
       continue;
     }
-    shared_ptr<Callback> callback = maybe_callback->second;
+    shared_ptr<AsyncCallback> callback = maybe_callback->second;
 
     LOGGER << "Report an error on channel " << channel_id << " to the node callback." << endl;
 
