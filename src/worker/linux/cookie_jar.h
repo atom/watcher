@@ -23,8 +23,11 @@ public:
 
   const ChannelID &get_channel_id() const { return channel_id; }
 
+  // Access the absolute path from this event.
+  const std::string &get_from_path() { return from_path; }
+
   // Take possession of the absolute path from this event.
-  std::string get_from_path() { return std::string(std::move(from_path)); }
+  std::string move_from_path() { return std::string(std::move(from_path)); }
 
   const EntryKind &get_kind() { return kind; }
 
@@ -74,8 +77,8 @@ private:
 
 // Associate IN_MOVED_FROM and IN_MOVED_TO events from inotify received within a configurable number of consecutive
 // notification cycles. The CookieJar contains a fixed number of CookieBatches that contain unmatched IN_MOVED_FROM
-// events collected within a single notification cycle. As more notifications arrive, events that remain unmatched
-// are aged off and emitted as deletion events.
+// events collected within a single notification cycle. As more notifications arrive or read() calls time out, events
+// that remain unmatched are aged off and emitted as deletion events.
 class CookieJar
 {
 public:

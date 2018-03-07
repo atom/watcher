@@ -41,7 +41,7 @@ void CookieBatch::moved_from(MessageBuffer &messages,
     // Duplicate IN_MOVED_FROM cookie.
     // Resolve the old one as a deletion.
     Cookie dup(move(existing->second));
-    messages.deleted(dup.get_channel_id(), dup.get_from_path(), dup.get_kind());
+    messages.deleted(dup.get_channel_id(), dup.move_from_path(), dup.get_kind());
     from_paths.erase(existing);
   }
 
@@ -66,7 +66,7 @@ void CookieBatch::flush(MessageBuffer &messages, RecentFileCache &cache)
   for (auto &pair : from_paths) {
     Cookie dup(move(pair.second));
     cache.evict(dup.get_from_path());
-    messages.deleted(dup.get_channel_id(), dup.get_from_path(), dup.get_kind());
+    messages.deleted(dup.get_channel_id(), dup.move_from_path(), dup.get_kind());
   }
   from_paths.clear();
 }
@@ -100,7 +100,7 @@ void CookieJar::moved_to(MessageBuffer &messages,
       if (from) {
         // Multiple IN_MOVED_FROM results.
         // Report deletions for all but the most recent.
-        messages.deleted(from->get_channel_id(), from->get_from_path(), from->get_kind());
+        messages.deleted(from->get_channel_id(), from->move_from_path(), from->get_kind());
       }
 
       from = move(found);
@@ -117,12 +117,12 @@ void CookieJar::moved_to(MessageBuffer &messages,
   if (from->get_channel_id() != channel_id || kinds_are_different(from->get_kind(), kind)) {
     // Existing IN_MOVED_FROM with this cookie does not match.
     // Resolve it as a deletion/creation pair.
-    messages.deleted(from->get_channel_id(), from->get_from_path(), from->get_kind());
+    messages.deleted(from->get_channel_id(), from->move_from_path(), from->get_kind());
     messages.created(channel_id, move(new_path), kind);
     return;
   }
 
-  messages.renamed(channel_id, from->get_from_path(), move(new_path), kind);
+  messages.renamed(channel_id, from->move_from_path(), move(new_path), kind);
 }
 
 void CookieJar::flush_oldest_batch(MessageBuffer &messages, RecentFileCache &cache)
