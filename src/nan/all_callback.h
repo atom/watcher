@@ -9,20 +9,21 @@
 #include <v8.h>
 
 #include "../result.h"
+#include "async_callback.h"
 #include "functional_callback.h"
 
 class AllCallback
 {
 public:
-  static std::shared_ptr<AllCallback> create(std::unique_ptr<Nan::Callback> &&done);
+  static std::shared_ptr<AllCallback> create(std::unique_ptr<AsyncCallback> &&done);
 
   ~AllCallback() = default;
 
-  std::unique_ptr<Nan::Callback> create_callback();
+  std::unique_ptr<AsyncCallback> create_callback(const char *async_name);
 
   void set_result(Result<> &&r);
 
-  void fire_if_empty();
+  void fire_if_empty(bool sync);
 
   AllCallback(const AllCallback &) = delete;
   AllCallback(AllCallback &&) = delete;
@@ -30,11 +31,11 @@ public:
   AllCallback &operator=(AllCallback &&) = delete;
 
 private:
-  explicit AllCallback(std::unique_ptr<Nan::Callback> &&done);
+  explicit AllCallback(std::unique_ptr<AsyncCallback> &&done);
 
   void callback_complete(size_t callback_index, const Nan::FunctionCallbackInfo<v8::Value> &info);
 
-  std::unique_ptr<Nan::Callback> done;
+  std::unique_ptr<AsyncCallback> done;
   bool fired;
   size_t total;
   size_t remaining;

@@ -6,6 +6,7 @@
 
 #include "hub.h"
 #include "nan/all_callback.h"
+#include "nan/async_callback.h"
 #include "nan/options.h"
 
 using std::endl;
@@ -65,7 +66,7 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   if (!get_uint_option(options, "pollingInterval", polling_interval)) return;
   if (!get_uint_option(options, "pollingThrottle", polling_throttle)) return;
 
-  unique_ptr<Nan::Callback> callback(new Nan::Callback(info[1].As<Function>()));
+  unique_ptr<AsyncCallback> callback(new AsyncCallback("@atom/watcher:configure", info[1].As<Function>()));
   shared_ptr<AllCallback> all = AllCallback::create(move(callback));
 
   Result<> r = ok_result();
@@ -81,39 +82,48 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   if (worker_log_disable) {
-    r &= Hub::get().disable_worker_log(all->create_callback());
+    r &= Hub::get().disable_worker_log(all->create_callback("@atom/watcher:binding.configure.disable_worker_log"));
   } else if (!worker_log_file.empty()) {
-    r &= Hub::get().use_worker_log_file(move(worker_log_file), all->create_callback());
+    r &= Hub::get().use_worker_log_file(
+      move(worker_log_file), all->create_callback("@atom/watcher:binding.configure.use_worker_log_file"));
   } else if (worker_log_stderr) {
-    r &= Hub::get().use_worker_log_stderr(all->create_callback());
+    r &=
+      Hub::get().use_worker_log_stderr(all->create_callback("@atom/watcher:binding.configure.use_worker_log_stderr"));
   } else if (worker_log_stdout) {
-    r &= Hub::get().use_worker_log_stdout(all->create_callback());
+    r &=
+      Hub::get().use_worker_log_stdout(all->create_callback("@atom/watcher:binding.configure.use_worker_log_stdout"));
   }
 
   if (worker_cache_size > 0) {
-    r &= Hub::get().worker_cache_size(worker_cache_size, all->create_callback());
+    r &= Hub::get().worker_cache_size(
+      worker_cache_size, all->create_callback("@atom/watcher:binding.configure.worker_cache_size"));
   }
 
   if (polling_log_disable) {
-    r &= Hub::get().disable_polling_log(all->create_callback());
+    r &= Hub::get().disable_polling_log(all->create_callback("@atom/watcher:binding.configure.disable_polling_log"));
   } else if (!polling_log_file.empty()) {
-    r &= Hub::get().use_polling_log_file(move(polling_log_file), all->create_callback());
+    r &= Hub::get().use_polling_log_file(
+      move(polling_log_file), all->create_callback("@atom/watcher:binding.configure.use_polling_log_file"));
   } else if (polling_log_stderr) {
-    r &= Hub::get().use_polling_log_stderr(all->create_callback());
+    r &=
+      Hub::get().use_polling_log_stderr(all->create_callback("@atom/watcher:binding.configure.use_polling_log_stderr"));
   } else if (polling_log_stdout) {
-    r &= Hub::get().use_polling_log_stdout(all->create_callback());
+    r &=
+      Hub::get().use_polling_log_stdout(all->create_callback("@atom/watcher:binding.configure.use_polling_log_stdout"));
   }
 
   if (polling_interval > 0) {
-    r &= Hub::get().set_polling_interval(polling_interval, all->create_callback());
+    r &= Hub::get().set_polling_interval(
+      polling_interval, all->create_callback("@atom/watcher:binding.configure.set_polling_interval"));
   }
 
   if (polling_throttle > 0) {
-    r &= Hub::get().set_polling_throttle(polling_throttle, all->create_callback());
+    r &= Hub::get().set_polling_throttle(
+      polling_throttle, all->create_callback("@atom/watcher:binding.configure.set_polling_throttle"));
   }
 
   all->set_result(move(r));
-  all->fire_if_empty();
+  all->fire_if_empty(true);
 }
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
@@ -147,8 +157,9 @@ void watch(const Nan::FunctionCallbackInfo<Value> &info)
   if (!get_bool_option(options, "poll", poll)) return;
   if (!get_bool_option(options, "recursive", recursive)) return;
 
-  unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[2].As<Function>()));
-  unique_ptr<Nan::Callback> event_callback(new Nan::Callback(info[3].As<Function>()));
+  unique_ptr<AsyncCallback> ack_callback(new AsyncCallback("@atom/watcher:binding.watch.ack", info[2].As<Function>()));
+  unique_ptr<AsyncCallback> event_callback(
+    new AsyncCallback("@atom/watcher:binding.watch.event", info[3].As<Function>()));
 
   Result<> r = Hub::get().watch(move(root_str), poll, recursive, move(ack_callback), move(event_callback));
   if (r.is_error()) {
@@ -170,7 +181,7 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
   }
   auto channel_id = static_cast<ChannelID>(maybe_channel_id.FromJust());
 
-  unique_ptr<Nan::Callback> ack_callback(new Nan::Callback(info[1].As<Function>()));
+  unique_ptr<AsyncCallback> ack_callback(new AsyncCallback("@atom/watcher:binding.unwatch", info[1].As<Function>()));
 
   Result<> r = Hub::get().unwatch(channel_id, move(ack_callback));
   if (r.is_error()) {
@@ -180,7 +191,7 @@ void unwatch(const Nan::FunctionCallbackInfo<Value> &info)
 
 void status(const Nan::FunctionCallbackInfo<Value> &info)
 {
-  unique_ptr<Nan::Callback> callback(new Nan::Callback(info[0].As<Function>()));
+  unique_ptr<AsyncCallback> callback(new AsyncCallback("@atom/watcher:binding.status", info[0].As<Function>()));
   Hub::get().status(move(callback));
 }
 

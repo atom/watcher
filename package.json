@@ -38,15 +38,15 @@
   "devDependencies": {
     "chai": "4.1.2",
     "chai-as-promised": "7.1.1",
-    "electron-rebuild": "^1.7.3",
-    "mocha": "5.0.3",
-    "mocha-appveyor-reporter": "^0.4.0",
-    "mocha-junit-reporter": "^1.13.0",
-    "mocha-stress": "^1.0.0",
-    "shell-quote": "^1.6.1",
+    "electron-rebuild": "1.7.3",
+    "mocha": "5.0.4",
+    "mocha-appveyor-reporter": "0.4.0",
+    "mocha-junit-reporter": "1.17.0",
+    "mocha-stress": "1.0.0",
+    "shell-quote": "1.6.1",
     "standard": "11.0.0",
-    "temp": "^0.8.3",
-    "test-until": "^1.1.1"
+    "temp": "0.8.3",
+    "test-until": "1.1.1"
   },
   "dependencies": {
     "event-kit": "^2.4.0",

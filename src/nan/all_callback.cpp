@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "all_callback.h"
+#include "async_callback.h"
 #include "functional_callback.h"
 
-using Nan::Callback;
 using Nan::FunctionCallback;
 using Nan::FunctionCallbackInfo;
 using Nan::HandleScope;
@@ -24,7 +24,7 @@ using v8::Value;
 
 list<shared_ptr<AllCallback>> AllCallback::retained;
 
-shared_ptr<AllCallback> AllCallback::create(unique_ptr<Callback> &&done)
+shared_ptr<AllCallback> AllCallback::create(unique_ptr<AsyncCallback> &&done)
 {
   shared_ptr<AllCallback> created(new AllCallback(move(done)));
   retained.emplace_front(created);
@@ -32,7 +32,7 @@ shared_ptr<AllCallback> AllCallback::create(unique_ptr<Callback> &&done)
   return retained.front();
 }
 
-AllCallback::AllCallback(unique_ptr<Callback> &&done) :
+AllCallback::AllCallback(unique_ptr<AsyncCallback> &&done) :
   done(move(done)),
   fired{false},
   total{0},
@@ -44,7 +44,7 @@ AllCallback::AllCallback(unique_ptr<Callback> &&done) :
   //
 }
 
-unique_ptr<Callback> AllCallback::create_callback()
+unique_ptr<AsyncCallback> AllCallback::create_callback(const char *async_name)
 {
   size_t index = total;
   functions.emplace_front(bind(&AllCallback::callback_complete, this, index, _1));
@@ -52,7 +52,7 @@ unique_ptr<Callback> AllCallback::create_callback()
   total++;
   remaining++;
 
-  return fn_callback(functions.front());
+  return fn_callback(async_name, functions.front());
 }
 
 void AllCallback::set_result(Result<> &&r)
@@ -67,7 +67,7 @@ void AllCallback::set_result(Result<> &&r)
   }
 }
 
-void AllCallback::fire_if_empty()
+void AllCallback::fire_if_empty(bool sync)
 {
   if (remaining > 0) return;
   if (fired) return;
@@ -78,7 +78,11 @@ void AllCallback::fire_if_empty()
   Local<Array> l_results = Nan::New(results);
 
   Local<Value> argv[] = {l_error, l_results};
-  done->Call(2, argv);
+  if (sync) {
+    done->SyncCall(2, argv);
+  } else {
+    done->Call(2, argv);
+  }
 
   retained.erase(me);
 }
@@ -103,5 +107,5 @@ void AllCallback::callback_complete(size_t callback_index, const FunctionCallbac
 
   remaining--;
 
-  fire_if_empty();
+  fire_if_empty(false);
 }
