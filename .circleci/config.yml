@@ -23,6 +23,7 @@ jobs:
           export NVM_DIR=$(pwd)/.nvm
           mkdir -p ${NVM_DIR}
           echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
+          source /usr/local/opt/nvm/nvm.sh
           nvm install ${NODE_VERSION}
           nvm alias default ${NODE_VERSION}
     - run: npm install
