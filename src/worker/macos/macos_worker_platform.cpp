@@ -220,7 +220,7 @@ public:
     handler.handle_deferred();
     cache.apply();
 
-    shared_ptr<set<RenameBuffer::Key>> out = rename_buffer.flush_unmatched(message_buffer);
+    shared_ptr<set<RenameBuffer::Key>> out = rename_buffer.flush_unmatched(message_buffer, cache);
     if (!out->empty()) {
       LOGGER << "Scheduling expiration of " << out->size() << " unpaired rename entries on channel " << channel_id
              << "." << endl;
@@ -271,7 +271,7 @@ public:
     MessageBuffer buffer;
     ChannelMessageBuffer message_buffer(buffer, channel_id);
 
-    shared_ptr<set<RenameBuffer::Key>> next = rename_buffer.flush_unmatched(message_buffer, keys);
+    shared_ptr<set<RenameBuffer::Key>> next = rename_buffer.flush_unmatched(message_buffer, cache, keys);
     assert(next->empty());
     keys.reset();
 

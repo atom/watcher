@@ -35,26 +35,38 @@ const {EventMatcher} = require('../matcher');
     it('when a file is renamed from inside of the watch root out', async function () {
       const outsideFile = fixture.fixturePath('file.txt')
       const insideFile = fixture.watchPath('file.txt')
-      const flagFile = fixture.watchPath('flag.txt')
+
+      await fs.writeFile(insideFile, 'contents')
+      await until('the creation event arrives', matcher.allEvents(
+        {action: 'created', kind: 'file', path: insideFile}
+      ))
+
+      await fs.rename(insideFile, outsideFile)
+      await until('the deletion event arrives', matcher.allEvents(
+        {action: 'deleted', kind: 'file', path: insideFile}
+      ))
+    })
+
+    it('when a file is renamed out of, then back into, the watch root', async function () {
+      const outsideFile = fixture.fixturePath('file.txt')
+      const insideFile = fixture.watchPath('file.txt')
 
       await fs.writeFile(insideFile, 'contents')
 
       await until('the creation event arrives', matcher.allEvents(
         {action: 'created', kind: 'file', path: insideFile}
       ))
+      matcher.reset()
 
       await fs.rename(insideFile, outsideFile)
-      await fs.writeFile(flagFile, 'flag 1')
-
-      await until('the flag file event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: flagFile}
-      ))
-
-      // Trigger another batch of events on Linux
-      await fs.writeFile(flagFile, 'flag 2')
-
       await until('the deletion event arrives', matcher.allEvents(
         {action: 'deleted', kind: 'file', path: insideFile}
+      ))
+      matcher.reset()
+
+      await fs.rename(outsideFile, insideFile)
+      await until('the re-creation event arrives', matcher.allEvents(
+        {action: 'created', kind: 'file', path: insideFile}
       ))
     })
   })

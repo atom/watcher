@@ -24,6 +24,9 @@ using std::vector;
 
 const size_t DEFAULT_CACHE_SIZE = 4096;
 
+// In milliseconds
+const int RENAME_TIMEOUT = 500;
+
 // Platform-specific worker implementation for Linux systems.
 class LinuxWorkerPlatform : public WorkerPlatform
 {
@@ -50,13 +53,24 @@ public:
     to_poll[1].revents = 0;
 
     while (true) {
-      int result = poll(to_poll, 2, -1);
+      int result = poll(to_poll, 2, RENAME_TIMEOUT);
 
       if (result < 0) {
         return errno_result<>("Unable to poll");
       }
+
       if (result == 0) {
-        return error_result("Unexpected poll() timeout");
+        // Poll timeout. Cycle the CookieJar.
+        MessageBuffer messages;
+        jar.flush_oldest_batch(messages, cache);
+
+        if (!messages.empty()) {
+          LOGGER << "Flushing " << plural(messages.size(), "unpaired rename") << "." << endl;
+          Result<> er = emit_all(messages.begin(), messages.end());
+          if (er.is_error()) return er;
+        }
+
+        continue;
       }
 
       if ((to_poll[0].revents & (POLLIN | POLLERR)) != 0u) {

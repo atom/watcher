@@ -10,6 +10,7 @@
 
 #include "../../message.h"
 #include "../../message_buffer.h"
+#include "../recent_file_cache.h"
 
 // Remember a path that was observed in an IN_MOVED_FROM inotify event until its corresponding IN_MOVED_TO event
 // is observed, or until it times out.
@@ -22,8 +23,11 @@ public:
 
   const ChannelID &get_channel_id() const { return channel_id; }
 
+  // Access the absolute path from this event.
+  const std::string &get_from_path() { return from_path; }
+
   // Take possession of the absolute path from this event.
-  std::string get_from_path() { return std::string(std::move(from_path)); }
+  std::string move_from_path() { return std::string(std::move(from_path)); }
 
   const EntryKind &get_kind() { return kind; }
 
@@ -57,8 +61,8 @@ public:
   // exists.
   std::unique_ptr<Cookie> yoink(uint32_t cookie);
 
-  // Age off all Cookies within this batch by buffering them as deletion events.
-  void flush(MessageBuffer &messages);
+  // Age off all Cookies within this batch by buffering them as deletion events. Evict them from the cache.
+  void flush(MessageBuffer &messages, RecentFileCache &cache);
 
   bool empty() const { return from_paths.empty(); }
 
@@ -73,8 +77,8 @@ private:
 
 // Associate IN_MOVED_FROM and IN_MOVED_TO events from inotify received within a configurable number of consecutive
 // notification cycles. The CookieJar contains a fixed number of CookieBatches that contain unmatched IN_MOVED_FROM
-// events collected within a single notification cycle. As more notifications arrive, events that remain unmatched
-// are aged off and emitted as deletion events.
+// events collected within a single notification cycle. As more notifications arrive or read() calls time out, events
+// that remain unmatched are aged off and emitted as deletion events.
 class CookieJar
 {
 public:
@@ -104,7 +108,7 @@ public:
 
   // Buffer deletion events for any Cookies that have not been matched within `max_batches` CookieBatches. Add a
   // fresh CookieBatch to capture the next cycle of rename events.
-  void flush_oldest_batch(MessageBuffer &messages);
+  void flush_oldest_batch(MessageBuffer &messages, RecentFileCache &cache);
 
   CookieJar(const CookieJar &other) = delete;
   CookieJar(CookieJar &&other) = delete;
