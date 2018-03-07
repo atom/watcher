@@ -39,6 +39,10 @@ jobs:
     - attach_workspace:
         at: .
     - run: npm run ci:circle
+    - store_test_results:
+        path: test-results
+    - store_artifacts:
+        path: test-results
 
   lint:
     <<: *defaults
