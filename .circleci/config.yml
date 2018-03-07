@@ -2,7 +2,7 @@ version: 2
 
 defaults: &defaults
   macos:
-    version: 7.3
+    xcode: 7.3
   environment:
   - NVM_DIR: "${HOME}/.nvm"
   - NODE_VERSION: "7.9.0"
