@@ -1,14 +1,11 @@
 version: 2
 
-defaults: &defaults
-  macos:
-    xcode: 8.3.3
-  environment:
-  - NODE_VERSION: "7.9.0"
-
 jobs:
   build:
-    <<: *defaults
+    macos:
+      xcode: 8.3.3
+    environment:
+    - NODE_VERSION: "7.9.0"
     steps:
     - checkout
     - run:
@@ -27,43 +24,11 @@ jobs:
           nvm install ${NODE_VERSION}
           nvm alias default ${NODE_VERSION}
     - run: npm install
-    - persist_to_workspace:
-        root: .
-        paths:
-        - .nvm
-        - node_modules
-        - build
-
-  test:
-    <<: *defaults
-    steps:
-    - run:
-        name: prepare environment
-        command: |
-          echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
-          export PATH=${PATH}:/usr/local/opt/llvm/bin
-          export NVM_DIR=$(pwd)/.nvm
-    - checkout
-    - attach_workspace:
-        at: .
     - run: npm run ci:circle
     - store_test_results:
         path: test-results
     - store_artifacts:
         path: test-results
-
-  lint:
-    <<: *defaults
-    steps:
-    - run:
-        name: prepare environment
-        command: |
-          echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
-          export PATH=${PATH}:/usr/local/opt/llvm/bin
-          export NVM_DIR=$(pwd)/.nvm
-    - checkout
-    - attach_workspace:
-        at: .
     - run:
         name: lint js
         command: npm run lint:js
@@ -73,15 +38,3 @@ jobs:
     - run:
         name: lint c++
         command: npm run lint:cpp
-
-workflows:
-  version: 2
-  everything:
-    jobs:
-    - build
-    - test:
-        requires:
-        - build
-    - lint:
-        requires:
-        - build
