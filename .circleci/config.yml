@@ -13,7 +13,7 @@ jobs:
         command: |
           brew update
           brew install llvm
-          export PATH=${PATH}:/usr/local/opt/llvm/bin
+          echo "export PATH=${PATH}:/usr/local/opt/llvm/bin" >> $BASH_ENV
     - run:
         name: install node.js with nvm
         command: |
