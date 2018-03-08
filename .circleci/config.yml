@@ -22,6 +22,7 @@ jobs:
           [ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"
           nvm install ${NODE_VERSION}
           nvm alias default ${NODE_VERSION}
+          echo "[ -s \"${NVM_DIR}/nvm.sh\" ] && . \"${NVM_DIR}/nvm.sh\"" >> $BASH_ENV
     - run: npm install
     - run: npm run ci:circle
     - store_test_results:
