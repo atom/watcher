@@ -9,18 +9,17 @@ jobs:
     steps:
     - checkout
     - run:
-        name: install homebrew dependencies
+        name: install llvm
         command: |
           brew update
-          brew install nvm llvm
+          brew install llvm
           export PATH=${PATH}:/usr/local/opt/llvm/bin
     - run:
         name: install node.js with nvm
         command: |
-          export NVM_DIR=$(pwd)/.nvm
-          mkdir -p ${NVM_DIR}
-          echo "source /usr/local/opt/nvm/nvm.sh" >> ~/.bashrc
-          source /usr/local/opt/nvm/nvm.sh
+          export NVM_DIR=${HOME}/.nvm
+          curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+          [ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"
           nvm install ${NODE_VERSION}
           nvm alias default ${NODE_VERSION}
     - run: npm install
