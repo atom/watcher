@@ -29,16 +29,16 @@ using std::endl;
 using std::move;
 using std::ostream;
 using std::ostringstream;
-using std::placeholders::_1;
-using std::placeholders::_2;
-using std::placeholders::_3;
-using std::placeholders::_4;
-using std::placeholders::_5;
 using std::set;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
+using std::placeholders::_4;
+using std::placeholders::_5;
 
 const size_t DEFAULT_CACHE_SIZE = 4096;
 

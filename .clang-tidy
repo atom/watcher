@@ -16,6 +16,7 @@ readability-*,\
 -cppcoreguidelines-pro-type-union-access,\
 -cppcoreguidelines-pro-type-reinterpret-cast,\
 -cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+-cppcoreguidelines-owning-memory,\
 -modernize-make-unique,\
 -modernize-make-shared,"
 FormatStyle: file

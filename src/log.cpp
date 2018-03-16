@@ -12,7 +12,6 @@
 #include "log.h"
 
 using std::cerr;
-using std::chrono::steady_clock;
 using std::cout;
 using std::dec;
 using std::endl;
@@ -23,6 +22,7 @@ using std::setw;
 using std::strerror;
 using std::string;
 using std::to_string;
+using std::chrono::steady_clock;
 
 class NullLogger : public Logger
 {
