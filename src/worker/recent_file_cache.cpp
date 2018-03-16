@@ -16,9 +16,6 @@
 #include "../helper/libuv.h"
 #include "../log.h"
 
-using std::chrono::minutes;
-using std::chrono::steady_clock;
-using std::chrono::time_point;
 using std::endl;
 using std::move;
 using std::ostream;
@@ -29,6 +26,9 @@ using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
 using std::vector;
+using std::chrono::minutes;
+using std::chrono::steady_clock;
+using std::chrono::time_point;
 
 shared_ptr<StatResult> StatResult::at(string &&path, bool file_hint, bool directory_hint, bool symlink_hint)
 {
