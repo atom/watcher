@@ -4,7 +4,8 @@
   "description": "Atom filesystem watcher",
   "main": "lib/index.js",
   "scripts": {
-    "install": "node --harmony script/helper/gen-compilation-db.js rebuild",
+    "install": "node-pre-gyp install --fallback-to-build",
+    "publish": "node-pre-gyp package && node-pre-gyp publish",
     "lint": "npm run lint:js && npm run lint:cpp",
     "lint:js": "standard",
     "lint:cpp": "script/c++-lint",
@@ -36,9 +37,13 @@
   "author": "GitHub",
   "license": "MIT",
   "devDependencies": {
+    "aws-sdk": "2.220.1",
     "chai": "4.1.2",
     "chai-as-promised": "7.1.1",
     "electron-rebuild": "1.7.3",
+    "eslint-plugin-import": "2.8.0",
+    "eslint-plugin-promise": "3.6.0",
+    "eslint-plugin-react": "7.6.1",
     "mocha": "5.0.5",
     "mocha-appveyor-reporter": "0.4.0",
     "mocha-junit-reporter": "1.17.0",
@@ -48,10 +53,19 @@
     "temp": "0.8.3",
     "test-until": "1.1.1"
   },
+  "bundledDependencies": [
+    "node-pre-gyp"
+  ],
   "dependencies": {
     "event-kit": "^2.4.0",
     "fs-extra": "^5.0.0",
-    "nan": "2.10.0"
+    "nan": "2.10.0",
+    "node-pre-gyp": "0.6.39"
+  },
+  "binary": {
+    "module_name": "watcher",
+    "module_path": "./build/{configuration}/",
+    "host": "https://atom-watcher-test-bucket.s3.amazonaws.com"
   },
   "standard": {
     "globals": [
