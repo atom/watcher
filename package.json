@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
-    "publish": "node-pre-gyp package && node-pre-gyp publish",
+    "publish": "node-pre-gyp package && node-pre-gyp-github publish --release",
     "lint": "npm run lint:js && npm run lint:cpp",
     "lint:js": "standard",
     "lint:cpp": "script/c++-lint",
@@ -48,6 +48,7 @@
     "mocha-appveyor-reporter": "0.4.0",
     "mocha-junit-reporter": "1.17.0",
     "mocha-stress": "1.0.0",
+    "node-pre-gyp-github": "1.3.1",
     "shell-quote": "1.6.1",
     "standard": "11.0.1",
     "temp": "0.8.3",
@@ -65,7 +66,8 @@
   "binary": {
     "module_name": "watcher",
     "module_path": "./build/{configuration}/",
-    "host": "https://atom-watcher-test-bucket.s3.amazonaws.com"
+    "host": "https://github.com/atom/watcher/releases/download/",
+    "remote_path": "{version}"
   },
   "standard": {
     "globals": [
