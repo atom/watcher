@@ -38,3 +38,6 @@ jobs:
     - run:
         name: lint c++
         command: npm run lint:cpp
+    - run:
+        name: deploy on tag
+        command: git describe --tags --exact >/dev/null 2>&1 && npm run publish
