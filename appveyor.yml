@@ -7,7 +7,7 @@ cache:
 environment:
   nodejs_version: "7.4.0"
   NODE_PRE_GYP_GITHUB_TOKEN:
-    secure: izXdqKc3Q97YCK/iHmkf5704WRhBwZXVBn2G+MX/NgyxVJPfwTkZxc8WMET/QZOh 
+    secure: izXdqKc3Q97YCK/iHmkf5704WRhBwZXVBn2G+MX/NgyxVJPfwTkZxc8WMET/QZOh
 
 platform:
   - x86
@@ -23,7 +23,7 @@ install:
 test_script:
 - npm run ci:appveyor
 - ps: |
-    if ($env:APPVEYOR_REPO_TAG -eq 'true' && Test-Path $env:NODE_PRE_GYP_GITHUB_TOKEN) {
+    if (($env:APPVEYOR_REPO_TAG -eq 'true') -and $env:NODE_PRE_GYP_GITHUB_TOKEN) {
       npm run publish
     }
 
