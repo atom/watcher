@@ -20,6 +20,10 @@ install:
 
 test_script:
 - npm run ci:appveyor
+- ps: |
+    if ($env:APPVEYOR_REPO_TAG -eq 'true' && Test-Path $env:NODE_PRE_GYP_GITHUB_TOKEN) {
+      npm run publish
+    }
 
 shallow_clone: true
 clone_depth: 5
