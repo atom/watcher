@@ -6,6 +6,8 @@ cache:
 
 environment:
   nodejs_version: "7.4.0"
+  NODE_PRE_GYP_GITHUB_TOKEN:
+    secure: izXdqKc3Q97YCK/iHmkf5704WRhBwZXVBn2G+MX/NgyxVJPfwTkZxc8WMET/QZOh 
 
 platform:
   - x86
