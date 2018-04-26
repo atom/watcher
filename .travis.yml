@@ -25,7 +25,7 @@ before_script: greenkeeper-lockfile-update
 script:
 - npm run ci:travis
 - npm run lint:js
-- '[ -n "${TRAVIS_TAG}" ] && npm run publish'
+- '[ -n "${TRAVIS_TAG}" ] && npm run publish || true'
 after_script: greenkeeper-lockfile-upload
 notifications:
   email:
