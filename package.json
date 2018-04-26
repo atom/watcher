@@ -1,6 +1,6 @@
 {
   "name": "@atom/watcher",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Atom filesystem watcher",
   "main": "lib/index.js",
   "scripts": {
@@ -25,8 +25,8 @@
     "clean:fixture": "git clean -xfd test/fixture"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/atom/watcher.git"
+    "type": "git",
+    "url": "https://github.com/atom/watcher.git"
   },
   "bugs": "https://github.com/atom/watcher/issues",
   "keywords": [
