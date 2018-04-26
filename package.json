@@ -24,7 +24,10 @@
     "aw:win": "npm run clean:fixture && cls && npm run build:debug && cls && npm run test",
     "clean:fixture": "git clean -xfd test/fixture"
   },
-  "repository": "atom/watcher",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/atom/watcher.git"
+  },
   "bugs": "https://github.com/atom/watcher/issues",
   "keywords": [
     "filewatch",
