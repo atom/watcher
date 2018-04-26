@@ -1,6 +1,6 @@
 {
   "name": "@atom/watcher",
-  "version": "1.0.6",
+  "version": "1.0.7-2",
   "description": "Atom filesystem watcher",
   "main": "lib/index.js",
   "scripts": {
@@ -40,7 +40,6 @@
   "author": "GitHub",
   "license": "MIT",
   "devDependencies": {
-    "aws-sdk": "2.220.1",
     "chai": "4.1.2",
     "chai-as-promised": "7.1.1",
     "electron-rebuild": "1.7.3",
