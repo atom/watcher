@@ -63,7 +63,7 @@
     "event-kit": "^2.4.0",
     "fs-extra": "^5.0.0",
     "nan": "2.10.0",
-    "node-pre-gyp": "0.6.39"
+    "node-pre-gyp": "^0.9.1"
   },
   "binary": {
     "module_name": "watcher",
