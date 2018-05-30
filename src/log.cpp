@@ -148,9 +148,9 @@ Logger *Logger::current()
 
 string replace_logger(const Logger *new_logger)
 {
-  string r = new_logger->get_error();
-  if (!r.empty()) {
-    if (new_logger != &the_null_logger) {
+  if (new_logger != &the_null_logger) {
+    string r = new_logger->get_error();
+    if (!r.empty()) {
       delete new_logger;
     }
     return r;
@@ -167,17 +167,17 @@ string replace_logger(const Logger *new_logger)
 
 string Logger::to_file(const char *filename)
 {
-  return replace_logger(new FileLogger(filename));
+  return replace_logger(new FileLogger(filename));  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 string Logger::to_stderr()
 {
-  return replace_logger(new StderrLogger());
+  return replace_logger(new StderrLogger());  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 string Logger::to_stdout()
 {
-  return replace_logger(new StdoutLogger());
+  return replace_logger(new StdoutLogger());  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 string Logger::disable()
