@@ -167,17 +167,17 @@ string replace_logger(const Logger *new_logger)
 
 string Logger::to_file(const char *filename)
 {
-  return replace_logger(new FileLogger(filename)); // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+  return replace_logger(new FileLogger(filename));  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 string Logger::to_stderr()
 {
-  return replace_logger(new StderrLogger()); // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+  return replace_logger(new StderrLogger());  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 string Logger::to_stdout()
 {
-  return replace_logger(new StdoutLogger()); // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+  return replace_logger(new StdoutLogger());  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 string Logger::disable()
