@@ -92,8 +92,6 @@ public:
 
   virtual ~FnRegistry() = default;
 
-  void *create_info(FnType &&fn);
-
   FnRegistry(const FnRegistry &) = delete;
   FnRegistry(FnRegistry &&) = delete;
   FnRegistry &operator=(const FnRegistry &) = delete;
@@ -115,11 +113,12 @@ protected:
     Entry &operator=(Entry &&) = delete;
   };
 
-  void *emplace_entry(FnType &&fn_addr);
-
   std::list<Entry> fns;
 
   using Iter = typename std::list<Entry>::const_iterator;
+
+public:
+  std::unique_ptr<Iter> create_info(FnType &&fn);
 };
 
 class SourceFnRegistry : public FnRegistry<SourceFn, SourceFnRegistry>
@@ -173,11 +172,10 @@ public:
 };
 
 template <class FnType, class This>
-void *FnRegistry<FnType, This>::create_info(FnType &&fn)
+std::unique_ptr<typename FnRegistry<FnType, This>::Iter> FnRegistry<FnType, This>::create_info(FnType &&fn)
 {
   fns.emplace_front(std::move(fn), static_cast<This *>(this));
-  auto *it = new Iter(fns.cbegin());
-  return static_cast<void *>(it);
+  return std::unique_ptr<Iter>(new Iter(fns.cbegin()));
 }
 
 #endif
