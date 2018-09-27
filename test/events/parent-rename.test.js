@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher')
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher')
 
 // These cases interfere with the caches on MacOS, but other platforms should handle them correctly as well.
 describe('when a parent directory is renamed', function () {
@@ -35,13 +35,13 @@ describe('when a parent directory is renamed', function () {
 
     await fs.rename(originalParentDir, finalParentDir)
     await until('the rename event arrives', matcher.allEvents(
-      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir}
+      { action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir }
     ))
 
     await fs.rename(finalFile, changedFile)
 
     await until('the rename event arrives', matcher.allEvents(
-      {action: 'renamed', kind: 'file', oldPath: finalFile, path: changedFile}
+      { action: 'renamed', kind: 'file', oldPath: finalFile, path: changedFile }
     ))
   })
 
@@ -52,8 +52,8 @@ describe('when a parent directory is renamed', function () {
     await fs.rename(finalFile, changedFile)
 
     await until('the rename events arrive', matcher.allEvents(
-      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir},
-      {action: 'renamed', kind: 'file', oldPath: finalFile, path: changedFile}
+      { action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir },
+      { action: 'renamed', kind: 'file', oldPath: finalFile, path: changedFile }
     ))
   })
 
@@ -64,8 +64,8 @@ describe('when a parent directory is renamed', function () {
     await fs.rename(originalParentDir, finalParentDir)
 
     await until('the rename events arrive', matcher.allEvents(
-      {action: 'renamed', kind: 'file', oldPath: originalFile, path: changedFile},
-      {action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir}
+      { action: 'renamed', kind: 'file', oldPath: originalFile, path: changedFile },
+      { action: 'renamed', kind: 'directory', oldPath: originalParentDir, path: finalParentDir }
     ))
   })
 })

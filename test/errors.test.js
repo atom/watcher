@@ -1,7 +1,7 @@
 /* eslint-dev mocha */
 
-const {Fixture} = require('./helper')
-const {EventMatcher} = require('./matcher')
+const { Fixture } = require('./helper')
+const { EventMatcher } = require('./matcher')
 
 describe('error reporting', function () {
   let fixture, matcher

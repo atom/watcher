@@ -1,7 +1,7 @@
 const path = require('path')
-const {Emitter} = require('event-kit')
+const { Emitter } = require('event-kit')
 
-const {NativeWatcherRegistry} = require('../lib/native-watcher-registry')
+const { NativeWatcherRegistry } = require('../lib/native-watcher-registry')
 
 function findRootDirectory () {
   let current = process.cwd()
@@ -28,7 +28,7 @@ function parts (fullPath) {
 class MockWatcher {
   constructor (normalizedPath, options) {
     this.normalizedPath = normalizedPath
-    this.options = Object.assign({recursive: true}, options)
+    this.options = Object.assign({ recursive: true }, options)
     this.native = null
   }
 
@@ -407,11 +407,11 @@ describe('NativeWatcherRegistry', function () {
         return new MockNative('nope')
       }
 
-      const parentWatcher = new MockWatcher(parentDir, {recursive: true})
-      const child0Watcher = new MockWatcher(child0Dir, {recursive: false})
-      const child1Watcher = new MockWatcher(child1Dir, {recursive: true})
-      const child2Watcher = new MockWatcher(child2Dir, {recursive: true})
-      const child3Watcher = new MockWatcher(child3Dir, {recursive: false})
+      const parentWatcher = new MockWatcher(parentDir, { recursive: true })
+      const child0Watcher = new MockWatcher(child0Dir, { recursive: false })
+      const child1Watcher = new MockWatcher(child1Dir, { recursive: true })
+      const child2Watcher = new MockWatcher(child2Dir, { recursive: true })
+      const child3Watcher = new MockWatcher(child3Dir, { recursive: false })
       await registry.attach(parentWatcher)
       await Promise.all(
         [child0Watcher, child1Watcher, child2Watcher, child3Watcher].map(w => registry.attach(w))
@@ -445,9 +445,9 @@ describe('NativeWatcherRegistry', function () {
 
         return new MockNative('nope')
       }
-      await registry.attach(new MockWatcher(existingPath, {recursive: false}))
+      await registry.attach(new MockWatcher(existingPath, { recursive: false }))
 
-      const watcher = new MockWatcher(existingPath, {recursive: false})
+      const watcher = new MockWatcher(existingPath, { recursive: false })
       await registry.attach(watcher)
 
       assert.strictEqual(watcher.native, EXISTING)
@@ -469,18 +469,18 @@ describe('NativeWatcherRegistry', function () {
           return new MockNative('nope')
         }
 
-        await registry.attach(new MockWatcher(existingPath, {recursive: true}))
+        await registry.attach(new MockWatcher(existingPath, { recursive: true }))
       })
 
       it('on the same directory', async function () {
-        const watcher = new MockWatcher(existingPath, {recursive: false})
+        const watcher = new MockWatcher(existingPath, { recursive: false })
         await registry.attach(watcher)
         assert.strictEqual(watcher.native, EXISTING)
       })
 
       it('on a parent directory', async function () {
         const childPath = absolute('existing', 'path', 'subdir')
-        const watcher = new MockWatcher(childPath, {recursive: false})
+        const watcher = new MockWatcher(childPath, { recursive: false })
         await registry.attach(watcher)
         assert.strictEqual(watcher.native, EXISTING)
       })
@@ -506,12 +506,12 @@ describe('NativeWatcherRegistry', function () {
           return new MockNative('nope')
         }
 
-        existingWatcher = new MockWatcher(existingPath, {recursive: false})
+        existingWatcher = new MockWatcher(existingPath, { recursive: false })
         await registry.attach(existingWatcher)
       })
 
       it('when the same directory is watched recursively', async function () {
-        const watcher = new MockWatcher(existingPath, {recursive: true})
+        const watcher = new MockWatcher(existingPath, { recursive: true })
         await registry.attach(watcher)
 
         assert.strictEqual(watcher.native, CREATED)
@@ -520,7 +520,7 @@ describe('NativeWatcherRegistry', function () {
 
       it('when a parent directory is watched recursively', async function () {
         const parentDir = absolute('existing', 'path')
-        const watcher = new MockWatcher(parentDir, {recursive: true})
+        const watcher = new MockWatcher(parentDir, { recursive: true })
         await registry.attach(watcher)
 
         assert.strictEqual(watcher.native, CREATED)
@@ -547,11 +547,11 @@ describe('NativeWatcherRegistry', function () {
         return new MockNative('nope')
       }
 
-      const parentWatcher = new MockWatcher(parentDir, {recursive: false})
+      const parentWatcher = new MockWatcher(parentDir, { recursive: false })
       await registry.attach(parentWatcher)
       assert.strictEqual(parentWatcher.native, PARENT)
 
-      const childWatcher = new MockWatcher(childDir, {recursive: true})
+      const childWatcher = new MockWatcher(childDir, { recursive: true })
       await registry.attach(childWatcher)
       assert.strictEqual(childWatcher.native, CHILD)
       assert.strictEqual(parentWatcher.native, PARENT)
@@ -578,16 +578,16 @@ describe('NativeWatcherRegistry', function () {
         return new MockNative('oops')
       }
 
-      const rChildWatcher = new MockWatcher(recursiveChild, {recursive: true})
+      const rChildWatcher = new MockWatcher(recursiveChild, { recursive: true })
       await registry.attach(rChildWatcher)
 
-      const nrChildWatcher = new MockWatcher(nonrecursiveChild, {recursive: false})
+      const nrChildWatcher = new MockWatcher(nonrecursiveChild, { recursive: false })
       await registry.attach(nrChildWatcher)
 
       assert.strictEqual(rChildWatcher.native, RCHILD)
       assert.strictEqual(nrChildWatcher.native, NRCHILD)
 
-      const parentWatcher = new MockWatcher(parentDir, {recursive: false})
+      const parentWatcher = new MockWatcher(parentDir, { recursive: false })
       await registry.attach(parentWatcher)
 
       assert.strictEqual(parentWatcher.native, PARENT)

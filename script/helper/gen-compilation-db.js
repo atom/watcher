@@ -5,7 +5,7 @@
 
 const path = require('path')
 const readline = require('readline')
-const {spawn, execFileSync} = require('child_process')
+const { spawn, execFileSync } = require('child_process')
 
 const BASE_DIR = path.resolve(__dirname, '..', '..')
 const BUILD_DIR = path.resolve(BASE_DIR, 'build')
@@ -18,7 +18,7 @@ try {
   fs = require('fs-extra')
   shell = require('shell-quote')
 } catch (e) {
-  execFileSync(NODE_GYP_BINARY, process.argv.slice(2), {stdio: 'inherit'})
+  execFileSync(NODE_GYP_BINARY, process.argv.slice(2), { stdio: 'inherit' })
   process.exit(0)
 }
 
@@ -58,10 +58,10 @@ function runNodeGyp () {
 
   return new Promise((resolve, reject) => {
     const nodeGyp = spawn(NODE_GYP_BINARY, process.argv.slice(2), {
-      env: Object.assign({}, process.env, {V: '1'}),
+      env: Object.assign({}, process.env, { V: '1' }),
       stdio: [process.stdin, 'pipe', process.stderr]
     })
-    const lineReader = readline.createInterface({input: nodeGyp.stdout})
+    const lineReader = readline.createInterface({ input: nodeGyp.stdout })
 
     lineReader.on('line', line => {
       if (/-DNODE_GYP_MODULE_NAME=/.test(line)) {

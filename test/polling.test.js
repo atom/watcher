@@ -1,5 +1,5 @@
-const {status} = require('../lib/binding')
-const {Fixture} = require('./helper')
+const { status } = require('../lib/binding')
+const { Fixture } = require('./helper')
 
 describe('polling', function () {
   let fixture
@@ -21,7 +21,7 @@ describe('polling', function () {
     })
 
     it('runs the polling thread when polling a directory for changes', async function () {
-      const watcher = await fixture.watch([], {poll: true}, () => {})
+      const watcher = await fixture.watch([], { poll: true }, () => {})
       const s = await status()
       assert.equal(s.pollingThreadState, 'running')
 

@@ -1,6 +1,6 @@
 const fs = require('fs-extra')
-const {Fixture} = require('./helper')
-const {EventMatcher} = require('./matcher')
+const { Fixture } = require('./helper')
+const { EventMatcher } = require('./matcher')
 
 describe('watching a directory', function () {
   let fixture
@@ -22,7 +22,7 @@ describe('watching a directory', function () {
     const filePath = fixture.watchPath('file.txt')
     await fs.writeFile(filePath, 'indeed')
 
-    await until('an event arrives', matcher.allEvents({path: filePath}))
+    await until('an event arrives', matcher.allEvents({ path: filePath }))
   })
 
   it('can watch multiple directories at once and dispatch events appropriately', async function () {
@@ -40,15 +40,15 @@ describe('watching a directory', function () {
 
     const fileA = fixture.watchPath('dir_a', 'a.txt')
     await fs.writeFile(fileA, 'file a')
-    await until('watcher A picks up its event', matcherA.allEvents({path: fileA}))
+    await until('watcher A picks up its event', matcherA.allEvents({ path: fileA }))
 
     const fileB = fixture.watchPath('dir_b', 'b.txt')
     await fs.writeFile(fileB, 'file b')
-    await until('watcher B picks up its event', matcherB.allEvents({path: fileB}))
+    await until('watcher B picks up its event', matcherB.allEvents({ path: fileB }))
 
     // Assert that the streams weren't crossed
-    assert.isTrue(matcherA.noEvents({path: fileB}))
-    assert.isTrue(matcherB.noEvents({path: fileA}))
+    assert.isTrue(matcherA.noEvents({ path: fileB }))
+    assert.isTrue(matcherB.noEvents({ path: fileA }))
   })
 
   it('watches subdirectories recursively', async function () {
@@ -71,9 +71,9 @@ describe('watching a directory', function () {
     await fs.writeFile(file1, 'file 1')
 
     await until('all three events arrive', matcher.allEvents(
-      {path: rootFile},
-      {path: file0},
-      {path: file1}
+      { path: rootFile },
+      { path: file0 },
+      { path: file1 }
     ))
   })
 
@@ -85,10 +85,10 @@ describe('watching a directory', function () {
     const file0 = fixture.watchPath('subdir', 'file-0.txt')
 
     await fs.mkdir(subdir)
-    await until('the subdirectory creation event arrives', matcher.allEvents({path: subdir}))
+    await until('the subdirectory creation event arrives', matcher.allEvents({ path: subdir }))
 
     await fs.writeFile(file0, 'file 0')
-    await until('the modification event arrives', matcher.allEvents({path: file0}))
+    await until('the modification event arrives', matcher.allEvents({ path: file0 }))
   })
 
   it('watches directories renamed within a watch root', async function () {
@@ -106,11 +106,11 @@ describe('watching a directory', function () {
     await matcher.watch([], {})
 
     await fs.rename(externalDir, internalDir)
-    await until('creation event arrives', matcher.allEvents({path: internalDir}))
+    await until('creation event arrives', matcher.allEvents({ path: internalDir }))
 
     await fs.writeFile(internalFile, 'changed')
 
-    await until('modification event arrives', matcher.allEvents({path: internalFile}))
+    await until('modification event arrives', matcher.allEvents({ path: internalFile }))
   })
 
   it('can watch a directory nested within an already-watched directory', async function () {
@@ -132,11 +132,11 @@ describe('watching a directory', function () {
     await fs.appendFile(subFile, 'change 0\n')
 
     await until('parent events arrive', parent.allEvents(
-      {path: rootFile},
-      {path: subFile}
+      { path: rootFile },
+      { path: subFile }
     ))
     await until('child events arrive', parent.allEvents(
-      {path: subFile}
+      { path: subFile }
     ))
 
     w.dispose()
@@ -146,8 +146,8 @@ describe('watching a directory', function () {
     await fs.appendFile(subFile, 'change 1\n')
 
     await until('parent events arrive', parent.allEvents(
-      {path: rootFile},
-      {path: subFile}
+      { path: rootFile },
+      { path: subFile }
     ))
   })
 })
