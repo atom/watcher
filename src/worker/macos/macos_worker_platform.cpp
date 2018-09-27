@@ -70,7 +70,7 @@ public:
     auto info = source_registry.create_info(bind(&MacOSWorkerPlatform::source_triggered, this));
     CFRunLoopSourceContext command_context{
       0,  // version
-      static_cast<void*>(info.get()),  // info
+      static_cast<void *>(info.get()),  // info
       nullptr,  // retain
       nullptr,  // release
       nullptr,  // copyDescription
@@ -108,7 +108,7 @@ public:
       bind(&MacOSWorkerPlatform::fs_event_triggered, this, channel_id, _1, _2, _3, _4, _5));
     FSEventStreamContext stream_context{
       0,  // version
-      static_cast<void*>(info.get()),  // info
+      static_cast<void *>(info.get()),  // info
       nullptr,  // retain
       nullptr,  // release
       nullptr  // copyDescription
@@ -233,7 +233,7 @@ public:
       auto info = timer_registry.create_info(bind(&MacOSWorkerPlatform::timer_triggered, this, out, channel_id, _1));
       CFRunLoopTimerContext timer_context{
         0,  // version
-        static_cast<void*>(info.get()),  // info
+        static_cast<void *>(info.get()),  // info
         nullptr,  // retain
         nullptr,  // release
         nullptr  // copy description
