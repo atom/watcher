@@ -67,9 +67,10 @@ public:
   {
     run_loop.set_from_get(CFRunLoopGetCurrent());
 
+    auto info = source_registry.create_info(bind(&MacOSWorkerPlatform::source_triggered, this));
     CFRunLoopSourceContext command_context{
       0,  // version
-      source_registry.create_info(bind(&MacOSWorkerPlatform::source_triggered, this)),  // info
+      static_cast<void *>(info.get()),  // info
       nullptr,  // retain
       nullptr,  // release
       nullptr,  // copyDescription
@@ -82,6 +83,7 @@ public:
     command_source.set_from_create(CFRunLoopSourceCreate(kCFAllocatorDefault, 1, &command_context));
     CFRunLoopAddSource(run_loop.get(), command_source.get(), kCFRunLoopDefaultMode);
 
+    static_cast<void>(info.release());
     return ok_result();
   }
 
@@ -102,10 +104,11 @@ public:
     }
     logline << " at channel " << channel_id << "." << endl;
 
+    auto info = event_stream_registry.create_info(
+      bind(&MacOSWorkerPlatform::fs_event_triggered, this, channel_id, _1, _2, _3, _4, _5));
     FSEventStreamContext stream_context{
       0,  // version
-      event_stream_registry.create_info(
-        bind(&MacOSWorkerPlatform::fs_event_triggered, this, channel_id, _1, _2, _3, _4, _5)),  // info
+      static_cast<void *>(info.get()),  // info
       nullptr,  // retain
       nullptr,  // release
       nullptr  // copyDescription
@@ -153,6 +156,7 @@ public:
       return ok_result(false);
     }
 
+    static_cast<void>(info.release());
     subscriptions.emplace(channel_id, Subscription(channel_id, recursive, string(root_path), move(event_stream)));
 
     cache.prepopulate(root_path, DEFAULT_CACHE_PREPOPULATION, recursive);
@@ -226,9 +230,10 @@ public:
              << "." << endl;
       CFAbsoluteTime fire_time = CFAbsoluteTimeGetCurrent() + RENAME_TIMEOUT;
 
+      auto info = timer_registry.create_info(bind(&MacOSWorkerPlatform::timer_triggered, this, out, channel_id, _1));
       CFRunLoopTimerContext timer_context{
         0,  // version
-        timer_registry.create_info(bind(&MacOSWorkerPlatform::timer_triggered, this, out, channel_id, _1)),  // info
+        static_cast<void *>(info.get()),  // info
         nullptr,  // retain
         nullptr,  // release
         nullptr  // copy description
@@ -245,6 +250,7 @@ public:
       );
 
       CFRunLoopAddTimer(run_loop.get(), timer, kCFRunLoopDefaultMode);
+      static_cast<void>(info.release());
     }
 
     Result<> er = emit_all(message_buffer.begin(), message_buffer.end());
