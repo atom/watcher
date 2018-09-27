@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher')
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher')
 
 describe('watching beneath symlinked directories', function () {
   let fixture
@@ -37,8 +37,8 @@ describe('watching beneath symlinked directories', function () {
     await fs.writeFile(realFile, 'contents\n')
 
     await Promise.all([
-      until('symlink event arrives', symlinkMatcher.allEvents({action: 'created', kind: 'file', path: symlinkFile})),
-      until('real path event arrives', realMatcher.allEvents({action: 'created', kind: 'file', path: realFile}))
+      until('symlink event arrives', symlinkMatcher.allEvents({ action: 'created', kind: 'file', path: symlinkFile })),
+      until('real path event arrives', realMatcher.allEvents({ action: 'created', kind: 'file', path: realFile }))
     ])
   })
 
@@ -57,7 +57,7 @@ describe('watching beneath symlinked directories', function () {
     await fs.writeFile(fileName, 'contents\n')
 
     await until('creation event arrives', matcher.allEvents(
-      {action: 'created', kind: 'file', path: fileName}
+      { action: 'created', kind: 'file', path: fileName }
     ))
   })
 
@@ -76,7 +76,7 @@ describe('watching beneath symlinked directories', function () {
     await fs.writeFile(fileName, 'stuff\n')
 
     await until('creation event arrives', matcher.allEvents(
-      {action: 'created', kind: 'file', path: fileName}
+      { action: 'created', kind: 'file', path: fileName }
     ))
   })
 })

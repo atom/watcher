@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher');
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher');
 
 [false, true].forEach(poll => {
   describe(`nonrecursive watching with poll = ${poll}`, function () {
@@ -18,7 +18,7 @@ const {EventMatcher} = require('../matcher');
       ])
 
       matcher = new EventMatcher(fixture)
-      await matcher.watch([], {poll, recursive: false})
+      await matcher.watch([], { poll, recursive: false })
     })
 
     afterEach(async function () {
@@ -35,8 +35,8 @@ const {EventMatcher} = require('../matcher');
       ])
 
       await until('creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'file', path: filePath},
-        {action: 'created', kind: 'directory', path: dirPath}
+        { action: 'created', kind: 'file', path: filePath },
+        { action: 'created', kind: 'directory', path: dirPath }
       ))
 
       await Promise.all([
@@ -45,8 +45,8 @@ const {EventMatcher} = require('../matcher');
       ])
 
       await until('deletion events arrive', matcher.allEvents(
-        {action: 'deleted', path: filePath},
-        {action: 'deleted', path: dirPath}
+        { action: 'deleted', path: filePath },
+        { action: 'deleted', path: dirPath }
       ))
     })
 
@@ -62,12 +62,12 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(flagFile, 'uh huh\n')
 
       await until('creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: flagFile}
+        { action: 'created', kind: 'file', path: flagFile }
       ))
       assert.isTrue(matcher.noEvents(
-        {path: file1Path},
-        {path: file2Path},
-        {path: file3Path}
+        { path: file1Path },
+        { path: file2Path },
+        { path: file3Path }
       ))
     })
   })

@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher');
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher');
 
 [false, true].forEach(poll => {
   describe(`entry kind change events with poll = ${poll}`, function () {
@@ -13,7 +13,7 @@ const {EventMatcher} = require('../matcher');
       await fixture.log()
 
       matcher = new EventMatcher(fixture)
-      await matcher.watch([], {poll})
+      await matcher.watch([], { poll })
     })
 
     afterEach(async function () {
@@ -24,15 +24,15 @@ const {EventMatcher} = require('../matcher');
       const reusedPath = fixture.watchPath('reused')
       await fs.mkdir(reusedPath)
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: reusedPath}
+        { action: 'created', kind: 'directory', path: reusedPath }
       ))
 
       await fs.rmdir(reusedPath)
       await fs.writeFile(reusedPath, 'IMMA FILE NOW, SURPRIIIISE\n')
 
       await until('deletion and creation events arrive', matcher.allEvents(
-        {action: 'deleted', kind: 'directory', path: reusedPath},
-        {action: 'created', kind: 'file', path: reusedPath}
+        { action: 'deleted', kind: 'directory', path: reusedPath },
+        { action: 'created', kind: 'file', path: reusedPath }
       ))
     })
 
@@ -45,8 +45,8 @@ const {EventMatcher} = require('../matcher');
         fs.writeFile(oldFilePath, 'original\n')
       ])
       await until('directory and file creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: reusedPath},
-        {action: 'created', kind: 'file', path: oldFilePath}
+        { action: 'created', kind: 'directory', path: reusedPath },
+        { action: 'created', kind: 'file', path: oldFilePath }
       ))
 
       await fs.rmdir(reusedPath)
@@ -54,14 +54,14 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('deletion and creation events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'directory', path: reusedPath},
-          {action: 'deleted', kind: 'file', path: oldFilePath},
-          {action: 'created', kind: 'file', path: reusedPath}
+          { action: 'deleted', kind: 'directory', path: reusedPath },
+          { action: 'deleted', kind: 'file', path: oldFilePath },
+          { action: 'created', kind: 'file', path: reusedPath }
         ))
       } else {
         await until('deletion and rename events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'directory', path: reusedPath},
-          {action: 'renamed', kind: 'file', oldPath: oldFilePath, path: reusedPath}
+          { action: 'deleted', kind: 'directory', path: reusedPath },
+          { action: 'renamed', kind: 'file', oldPath: oldFilePath, path: reusedPath }
         ))
       }
     })
@@ -72,7 +72,7 @@ const {EventMatcher} = require('../matcher');
 
       await fs.mkdirs(reusedPath)
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: reusedPath}
+        { action: 'created', kind: 'directory', path: reusedPath }
       ))
 
       await fs.rename(reusedPath, newDirPath)
@@ -80,14 +80,14 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('rename and creation events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'directory', path: reusedPath},
-          {action: 'created', kind: 'directory', path: newDirPath},
-          {action: 'created', kind: 'file', path: reusedPath}
+          { action: 'deleted', kind: 'directory', path: reusedPath },
+          { action: 'created', kind: 'directory', path: newDirPath },
+          { action: 'created', kind: 'file', path: reusedPath }
         ))
       } else {
         await until('rename and creation events arrive', matcher.allEvents(
-          {action: 'renamed', kind: 'directory', oldPath: reusedPath, path: newDirPath},
-          {action: 'created', kind: 'file', path: reusedPath}
+          { action: 'renamed', kind: 'directory', oldPath: reusedPath, path: newDirPath },
+          { action: 'created', kind: 'file', path: reusedPath }
         ))
       }
     })
@@ -102,8 +102,8 @@ const {EventMatcher} = require('../matcher');
         fs.writeFile(oldFilePath, 'started as a file\n')
       ])
       await until('directory and file creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: reusedPath},
-        {action: 'created', kind: 'file', path: oldFilePath}
+        { action: 'created', kind: 'directory', path: reusedPath },
+        { action: 'created', kind: 'file', path: oldFilePath }
       ))
 
       await fs.rename(reusedPath, newDirPath)
@@ -111,15 +111,15 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('deletion and creation events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'directory', path: reusedPath},
-          {action: 'created', kind: 'directory', path: newDirPath},
-          {action: 'deleted', kind: 'file', path: oldFilePath},
-          {action: 'created', kind: 'file', path: reusedPath}
+          { action: 'deleted', kind: 'directory', path: reusedPath },
+          { action: 'created', kind: 'directory', path: newDirPath },
+          { action: 'deleted', kind: 'file', path: oldFilePath },
+          { action: 'created', kind: 'file', path: reusedPath }
         ))
       } else {
         await until('rename events arrive', matcher.allEvents(
-          {action: 'renamed', kind: 'directory', oldPath: reusedPath, path: newDirPath},
-          {action: 'renamed', kind: 'file', oldPath: oldFilePath, path: reusedPath}
+          { action: 'renamed', kind: 'directory', oldPath: reusedPath, path: newDirPath },
+          { action: 'renamed', kind: 'file', oldPath: oldFilePath, path: reusedPath }
         ))
       }
     })
@@ -128,15 +128,15 @@ const {EventMatcher} = require('../matcher');
       const reusedPath = fixture.watchPath('reused')
       await fs.writeFile(reusedPath, 'something\n')
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: reusedPath}
+        { action: 'created', kind: 'file', path: reusedPath }
       ))
 
       await fs.unlink(reusedPath)
       await fs.mkdir(reusedPath)
 
       await until('delete and create events arrive', matcher.allEvents(
-        {action: 'deleted', path: reusedPath},
-        {action: 'created', kind: 'directory', path: reusedPath}
+        { action: 'deleted', path: reusedPath },
+        { action: 'created', kind: 'directory', path: reusedPath }
       ))
     })
 
@@ -149,8 +149,8 @@ const {EventMatcher} = require('../matcher');
         fs.mkdir(oldDirPath)
       ])
       await until('creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'file', path: reusedPath},
-        {action: 'created', kind: 'directory', path: oldDirPath}
+        { action: 'created', kind: 'file', path: reusedPath },
+        { action: 'created', kind: 'directory', path: oldDirPath }
       ))
 
       await fs.unlink(reusedPath)
@@ -158,14 +158,14 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('delete and create events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'file', path: reusedPath},
-          {action: 'deleted', kind: 'directory', path: oldDirPath},
-          {action: 'created', kind: 'directory', path: reusedPath}
+          { action: 'deleted', kind: 'file', path: reusedPath },
+          { action: 'deleted', kind: 'directory', path: oldDirPath },
+          { action: 'created', kind: 'directory', path: reusedPath }
         ))
       } else {
         await until('delete and rename events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'file', path: reusedPath},
-          {action: 'renamed', kind: 'directory', oldPath: oldDirPath, path: reusedPath}
+          { action: 'deleted', kind: 'file', path: reusedPath },
+          { action: 'renamed', kind: 'directory', oldPath: oldDirPath, path: reusedPath }
         ))
       }
     })
@@ -176,7 +176,7 @@ const {EventMatcher} = require('../matcher');
 
       await fs.writeFile(reusedPath, 'something\n')
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: reusedPath}
+        { action: 'created', kind: 'file', path: reusedPath }
       ))
 
       await fs.rename(reusedPath, newFilePath)
@@ -184,14 +184,14 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('creation and deletion events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'file', path: reusedPath},
-          {action: 'created', kind: 'file', path: newFilePath},
-          {action: 'created', kind: 'directory', path: reusedPath}
+          { action: 'deleted', kind: 'file', path: reusedPath },
+          { action: 'created', kind: 'file', path: newFilePath },
+          { action: 'created', kind: 'directory', path: reusedPath }
         ))
       } else {
         await until('rename and create events arrive', matcher.allEvents(
-          {action: 'renamed', kind: 'file', oldPath: reusedPath, path: newFilePath},
-          {action: 'created', kind: 'directory', path: reusedPath}
+          { action: 'renamed', kind: 'file', oldPath: reusedPath, path: newFilePath },
+          { action: 'created', kind: 'directory', path: reusedPath }
         ))
       }
     })
@@ -206,8 +206,8 @@ const {EventMatcher} = require('../matcher');
         fs.mkdir(oldDirPath)
       ])
       await until('file and directory creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'file', path: reusedPath},
-        {action: 'created', kind: 'directory', path: oldDirPath}
+        { action: 'created', kind: 'file', path: reusedPath },
+        { action: 'created', kind: 'directory', path: oldDirPath }
       ))
 
       await fs.rename(reusedPath, newFilePath)
@@ -215,15 +215,15 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('creation and deletion events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'file', path: reusedPath},
-          {action: 'created', kind: 'file', path: newFilePath},
-          {action: 'deleted', kind: 'directory', path: oldDirPath},
-          {action: 'created', kind: 'directory', path: reusedPath}
+          { action: 'deleted', kind: 'file', path: reusedPath },
+          { action: 'created', kind: 'file', path: newFilePath },
+          { action: 'deleted', kind: 'directory', path: oldDirPath },
+          { action: 'created', kind: 'directory', path: reusedPath }
         ))
       } else {
         await until('rename events arrive', matcher.allEvents(
-          {action: 'renamed', kind: 'file', oldPath: reusedPath, path: newFilePath},
-          {action: 'renamed', kind: 'directory', oldPath: oldDirPath, path: reusedPath}
+          { action: 'renamed', kind: 'file', oldPath: reusedPath, path: newFilePath },
+          { action: 'renamed', kind: 'directory', oldPath: oldDirPath, path: reusedPath }
         ))
       }
     })

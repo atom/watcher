@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher');
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher');
 
 [false, true].forEach(poll => {
   describe(`basic events with poll = ${poll}`, function () {
@@ -13,7 +13,7 @@ const {EventMatcher} = require('../matcher');
       await fixture.log()
 
       matcher = new EventMatcher(fixture)
-      await matcher.watch([], {poll})
+      await matcher.watch([], { poll })
     })
 
     afterEach(async function () {
@@ -25,7 +25,7 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(createdFile, 'contents')
 
       await until('the creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: createdFile}
+        { action: 'created', kind: 'file', path: createdFile }
       ))
     })
 
@@ -34,12 +34,12 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(modifiedFile, 'initial contents\n')
 
       await until('the creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: modifiedFile}
+        { action: 'created', kind: 'file', path: modifiedFile }
       ))
 
       await fs.appendFile(modifiedFile, 'changed contents\n')
       await until('the modification event arrives', matcher.allEvents(
-        {action: 'modified', kind: 'file', path: modifiedFile}
+        { action: 'modified', kind: 'file', path: modifiedFile }
       ))
     })
 
@@ -48,7 +48,7 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(oldPath, 'initial contents\n')
 
       await until('the creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: oldPath}
+        { action: 'created', kind: 'file', path: oldPath }
       ))
 
       const newPath = fixture.watchPath('new-file.txt')
@@ -57,8 +57,8 @@ const {EventMatcher} = require('../matcher');
 
       if (poll) {
         await until('the deletion and creation events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'file', path: oldPath},
-          {action: 'created', kind: 'file', path: newPath}
+          { action: 'deleted', kind: 'file', path: oldPath },
+          { action: 'created', kind: 'file', path: newPath }
         ))
       } else {
         await until('the rename event arrives', matcher.allEvents({
@@ -72,13 +72,13 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(deletedPath, 'initial contents\n')
 
       await until('the creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: deletedPath}
+        { action: 'created', kind: 'file', path: deletedPath }
       ))
 
       await fs.unlink(deletedPath)
 
       await until('the deletion event arrives', matcher.allEvents(
-        {action: 'deleted', kind: 'file', path: deletedPath}
+        { action: 'deleted', kind: 'file', path: deletedPath }
       ))
     })
 
@@ -87,7 +87,7 @@ const {EventMatcher} = require('../matcher');
       await fs.mkdirs(subdir)
 
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: subdir}
+        { action: 'created', kind: 'directory', path: subdir }
       ))
     })
 
@@ -97,18 +97,18 @@ const {EventMatcher} = require('../matcher');
 
       await fs.mkdirs(oldDir)
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: oldDir}
+        { action: 'created', kind: 'directory', path: oldDir }
       ))
 
       await fs.rename(oldDir, newDir)
       if (poll) {
         await until('directory creation and deletion events arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'directory', path: oldDir},
-          {action: 'created', kind: 'directory', path: newDir}
+          { action: 'deleted', kind: 'directory', path: oldDir },
+          { action: 'created', kind: 'directory', path: newDir }
         ))
       } else {
         await until('directory rename event arrives', matcher.allEvents(
-          {action: 'renamed', kind: 'directory', oldPath: oldDir, path: newDir}
+          { action: 'renamed', kind: 'directory', oldPath: oldDir, path: newDir }
         ))
       }
     })
@@ -117,12 +117,12 @@ const {EventMatcher} = require('../matcher');
       const subdir = fixture.watchPath('subdir')
       await fs.mkdirs(subdir)
       await until('directory creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'directory', path: subdir}
+        { action: 'created', kind: 'directory', path: subdir }
       ))
 
       await fs.rmdir(subdir)
       await until('directory deletion event arrives', matcher.allEvents(
-        {action: 'deleted', kind: 'directory', path: subdir}
+        { action: 'deleted', kind: 'directory', path: subdir }
       ))
     })
 
@@ -132,13 +132,13 @@ const {EventMatcher} = require('../matcher');
       await fs.writeFile(originalName, 'contents\n')
 
       await until('file creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'file', path: originalName}
+        { action: 'created', kind: 'file', path: originalName }
       ))
 
       await fs.symlink(originalName, symlinkName)
 
       await until('symlink creation event arrives', matcher.allEvents(
-        {action: 'created', kind: 'symlink', path: symlinkName}
+        { action: 'created', kind: 'symlink', path: symlinkName }
       ))
     })
 
@@ -149,14 +149,14 @@ const {EventMatcher} = require('../matcher');
       await fs.symlink(originalName, symlinkName)
 
       await until('file and symlink creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'file', path: originalName},
-        {action: 'created', kind: 'symlink', path: symlinkName}
+        { action: 'created', kind: 'file', path: originalName },
+        { action: 'created', kind: 'symlink', path: symlinkName }
       ))
 
       await fs.unlink(symlinkName)
 
       await until('symlink deletion event arrives', matcher.allEvents(
-        {action: 'deleted', kind: 'symlink', path: symlinkName}
+        { action: 'deleted', kind: 'symlink', path: symlinkName }
       ))
     })
 
@@ -168,20 +168,20 @@ const {EventMatcher} = require('../matcher');
       await fs.symlink(targetName, originalName)
 
       await until('file and symlink creation events arrive', matcher.allEvents(
-        {action: 'created', kind: 'file', path: targetName},
-        {action: 'created', kind: 'symlink', path: originalName}
+        { action: 'created', kind: 'file', path: targetName },
+        { action: 'created', kind: 'symlink', path: originalName }
       ))
 
       fs.rename(originalName, finalName)
 
       if (poll) {
         await until('symlink deletion and creation arrive', matcher.allEvents(
-          {action: 'deleted', kind: 'symlink', path: originalName},
-          {action: 'created', kind: 'symlink', path: finalName}
+          { action: 'deleted', kind: 'symlink', path: originalName },
+          { action: 'created', kind: 'symlink', path: finalName }
         ))
       } else {
         await until('rename event arrives', matcher.allEvents(
-          {action: 'renamed', kind: 'symlink', oldPath: originalName, path: finalName}
+          { action: 'renamed', kind: 'symlink', oldPath: originalName, path: finalName }
         ))
       }
     })
@@ -195,17 +195,17 @@ const {EventMatcher} = require('../matcher');
         await fs.close(fd)
 
         await until('the creation event arrives', matcher.allEvents(
-          {action: 'created', kind: 'file', path: longName}
+          { action: 'created', kind: 'file', path: longName }
         ))
         assert.isTrue(matcher.noEvents(
-          {action: 'modified', kind: 'file', path: longName}
+          { action: 'modified', kind: 'file', path: longName }
         ))
 
         await fs.appendFile(shortName, 'contents\n')
         await until('the modification event arrives', matcher.allEvents(
-          {action: 'modified', kind: 'file', path: longName}
+          { action: 'modified', kind: 'file', path: longName }
         ))
-        assert.isTrue(matcher.noEvents({path: shortName}))
+        assert.isTrue(matcher.noEvents({ path: shortName }))
       })
     }
   })

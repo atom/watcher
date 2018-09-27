@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher');
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher');
 
 [false, true].forEach(poll => {
   describe(`renaming the root with poll = ${poll}`, function () {
@@ -13,7 +13,7 @@ const {EventMatcher} = require('../matcher');
       await fixture.log()
 
       matcher = new EventMatcher(fixture)
-      await matcher.watch([], {poll})
+      await matcher.watch([], { poll })
     })
 
     afterEach(async function () {
@@ -27,7 +27,7 @@ const {EventMatcher} = require('../matcher');
       await fs.rename(oldRoot, newRoot)
 
       await until('deletion event arrives', matcher.allEvents(
-        {action: 'deleted', kind: 'directory', path: oldRoot}
+        { action: 'deleted', kind: 'directory', path: oldRoot }
       ))
     })
 
@@ -41,12 +41,12 @@ const {EventMatcher} = require('../matcher');
       await fs.appendFile(newFile, 'changed\n')
 
       await until('deletion event arrives', matcher.allEvents(
-        {action: 'deleted', kind: 'directory', path: oldRoot}
+        { action: 'deleted', kind: 'directory', path: oldRoot }
       ))
 
       assert.isTrue(matcher.noEvents(
-        {path: oldFile},
-        {path: newFile}
+        { path: oldFile },
+        { path: newFile }
       ))
     })
   })

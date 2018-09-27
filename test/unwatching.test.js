@@ -1,5 +1,5 @@
 const fs = require('fs-extra')
-const {Fixture} = require('./helper')
+const { Fixture } = require('./helper')
 
 describe('unwatching a directory', function () {
   let fixture

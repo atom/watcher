@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 
-const {Fixture} = require('../helper')
-const {EventMatcher} = require('../matcher')
+const { Fixture } = require('../helper')
+const { EventMatcher } = require('../matcher')
 
 describe('paths with extended utf8 characters', function () {
   let fixture
@@ -30,7 +30,7 @@ describe('paths with extended utf8 characters', function () {
     await fs.writeFile(fileName, 'wat\n')
 
     await until('creation event arrives', matcher.allEvents(
-      {action: 'created', kind: 'file', path: fileName}
+      { action: 'created', kind: 'file', path: fileName }
     ))
   })
 })

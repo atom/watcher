@@ -65,4 +65,4 @@ class EventMatcher {
   }
 }
 
-module.exports = {EventMatcher}
+module.exports = { EventMatcher }

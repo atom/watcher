@@ -2,9 +2,9 @@
 
 const path = require('path')
 const fs = require('fs-extra')
-const {CompositeDisposable} = require('event-kit')
+const { CompositeDisposable } = require('event-kit')
 
-const {watchPath, configure, DISABLE} = require('../lib')
+const { watchPath, configure, DISABLE } = require('../lib')
 
 class Fixture {
   constructor () {
@@ -28,7 +28,7 @@ class Fixture {
     ])
     return Promise.all([
       [this.mainLogFile, this.workerLogFile, this.pollingLogFile].map(fname => {
-        fs.unlink(fname, {encoding: 'utf8'}).catch(() => '')
+        fs.unlink(fname, { encoding: 'utf8' }).catch(() => '')
       })
     ])
   }
@@ -66,13 +66,13 @@ class Fixture {
     await Promise.all(Array.from(natives, native => native.stop(false)))
 
     if (process.platform === 'win32') {
-      await configure({mainLog: DISABLE, workerLog: DISABLE, pollingLog: DISABLE})
+      await configure({ mainLog: DISABLE, workerLog: DISABLE, pollingLog: DISABLE })
     }
 
     if (currentTest.state === 'failed' || process.env.VERBOSE) {
       const [mainLog, workerLog, pollingLog] = await Promise.all(
         [this.mainLogFile, this.workerLogFile, this.pollingLogFile].map(fname => {
-          return fs.readFile(fname, {encoding: 'utf8'}).catch(() => '')
+          return fs.readFile(fname, { encoding: 'utf8' }).catch(() => '')
         })
       )
 
@@ -81,9 +81,9 @@ class Fixture {
       console.log(`>>> polling log ${this.pollingLogFile}:\n${pollingLog}\n<<<\n`)
     }
 
-    await fs.remove(this.fixtureDir, {maxBusyTries: 1})
+    await fs.remove(this.fixtureDir, { maxBusyTries: 1 })
       .catch(err => console.warn('Unable to delete fixture directory', err))
   }
 }
 
-module.exports = {Fixture}
+module.exports = { Fixture }
