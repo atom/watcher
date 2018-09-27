@@ -96,17 +96,6 @@ CommandPayload::CommandPayload(CommandAction action,
   //
 }
 
-CommandPayload::CommandPayload(const CommandPayload &original) :
-  id{original.id},
-  action{original.action},
-  root{original.root},
-  arg{original.arg},
-  recursive{original.recursive},
-  split_count{original.split_count}
-{
-  //
-}
-
 CommandPayload::CommandPayload(CommandPayload &&original) noexcept :
   id{original.id},
   action{original.action},
