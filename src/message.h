@@ -132,7 +132,7 @@ class CommandPayload
 public:
   CommandPayload(CommandPayload &&original) noexcept;
 
-  explicit CommandPayload(const CommandPayload &original);
+  explicit CommandPayload(const CommandPayload &original) = default;
 
   ~CommandPayload() = default;
 
