@@ -28,6 +28,12 @@ script:
 - npm run lint:js
 - '[ -n "${TRAVIS_TAG}" ] && npm run publish || true'
 after_script: greenkeeper-lockfile-upload
+deploy:
+  provider: script
+  script: npm run prebuild && npm run prebuild:upload -u ${NODE_PRE_GYP_GITHUB_TOKEN}
+  skip_cleanup: true
+  on:
+    tags: true
 notifications:
   email:
     on_success: never
