@@ -5,8 +5,9 @@
   "main": "lib/index.js",
   "bin": "lib/cli.js",
   "scripts": {
-    "install": "node-pre-gyp install --fallback-to-build",
-    "publish": "node-pre-gyp package && node-pre-gyp-github publish --release",
+    "install": "prebuild-install || node-gyp rebuild",
+    "prebuild": "prebuild --all --strip --verbose",
+    "prebuild:upload": "prebuild --upload-all",
     "lint": "npm run lint:js && npm run lint:cpp",
     "lint:js": "standard",
     "lint:cpp": "script/c++-lint",
@@ -51,26 +52,16 @@
     "mocha-appveyor-reporter": "0.4.1",
     "mocha-junit-reporter": "1.18.0",
     "mocha-stress": "1.0.0",
-    "node-pre-gyp-github": "1.3.1",
+    "prebuild": "8.1.1",
     "shell-quote": "1.6.1",
     "standard": "12.0.1",
     "temp": "0.8.3",
     "test-until": "1.1.1"
   },
-  "bundledDependencies": [
-    "node-pre-gyp"
-  ],
   "dependencies": {
     "event-kit": "^2.5.0",
     "fs-extra": "^7.0.0",
-    "nan": "^2.10.0",
-    "node-pre-gyp": "^0.11.0"
-  },
-  "binary": {
-    "module_name": "watcher",
-    "module_path": "./build/{configuration}/",
-    "host": "https://github.com/atom/watcher/releases/download/",
-    "remote_path": "{version}"
+    "nan": "^2.10.0"
   },
   "standard": {
     "globals": [
