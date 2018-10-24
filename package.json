@@ -69,7 +69,7 @@
   "binary": {
     "module_name": "watcher",
     "module_path": "./build/{configuration}/",
-    "host": "https://api.github.com/atom/watcher/releases/download/",
+    "host": "https://github.com/atom/watcher/releases/download/",
     "remote_path": "{version}"
   },
   "standard": {
