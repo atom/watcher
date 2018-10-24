@@ -152,3 +152,20 @@ const watcher = await watchPath('/var/log', {}, () => {})
 
 watcher.dispose()
 ```
+
+## CLI
+
+It's possible to call `@atom/watcher` from the command-line, like this:
+
+```sh
+$ watcher /path/to/watch
+```
+
+Example:
+
+```
+created directory: /path/to/watch/foo
+deleted directory: /path/to/watch/foo
+```
+
+It can be useful for testing the watcher and to describe a scenario when reporting an issue.
