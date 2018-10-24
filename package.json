@@ -6,8 +6,8 @@
   "bin": "lib/cli.js",
   "scripts": {
     "install": "prebuild-install || node-gyp rebuild",
-    "prebuild": "prebuild --all --strip --verbose",
-    "prebuild:upload": "prebuild --upload-all",
+    "pre-build": "prebuild --all --strip --verbose",
+    "pre-build:upload": "prebuild --upload-all",
     "lint": "npm run lint:js && npm run lint:cpp",
     "lint:js": "standard",
     "lint:cpp": "script/c++-lint",
