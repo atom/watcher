@@ -19,7 +19,6 @@ install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - npm config set msvs_version 2015
   - npm install --build-from-source=@atom/watcher
-  - ps: Write-Output "APPVEYOR_REPO_TAG is $env:APPVEYOR_REPO_TAG"
 
 test_script:
 - npm run ci:appveyor
