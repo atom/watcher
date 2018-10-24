@@ -25,6 +25,9 @@ test_script:
 - ps: |
     if (($env:APPVEYOR_REPO_TAG -eq 'true') -and $env:NODE_PRE_GYP_GITHUB_TOKEN) {
       npm run pre-build -- -u $env:NODE_PRE_GYP_GITHUB_TOKEN 2> $null
+      if ($LASTEXITCODE -eq 0) {
+        $host.SetShouldExit(0)
+      }
     }
 
 shallow_clone: true
