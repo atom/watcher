@@ -16,7 +16,7 @@ platform:
 build: off
 
 install:
-  - ps: Install-Product node $env:nodejs_version
+  - ps: Install-Product node $env:nodejs_version $env:platform
   - npm config set msvs_version 2015
   - npm install --build-from-source=@atom/watcher
 
