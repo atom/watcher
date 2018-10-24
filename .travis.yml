@@ -29,7 +29,7 @@ script:
 after_script: greenkeeper-lockfile-upload
 deploy:
   provider: script
-  script: npm run pre-build && npm run pre-build:upload -u ${NODE_PRE_GYP_GITHUB_TOKEN}
+  script: npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN}
   skip_cleanup: true
   on:
     tags: true
