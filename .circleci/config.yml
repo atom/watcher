@@ -23,7 +23,7 @@ jobs:
           nvm install ${NODE_VERSION}
           nvm alias default ${NODE_VERSION}
           echo "[ -s \"${NVM_DIR}/nvm.sh\" ] && . \"${NVM_DIR}/nvm.sh\"" >> $BASH_ENV
-    - run: npm install --build-from-source=@atom/watcher
+    - run: npm install --build-from-source
     - run: npm run ci:circle
     - store_test_results:
         path: test-results

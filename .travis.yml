@@ -21,7 +21,7 @@ env:
 before_install:
 - npm install -g npm@latest greenkeeper-lockfile@1
 install:
-- npm install --build-from-source=@atom/watcher
+- npm install --build-from-source
 before_script: greenkeeper-lockfile-update
 script:
 - npm run ci:travis
