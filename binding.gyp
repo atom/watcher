@@ -50,6 +50,9 @@
                             "-Wno-unknown-pragmas"
                         ]
                     }
+                },
+                "xcode_settings": {
+                    'MACOSX_DEPLOYMENT_TARGET': '10.9'
                 }
             }],
             ["OS=='win'", {
@@ -109,7 +112,7 @@
             ['OS=="mac"', {
                 "xcode_settings": {
                     'CLANG_CXX_LIBRARY': 'libc++',
-                    'CLANG_CXX_LANGUAGE_STANDARD':'c++11',
+                    'CLANG_CXX_LANGUAGE_STANDARD': 'c++11'
                 }
             }]
         ]
