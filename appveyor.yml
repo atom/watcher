@@ -24,7 +24,7 @@ test_script:
 - npm run ci:appveyor
 - ps: |
     if (($env:APPVEYOR_REPO_TAG -eq 'true') -and $env:NODE_PRE_GYP_GITHUB_TOKEN) {
-      npm run pre-build -- -u $env:NODE_PRE_GYP_GITHUB_TOKEN
+      npm run pre-build -- -u $env:NODE_PRE_GYP_GITHUB_TOKEN 2> $null
     }
 
 shallow_clone: true
