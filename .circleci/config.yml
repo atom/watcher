@@ -5,7 +5,7 @@ jobs:
     macos:
       xcode: 8.3.3
     environment:
-    - NODE_VERSION: "7.9.0"
+    - NODE_VERSION: "8"
     steps:
     - checkout
     - run:
