@@ -3,6 +3,7 @@
   "version": "1.0.8",
   "description": "Atom filesystem watcher",
   "main": "lib/index.js",
+  "bin": "lib/cli.js",
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
     "publish": "node-pre-gyp package && node-pre-gyp-github publish --release",
