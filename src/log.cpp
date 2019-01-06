@@ -152,8 +152,8 @@ string replace_logger(const Logger *new_logger)
     string r = new_logger->get_error();
     if (!r.empty()) {
       delete new_logger;
+      return r;
     }
-    return r;
   }
 
   Logger *prior = Logger::current();
