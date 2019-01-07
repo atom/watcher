@@ -40,4 +40,4 @@ jobs:
         command: npm run lint:cpp
     - run:
         name: deploy on tag
-        command: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN}
+        command: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN} || true
