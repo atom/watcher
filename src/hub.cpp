@@ -97,6 +97,7 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<AsyncCallback> &&ack_call
   Result<> r = ok_result();
   r &= send_command(worker_thread, CommandPayloadBuilder::remove(channel_id), move(worker_cb));
   r &= send_command(polling_thread, CommandPayloadBuilder::remove(channel_id), move(polling_cb));
+  all->mark_ready();
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {

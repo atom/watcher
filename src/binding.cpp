@@ -123,7 +123,7 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
   }
 
   all->set_result(move(r));
-  all->fire_if_empty(true);
+  all->mark_ready();
 }
 
 void watch(const Nan::FunctionCallbackInfo<Value> &info)
