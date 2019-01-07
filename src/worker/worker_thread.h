@@ -30,6 +30,8 @@ private:
 
   Result<> body() override;
 
+  Result<OfflineCommandOutcome> handle_offline_command(const CommandPayload *command) override;
+
   Result<CommandOutcome> handle_add_command(const CommandPayload *payload) override;
 
   Result<CommandOutcome> handle_remove_command(const CommandPayload *payload) override;
