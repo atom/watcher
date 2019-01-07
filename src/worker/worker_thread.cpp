@@ -51,6 +51,10 @@ Result<Thread::OfflineCommandOutcome> WorkerThread::handle_offline_command(const
     return ok_result(TRIGGER_RUN);
   }
 
+  if (payload->get_action() == COMMAND_CACHE_SIZE) {
+    handle_cache_size_command(payload);
+  }
+
   if (payload->get_action() == COMMAND_STATUS) {
     handle_status_command(payload);
   }
