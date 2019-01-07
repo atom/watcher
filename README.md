@@ -66,6 +66,7 @@ Tweak package-global settings. This method may be called even after watchers hav
 const watcher = require('@atom/watcher')
 
 await watcher.configure({
+  jsLog: watcher.STDOUT,
   mainLog: watcher.STDERR,
   workerLog: 'worker.log',
   pollingLog: 'polling.log',
@@ -75,15 +76,17 @@ await watcher.configure({
 })
 ```
 
-`mainLog` configures the logging of events from the main thread, in line with libuv's event loop. It may be one of:
+`jsLog` configures the logging of events from the JavaScript layer. It may be one of:
 
 * A `String` specifying a path to log to a file. Be careful that you don't log to a directory that you're watching :innocent:
 * The constants `watcher.STDERR` or `watcher.STDOUT` to log to the `node` process' standard error or output streams.
 * `watcher.DISABLE` to disable main thread logging. This is the default.
 
-`workerLog` configures logging for the worker thread, which is used to interact with native operating system filesystem watching APIs. It accepts the same arguments as `mainLog` and also defaults to `watcher.DISABLE`.
+`mainLog` configures the logging of events from the main thread, in line with libuv's event loop. It accepts the same arguments as `jsLog` and also defaults to `watcher.DISABLE`.
 
-`pollingLog` configures logging for the polling thread, which polls the filesystem when the worker thread is unable to. The polling thread only launches when at least one path needs to be polled. `pollingLog` accepts the same arguments as `mainLog` and also defaults to `watcher.DISABLE`.
+`workerLog` configures logging for the worker thread, which is used to interact with native operating system filesystem watching APIs. It accepts the same arguments as `jsLog` and also defaults to `watcher.DISABLE`.
+
+`pollingLog` configures logging for the polling thread, which polls the filesystem when the worker thread is unable to. The polling thread only launches when at least one path needs to be polled. `pollingLog` accepts the same arguments as `jsLog` and also defaults to `watcher.DISABLE`.
 
 `workerCacheSize` controls the number of recently seen stat results are cached within the worker thread. Increasing the cache size will improve the reliability of rename correlation and the entry kinds of deleted entries, but will consume more RAM. The default is `4096`.
 
@@ -152,6 +155,15 @@ const watcher = await watchPath('/var/log', {}, () => {})
 
 watcher.dispose()
 ```
+
+### Environment variables
+
+Logging may also be configured by setting environment variables. Each of these may be set to an empty string to disable that log, `"stderr"` to output to stderr, `"stdout"` to output to stdout, or a path to write output to a file at that path.
+
+* `WATCHER_LOG_JS`: JavaScript layer logging
+* `WATCHER_LOG_MAIN`: Main thread logging
+* `WATCHER_LOG_WORKER`: Worker thread logging
+* `WATCHER_LOG_POLLING`: Polling thread logging
 
 ## CLI
 
