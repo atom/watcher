@@ -156,6 +156,15 @@ const watcher = await watchPath('/var/log', {}, () => {})
 watcher.dispose()
 ```
 
+### Environment variables
+
+Logging may also be configured by setting environment variables. Each of these may be set to an empty string to disable that log, `"stderr"` to output to stderr, `"stdout"` to output to stdout, or a path to write output to a file at that path.
+
+* `WATCHER_LOG_JS`: JavaScript layer logging
+* `WATCHER_LOG_MAIN`: Main thread logging
+* `WATCHER_LOG_WORKER`: Worker thread logging
+* `WATCHER_LOG_POLLING`: Polling thread logging
+
 ## CLI
 
 It's possible to call `@atom/watcher` from the command-line, like this:
