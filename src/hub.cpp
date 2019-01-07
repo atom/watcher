@@ -38,10 +38,10 @@ using v8::Value;
 
 void handle_events_helper(uv_async_t * /*handle*/)
 {
-  Hub::get().handle_events();
+  Hub::get()->handle_events();
 }
 
-Hub Hub::the_hub;
+Hub *Hub::the_hub = nullptr;
 
 Hub::Hub() :
   worker_thread(&event_handler),
