@@ -60,7 +60,6 @@ Hub::Hub() :
     report_uv_error(err);
   }
 
-  report_if_error(worker_thread.run());
   freeze();
 }
 
