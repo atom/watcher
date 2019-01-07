@@ -19,7 +19,13 @@
 class Hub : public Errable
 {
 public:
-  static Hub &get() { return the_hub; }
+  static Hub *get()
+  {
+    if (the_hub == nullptr) {
+      the_hub = new Hub();
+    }
+    return the_hub;
+  }
 
   Hub(const Hub &) = delete;
   Hub(Hub &&) = delete;
@@ -185,7 +191,7 @@ private:
 
   void handle_completed_status(StatusReq &req);
 
-  static Hub the_hub;
+  static Hub *the_hub;
 
   uv_async_t event_handler{};
 
