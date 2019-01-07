@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "bin": "lib/cli.js",
   "scripts": {
-    "install": "node-gyp rebuild",
+    "install": "prebuild-install || node-gyp rebuild",
     "pre-build": "prebuild --all --strip --verbose",
     "pre-build:upload": "prebuild --upload-all",
     "lint": "npm run lint:js && npm run lint:cpp",
