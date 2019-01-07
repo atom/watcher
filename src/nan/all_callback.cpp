@@ -34,6 +34,7 @@ shared_ptr<AllCallback> AllCallback::create(unique_ptr<AsyncCallback> &&done)
 
 AllCallback::AllCallback(unique_ptr<AsyncCallback> &&done) :
   done(move(done)),
+  ready{false},
   fired{false},
   total{0},
   remaining{0},
