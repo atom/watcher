@@ -60,7 +60,6 @@ Hub::Hub() :
     report_uv_error(err);
   }
 
-  report_if_error(worker_thread.run());
   freeze();
 }
 
@@ -92,13 +91,13 @@ Result<> Hub::unwatch(ChannelID channel_id, unique_ptr<AsyncCallback> &&ack_call
 
   string root;
   shared_ptr<AllCallback> all = AllCallback::create(move(ack_callback));
+  unique_ptr<AsyncCallback> worker_cb = all->create_callback("@atom/watcher:hub.unwatch.worker");
+  unique_ptr<AsyncCallback> polling_cb = all->create_callback("@atom/worker:hub.unwatch.polling");
 
   Result<> r = ok_result();
-  r &= send_command(
-    worker_thread, CommandPayloadBuilder::remove(channel_id), all->create_callback("@atom/watcher:hub.unwatch.worker"));
-  r &= send_command(polling_thread,
-    CommandPayloadBuilder::remove(channel_id),
-    all->create_callback("@atom/worker:hub.unwatch.polling"));
+  r &= send_command(worker_thread, CommandPayloadBuilder::remove(channel_id), move(worker_cb));
+  r &= send_command(polling_thread, CommandPayloadBuilder::remove(channel_id), move(polling_cb));
+  all->mark_ready();
 
   auto maybe_event_callback = channel_callbacks.find(channel_id);
   if (maybe_event_callback == channel_callbacks.end()) {

@@ -34,6 +34,7 @@ shared_ptr<AllCallback> AllCallback::create(unique_ptr<AsyncCallback> &&done)
 
 AllCallback::AllCallback(unique_ptr<AsyncCallback> &&done) :
   done(move(done)),
+  ready{false},
   fired{false},
   total{0},
   remaining{0},
@@ -55,6 +56,12 @@ unique_ptr<AsyncCallback> AllCallback::create_callback(const char *async_name)
   return fn_callback(async_name, functions.front());
 }
 
+void AllCallback::mark_ready()
+{
+  ready = true;
+  fire_if_empty(true);
+}
+
 void AllCallback::set_result(Result<> &&r)
 {
   if (r.is_ok()) return;
@@ -70,6 +77,7 @@ void AllCallback::set_result(Result<> &&r)
 void AllCallback::fire_if_empty(bool sync)
 {
   if (remaining > 0) return;
+  if (!ready) return;
   if (fired) return;
   fired = true;
 
