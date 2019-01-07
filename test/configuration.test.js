@@ -29,19 +29,29 @@ describe('configuration', function () {
     assert.match(contents, /FileLogger opened/)
   })
 
-  it('configures the worker thread logger', async function () {
-    await configure({ workerLog: fixture.workerLogFile })
-
-    const contents = await fs.readFile(fixture.workerLogFile)
-    assert.match(contents, /FileLogger opened/)
-  })
-
   it('fails if the main log file cannot be written', async function () {
     await assert.isRejected(configure({ mainLog: badPath }), /No such file or directory/)
   })
 
-  it('fails if the worker log file cannot be written', async function () {
-    await assert.isRejected(configure({ workerLog: badPath }), /No such file or directory/)
+  describe('for the worker thread', function () {
+    // There's currently no way to *stop* the worker thread, so we can't reliably test it in the stopped state.
+
+    describe("after it's started", function () {
+      it('configures the logger', async function () {
+        await fixture.watch([], { poll: false }, () => {})
+
+        await configure({ workerLog: fixture.workerLogFile })
+
+        const contents = await fs.readFile(fixture.workerLogFile)
+        assert.match(contents, /FileLogger opened/)
+      })
+
+      it('fails if the worker log file cannot be written', async function () {
+        await fixture.watch([], { poll: false }, () => {})
+
+        await assert.isRejected(configure({ workerLog: badPath }), /No such file or directory/)
+      })
+    })
   })
 
   describe('for the polling thread', function () {
