@@ -105,11 +105,11 @@ void configure(const Nan::FunctionCallbackInfo<Value> &info)
     r &= Hub::get()->use_polling_log_file(
       move(polling_log_file), all->create_callback("@atom/watcher:binding.configure.use_polling_log_file"));
   } else if (polling_log_stderr) {
-    r &=
-      Hub::get()->use_polling_log_stderr(all->create_callback("@atom/watcher:binding.configure.use_polling_log_stderr"));
+    r &= Hub::get()->use_polling_log_stderr(
+      all->create_callback("@atom/watcher:binding.configure.use_polling_log_stderr"));
   } else if (polling_log_stdout) {
-    r &=
-      Hub::get()->use_polling_log_stdout(all->create_callback("@atom/watcher:binding.configure.use_polling_log_stdout"));
+    r &= Hub::get()->use_polling_log_stdout(
+      all->create_callback("@atom/watcher:binding.configure.use_polling_log_stdout"));
   }
 
   if (polling_interval > 0) {

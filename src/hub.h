@@ -19,7 +19,8 @@
 class Hub : public Errable
 {
 public:
-  static Hub *get() {
+  static Hub *get()
+  {
     if (the_hub == nullptr) {
       the_hub = new Hub();
     }
