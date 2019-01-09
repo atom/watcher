@@ -21,8 +21,6 @@ public:
 
   std::unique_ptr<AsyncCallback> create_callback(const char *async_name);
 
-  void mark_ready();
-
   void set_result(Result<> &&r);
 
   void fire_if_empty(bool sync);
@@ -38,7 +36,6 @@ private:
   void callback_complete(size_t callback_index, const Nan::FunctionCallbackInfo<v8::Value> &info);
 
   std::unique_ptr<AsyncCallback> done;
-  bool ready;
   bool fired;
   size_t total;
   size_t remaining;

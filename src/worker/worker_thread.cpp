@@ -42,26 +42,6 @@ Result<> WorkerThread::body()
   return platform->listen();
 }
 
-Result<Thread::OfflineCommandOutcome> WorkerThread::handle_offline_command(const CommandPayload *payload)
-{
-  Result<OfflineCommandOutcome> r = Thread::handle_offline_command(payload);
-  if (r.is_error()) return r;
-
-  if (payload->get_action() == COMMAND_ADD) {
-    return ok_result(TRIGGER_RUN);
-  }
-
-  if (payload->get_action() == COMMAND_CACHE_SIZE) {
-    handle_cache_size_command(payload);
-  }
-
-  if (payload->get_action() == COMMAND_STATUS) {
-    handle_status_command(payload);
-  }
-
-  return ok_result(OFFLINE_ACK);
-}
-
 Result<Thread::CommandOutcome> WorkerThread::handle_add_command(const CommandPayload *payload)
 {
   Result<bool> r = platform->handle_add_command(
