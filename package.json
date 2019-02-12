@@ -44,7 +44,7 @@
   "devDependencies": {
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
-    "electron-rebuild": "1.8.2",
+    "electron-rebuild": "1.8.4",
     "eslint-plugin-import": "2.14.0",
     "eslint-plugin-promise": "4.0.1",
     "eslint-plugin-react": "7.12.4",
