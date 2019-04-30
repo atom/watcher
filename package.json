@@ -61,7 +61,7 @@
   "dependencies": {
     "event-kit": "2.5.3",
     "fs-extra": "7.0.1",
-    "nan": "2.13.1",
+    "nan": "2.13.2",
     "prebuild-install": "5.2.5"
   },
   "standard": {

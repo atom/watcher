@@ -1,43 +1,56 @@
 version: 2
 
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - node-8
+      - node-10
+      - node-12
+
+defaults: &defaults
+  macos:
+    xcode: 10.2.0
+  steps:
+  - checkout
+  - run:
+      name: install llvm
+      command: |
+        brew update
+        brew uninstall node yarn
+        brew cleanup
+        brew install llvm@7 node@$NODE_VERSION
+        echo "export PATH=${PATH}:/usr/local/opt/llvm@7/bin" >> $BASH_ENV
+        brew link --force --overwrite node@$NODE_VERSION
+  - run: npm install --build-from-source
+  - run: npm run ci:circle
+  - store_test_results:
+      path: test-results
+  - store_artifacts:
+      path: test-results
+  - run:
+      name: lint js
+      command: npm run lint:js
+  - run:
+      name: format c++
+      command: npm run format && git diff --exit-code -- src/ test/
+  - run:
+      name: lint c++
+      command: npm run lint:cpp
+  - run:
+      name: deploy on tag
+      command: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN} || true
+
 jobs:
-  build:
-    macos:
-      xcode: 8.3.3
+  node-8:
+    <<: *defaults
     environment:
     - NODE_VERSION: "8"
-    steps:
-    - checkout
-    - run:
-        name: install llvm
-        command: |
-          brew update
-          brew install llvm
-          echo "export PATH=${PATH}:/usr/local/opt/llvm/bin" >> $BASH_ENV
-    - run:
-        name: install node.js with nvm
-        command: |
-          export NVM_DIR=${HOME}/.nvm
-          curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
-          [ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"
-          nvm install ${NODE_VERSION}
-          nvm alias default ${NODE_VERSION}
-          echo "[ -s \"${NVM_DIR}/nvm.sh\" ] && . \"${NVM_DIR}/nvm.sh\"" >> $BASH_ENV
-    - run: npm install --build-from-source
-    - run: npm run ci:circle
-    - store_test_results:
-        path: test-results
-    - store_artifacts:
-        path: test-results
-    - run:
-        name: lint js
-        command: npm run lint:js
-    - run:
-        name: format c++
-        command: npm run format && git diff --exit-code -- src/ test/
-    - run:
-        name: lint c++
-        command: npm run lint:cpp
-    - run:
-        name: deploy on tag
-        command: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN} || true
+  node-10:
+    <<: *defaults
+    environment:
+    - NODE_VERSION: "10"
+  node-12:
+    <<: *defaults
+    environment:
+    - NODE_VERSION: "12"
