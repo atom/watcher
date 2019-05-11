@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "event-kit": "2.5.3",
-    "fs-extra": "7.0.1",
+    "fs-extra": "8.0.0",
     "nan": "2.13.1",
     "prebuild-install": "5.2.5"
   },
