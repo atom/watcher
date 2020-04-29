@@ -30,7 +30,7 @@ jobs:
     # 📚 https://git.io/JvXDl
 
     - run: |
-        npm install -g npm@latest greenkeeper-lockfile@1
+        npm install npm@latest greenkeeper-lockfile@1
         npm install --build-from-source
         npm run pre-build
 
