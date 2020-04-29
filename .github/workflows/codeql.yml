@@ -38,9 +38,11 @@ jobs:
     #    and modify them (or add more) to build your code if your project
     #    uses a compiled language
 
-    #- run: |
-    #   make bootstrap
-    #   make release
+    - run: |
+        npm install
+        npm run ci:travis
+        npm run lint:js
+        npm run pre-build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
