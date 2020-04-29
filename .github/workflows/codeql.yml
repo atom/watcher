@@ -29,14 +29,9 @@ jobs:
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
 
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-
     - run: |
-        npm install
-        npm run ci:travis
-        npm run lint:js
+        npm install -g npm@latest greenkeeper-lockfile@1
+        npm install --build-from-source
         npm run pre-build
 
     - name: Perform CodeQL Analysis
