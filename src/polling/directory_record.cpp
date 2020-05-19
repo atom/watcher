@@ -21,10 +21,7 @@ using std::shared_ptr;
 using std::string;
 
 DirectoryRecord::DirectoryRecord(string &&prefix) :
-  parent{nullptr},
-  name{move(prefix)},
-  populated{false},
-  was_present{false}
+  parent{nullptr}, name{move(prefix)}, populated{false}, was_present{false}
 {
   //
 }
@@ -218,10 +215,7 @@ size_t DirectoryRecord::count_entries() const
 }
 
 DirectoryRecord::DirectoryRecord(DirectoryRecord *parent, string &&name) :
-  parent{parent},
-  name(move(name)),
-  populated{false},
-  was_present{false}
+  parent{parent}, name(move(name)), populated{false}, was_present{false}
 {
   //
 }

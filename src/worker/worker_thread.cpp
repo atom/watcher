@@ -15,8 +15,7 @@ using std::string;
 using std::unique_ptr;
 
 WorkerThread::WorkerThread(uv_async_t *main_callback) :
-  Thread("worker thread", main_callback),
-  platform{WorkerPlatform::for_worker(this)}
+  Thread("worker thread", main_callback), platform{WorkerPlatform::for_worker(this)}
 {
   report_errable(*platform);
   freeze();

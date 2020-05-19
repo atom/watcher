@@ -265,12 +265,7 @@ private:
     uint_fast32_t arg,
     bool recursive,
     size_t split_count) :
-    id{NULL_COMMAND_ID},
-    action{action},
-    root{std::move(root)},
-    arg{arg},
-    recursive{recursive},
-    split_count{split_count}
+    id{NULL_COMMAND_ID}, action{action}, root{std::move(root)}, arg{arg}, recursive{recursive}, split_count{split_count}
   {}
 
   CommandID id;

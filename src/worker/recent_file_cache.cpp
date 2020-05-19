@@ -97,10 +97,7 @@ ostream &operator<<(ostream &out, const StatResult &result)
 }
 
 PresentEntry::PresentEntry(std::string &&path, EntryKind entry_kind, uint64_t inode, uint64_t size) :
-  StatResult(move(path), entry_kind),
-  inode{inode},
-  size{size},
-  last_seen{steady_clock::now()}
+  StatResult(move(path), entry_kind), inode{inode}, size{size}, last_seen{steady_clock::now()}
 {
   //
 }

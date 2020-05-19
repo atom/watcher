@@ -15,17 +15,13 @@ using std::string;
 using std::unique_ptr;
 
 Cookie::Cookie(ChannelID channel_id, std::string &&from_path, EntryKind kind) noexcept :
-  channel_id{channel_id},
-  from_path(move(from_path)),
-  kind{kind}
+  channel_id{channel_id}, from_path(move(from_path)), kind{kind}
 {
   //
 }
 
 Cookie::Cookie(Cookie &&other) noexcept :
-  channel_id{other.channel_id},
-  from_path(move(other.from_path)),
-  kind{other.kind}
+  channel_id{other.channel_id}, from_path(move(other.from_path)), kind{other.kind}
 {
   //
 }

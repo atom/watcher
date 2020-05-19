@@ -24,11 +24,7 @@ using std::ostream;
 using std::string;
 
 Event::Event(BatchHandler &batch, std::string &&event_path, FSEventStreamEventFlags flags) :
-  handler{batch},
-  event_path{move(event_path)},
-  flags{flags},
-  former{nullptr},
-  current{nullptr}
+  handler{batch}, event_path{move(event_path)}, flags{flags}, former{nullptr}, current{nullptr}
 {
   //
 }
@@ -213,11 +209,7 @@ BatchHandler::BatchHandler(ChannelMessageBuffer &message_buffer,
   RenameBuffer &rename_buffer,
   bool recursive,
   const string &root_path) :
-  cache{cache},
-  message_buffer{message_buffer},
-  rename_buffer{rename_buffer},
-  recursive{recursive},
-  root_path{root_path}
+  cache{cache}, message_buffer{message_buffer}, rename_buffer{rename_buffer}, recursive{recursive}, root_path{root_path}
 {
   //
 }

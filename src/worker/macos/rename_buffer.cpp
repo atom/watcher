@@ -21,19 +21,13 @@ using std::string;
 using std::vector;
 
 RenameBufferEntry::RenameBufferEntry(RenameBufferEntry &&original) noexcept :
-  entry(move(original.entry)),
-  event_path(move(original.event_path)),
-  current{original.current},
-  age{original.age}
+  entry(move(original.entry)), event_path(move(original.event_path)), current{original.current}, age{original.age}
 {
   //
 }
 
 RenameBufferEntry::RenameBufferEntry(shared_ptr<PresentEntry> entry, string event_path, bool current) :
-  entry{move(entry)},
-  event_path{move(event_path)},
-  current{current},
-  age{0}
+  entry{move(entry)}, event_path{move(event_path)}, current{current}, age{0}
 {
   //
 }

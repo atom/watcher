@@ -12,18 +12,13 @@ using std::shared_ptr;
 using std::string;
 
 PollingIterator::PollingIterator(const shared_ptr<DirectoryRecord> &root, bool recursive) :
-  root(root),
-  recursive{recursive},
-  current(root),
-  current_path(root->path()),
-  phase{PollingIterator::SCAN}
+  root(root), recursive{recursive}, current(root), current_path(root->path()), phase{PollingIterator::SCAN}
 {
   //
 }
 
 BoundPollingIterator::BoundPollingIterator(PollingIterator &iterator, ChannelMessageBuffer &buffer) :
-  buffer{buffer},
-  iterator{iterator}
+  buffer{buffer}, iterator{iterator}
 {
   //
 }

@@ -47,11 +47,7 @@ FileSystemPayload::FileSystemPayload(ChannelID channel_id,
   EntryKind entry_kind,
   string &&old_path,
   string &&path) :
-  channel_id{channel_id},
-  action{action},
-  entry_kind{entry_kind},
-  old_path{move(old_path)},
-  path{move(path)}
+  channel_id{channel_id}, action{action}, entry_kind{entry_kind}, old_path{move(old_path)}, path{move(path)}
 {
   //
 }
@@ -86,12 +82,7 @@ CommandPayload::CommandPayload(CommandAction action,
   uint_fast32_t arg,
   bool recursive,
   size_t split_count) :
-  id{id},
-  action{action},
-  root{move(root)},
-  arg{arg},
-  recursive{recursive},
-  split_count{split_count}
+  id{id}, action{action}, root{move(root)}, arg{arg}, recursive{recursive}, split_count{split_count}
 {
   //
 }
@@ -139,10 +130,7 @@ string CommandPayload::describe() const
 }
 
 AckPayload::AckPayload(CommandID key, ChannelID channel_id, bool success, string &&message) :
-  key{key},
-  channel_id{channel_id},
-  success{success},
-  message{move(message)}
+  key{key}, channel_id{channel_id}, success{success}, message{move(message)}
 {
   //
 }
@@ -155,9 +143,7 @@ string AckPayload::describe() const
 }
 
 ErrorPayload::ErrorPayload(ChannelID channel_id, std::string &&message, bool fatal) :
-  channel_id{channel_id},
-  message{move(message)},
-  fatal{fatal}
+  channel_id{channel_id}, message{move(message)}, fatal{fatal}
 {
   //
 }
@@ -172,8 +158,7 @@ string ErrorPayload::describe() const
 }
 
 StatusPayload::StatusPayload(RequestID request_id, unique_ptr<Status> &&status) :
-  request_id{request_id},
-  status{move(status)}
+  request_id{request_id}, status{move(status)}
 {
   //
 }
