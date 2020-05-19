@@ -26,9 +26,7 @@ using std::unique_ptr;
 using std::vector;
 
 PollingThread::PollingThread(uv_async_t *main_callback) :
-  Thread("polling thread", main_callback),
-  poll_interval{DEFAULT_POLL_INTERVAL},
-  poll_throttle{DEFAULT_POLL_THROTTLE}
+  Thread("polling thread", main_callback), poll_interval{DEFAULT_POLL_INTERVAL}, poll_throttle{DEFAULT_POLL_THROTTLE}
 {
   freeze();
 }

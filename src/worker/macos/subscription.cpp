@@ -12,10 +12,7 @@ Subscription::Subscription(ChannelID channel_id,
   bool recursive,
   string &&root,
   RefHolder<FSEventStreamRef> &&event_stream) :
-  channel_id{channel_id},
-  root{move(root)},
-  recursive{recursive},
-  event_stream{move(event_stream)}
+  channel_id{channel_id}, root{move(root)}, recursive{recursive}, event_stream{move(event_stream)}
 {
   //
 }

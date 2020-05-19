@@ -22,11 +22,7 @@ WatchedDirectory::WatchedDirectory(int wd,
   shared_ptr<WatchedDirectory> parent,
   string &&name,
   bool recursive) :
-  wd{wd},
-  channel_id{channel_id},
-  parent{parent},
-  name{move(name)},
-  recursive{recursive}
+  wd{wd}, channel_id{channel_id}, parent{parent}, name{move(name)}, recursive{recursive}
 {
   //
 }

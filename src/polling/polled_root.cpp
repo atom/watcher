@@ -10,10 +10,7 @@ using std::move;
 using std::string;
 
 PolledRoot::PolledRoot(string &&root_path, ChannelID channel_id, bool recursive) :
-  root(new DirectoryRecord(move(root_path))),
-  channel_id{channel_id},
-  iterator(root, recursive),
-  all_populated{false}
+  root(new DirectoryRecord(move(root_path))), channel_id{channel_id}, iterator(root, recursive), all_populated{false}
 {
   //
 }
