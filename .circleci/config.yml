@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     macos:
-      xcode: 10.2.1
+      xcode: 9.0.1
     environment:
       NODE_VERSION: '12'
     steps:
@@ -35,9 +35,9 @@ jobs:
     - run:
         name: format c++
         command: npm run format && git diff --exit-code -- src/ test/
-    #- run:
-    #    name: lint c++
-    #    command: npm run lint:cpp
+    - run:
+        name: lint c++
+        command: npm run lint:cpp
     - run:
         name: deploy on tag
         command: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN} || true
