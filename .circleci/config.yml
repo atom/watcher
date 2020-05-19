@@ -3,9 +3,9 @@ version: 2
 jobs:
   build:
     macos:
-      xcode: 8.3.3
+      xcode: 10.2.1
     environment:
-    - NODE_VERSION: "8"
+      NODE_VERSION: '12'
     steps:
     - checkout
     - run:
