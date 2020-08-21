@@ -1,0 +1,34 @@
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: mac-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: install llvm
+        run: |
+          brew update
+          brew install llvm
+          echo "export PATH=${PATH}:/usr/local/opt/llvm/bin" >> $BASH_ENV
+      - name: install node.js with nvm
+        run: |
+          export NVM_DIR=${HOME}/.nvm
+          curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+          [ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"
+          nvm install ${NODE_VERSION}
+          nvm alias default ${NODE_VERSION}
+          echo "[ -s \"${NVM_DIR}/nvm.sh\" ] && . \"${NVM_DIR}/nvm.sh\"" >> $BASH_ENV
+      - name: Build from source
+        run: npm install --build-from-source
+      - name: lint js
+        run: npm run lint:js
+      - name: format c++
+        run: npm run format && git diff --exit-code -- src/ test/
+      - name: lint c++
+        run: npm run lint:cpp
+      - name: deploy on tag
+        run: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN} || true
