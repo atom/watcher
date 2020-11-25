@@ -200,7 +200,6 @@ void initialize(Local<Object> exports)
   Logger::from_env("WATCHER_LOG_MAIN");
 
   LOGGER << "Initializing module" << endl;
-
   Nan::Set(exports,
     Nan::New<String>("configure").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(configure)).ToLocalChecked());
