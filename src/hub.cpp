@@ -213,12 +213,14 @@ void Hub::handle_events_from(Thread &thread)
       v8::Local<v8::Context> context = Nan::GetCurrentContext();
       Local<Object> js_event = Nan::New<Object>();
       js_event->Set(context,
-        Nan::New<String>("action").ToLocalChecked(), Nan::New<Number>(static_cast<int>(fs->get_filesystem_action())));
-      js_event->Set(context,
-        Nan::New<String>("kind").ToLocalChecked(), Nan::New<Number>(static_cast<int>(fs->get_entry_kind())));
-      js_event->Set(context,
-        Nan::New<String>("oldPath").ToLocalChecked(), Nan::New<String>(fs->get_old_path()).ToLocalChecked());
-      js_event->Set(context, Nan::New<String>("path").ToLocalChecked(), Nan::New<String>(fs->get_path()).ToLocalChecked());
+        Nan::New<String>("action").ToLocalChecked(),
+        Nan::New<Number>(static_cast<int>(fs->get_filesystem_action())));
+      js_event->Set(
+        context, Nan::New<String>("kind").ToLocalChecked(), Nan::New<Number>(static_cast<int>(fs->get_entry_kind())));
+      js_event->Set(
+        context, Nan::New<String>("oldPath").ToLocalChecked(), Nan::New<String>(fs->get_old_path()).ToLocalChecked());
+      js_event->Set(
+        context, Nan::New<String>("path").ToLocalChecked(), Nan::New<String>(fs->get_path()).ToLocalChecked());
 
       to_deliver[channel_id].push_back(js_event);
       continue;
