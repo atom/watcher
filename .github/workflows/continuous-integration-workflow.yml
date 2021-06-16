@@ -1,0 +1,25 @@
+name: CI
+on: push
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Set cpp linters
+        run: |
+          ln -s "$(brew --prefix llvm)/bin/clang-format" "/usr/local/bin/clang-format"
+          ln -s "$(brew --prefix llvm)/bin/clang-tidy" "/usr/local/bin/clang-tidy"
+      - name: Build from source
+        run: npm install --build-from-source
+      - name: lint js
+        run: npm run lint:js
+      - name: format c++
+        run: npm run format && git diff --exit-code -- src/ test/
+      - name: Test
+        run: npm run test
+      - name: deploy on tag
+        run: git describe --tags --exact >/dev/null 2>&1 && npm run pre-build -- -u ${NODE_PRE_GYP_GITHUB_TOKEN} || true
