@@ -45,12 +45,17 @@ unique_ptr<AsyncCallback> fn_callback(const char *async_name, FnCallback &fn)
   //Local<ArrayBuffer> fn_addr =
   //  ArrayBuffer::New(Isolate::GetCurrent(), static_cast<void *>(payload), sizeof(FnCallback *));
   // ---
-  std::unique_ptr<BackingStore> backing = ArrayBuffer::NewBackingStore(
-      static_cast<void *>(payload),
-      sizeof(FnCallback *),
-      [](void*, size_t, void*){},
-      nullptr);
-  Local<ArrayBuffer> fn_addr = ArrayBuffer::New(Isolate::GetCurrent(), std::move(backing));
+  //std::unique_ptr<BackingStore> backing = v8::ArrayBuffer::NewBackingStore(
+  //    static_cast<void *>(payload),
+  //    sizeof(FnCallback *),
+  //    [](void*, size_t, void*){},
+  //    nullptr);
+
+  std::unique_ptr<v8::BackingStore> backing =
+      v8::ArrayBuffer::NewBackingStore(v8::Isolate::GetCurrent(), sizeof(FnCallback *));
+  memcpy(backing->Data(), static_cast<void *>(payload), sizeof(FnCallback *));
+
+  Local<ArrayBuffer> fn_addr = v8::ArrayBuffer::New(v8::Isolate::GetCurrent(), std::move(backing));
   // ---
 
   Local<Function> wrapper = Nan::New<Function>(_fn_callback_helper, fn_addr);
