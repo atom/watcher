@@ -54,7 +54,7 @@
     "mocha-stress": "1.0.0",
     "prebuild": "8.2.1",
     "shell-quote": "1.6.1",
-    "standard": "12.0.1",
+    "standard": "13.0.1",
     "temp": "0.9.0",
     "test-until": "1.1.1"
   },
