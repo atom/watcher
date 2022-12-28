@@ -62,7 +62,7 @@
     "event-kit": "2.5.3",
     "fs-extra": "7.0.1",
     "nan": "2.14.1",
-    "prebuild-install": "5.3.3"
+    "prebuild-install": "5.3.4"
   },
   "standard": {
     "globals": [
